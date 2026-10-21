@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">AR Портал</string>
+    <string name="btn_place">Открыть портал</string>
+    <string name="btn_jump">Прыжок</string>
+    <string name="btn_roll">Кувырок</string>
+    <string name="btn_reset">Заново</string>
+</resources>
