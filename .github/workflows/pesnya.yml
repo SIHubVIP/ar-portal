@@ -1,0 +1,104 @@
+name: Pesnya test APK
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "pesnya/**"
+      - ".github/workflows/pesnya.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pesnya-test
+  cancel-in-progress: true
+
+env:
+  GODOT_VERSION: "4.3"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Download Godot and export templates
+        run: |
+          V=$GODOT_VERSION
+          curl -fsSL -o godot.zip "https://github.com/godotengine/godot-builds/releases/download/${V}-stable/Godot_v${V}-stable_linux.x86_64.zip"
+          unzip -q godot.zip && mv Godot_v${V}-stable_linux.x86_64 /usr/local/bin/godot && chmod +x /usr/local/bin/godot
+          curl -fsSL -o tpl.tpz "https://github.com/godotengine/godot-builds/releases/download/${V}-stable/Godot_v${V}-stable_export_templates.tpz"
+          mkdir -p ~/.local/share/godot/export_templates/${V}.stable
+          unzip -q tpl.tpz -d tpl && mv tpl/templates/* ~/.local/share/godot/export_templates/${V}.stable/
+          godot --version
+
+      - name: Configure Android export
+        run: |
+          SDK=${ANDROID_SDK_ROOT:-$ANDROID_HOME}
+          KS=$PWD/keystore/debug.keystore
+          mkdir -p ~/.config/godot
+          for f in editor_settings-4.3.tres editor_settings-4.tres; do
+          cat > ~/.config/godot/$f <<EOF
+          [gd_resource type="EditorSettings" format=3]
+
+          [resource]
+          export/android/android_sdk_path = "$SDK"
+          export/android/java_sdk_path = "$JAVA_HOME"
+          export/android/debug_keystore = "$KS"
+          export/android/debug_keystore_user = "androiddebugkey"
+          export/android/debug_keystore_pass = "android"
+          EOF
+          sed -i 's/^          //' ~/.config/godot/$f
+          done
+          cat ~/.config/godot/editor_settings-4.tres
+          echo "GODOT_ANDROID_KEYSTORE_DEBUG_PATH=$KS" >> $GITHUB_ENV
+          echo "GODOT_ANDROID_KEYSTORE_DEBUG_USER=androiddebugkey" >> $GITHUB_ENV
+          echo "GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD=android" >> $GITHUB_ENV
+          sed -i "s/^version\/code=.*/version\/code=$((1000 + ${{ github.run_number }}))/; s/^version\/name=.*/version\/name=\"0.1.${{ github.run_number }}\"/" pesnya/export_presets.cfg
+          grep version pesnya/export_presets.cfg
+
+      - name: Font licenses
+        run: |
+          curl -fsSL "https://raw.githubusercontent.com/google/fonts/main/ofl/russoone/OFL.txt" -o pesnya/fonts/OFL-RussoOne.txt || echo "skip"
+          curl -fsSL "https://raw.githubusercontent.com/google/fonts/main/ofl/rubik/OFL.txt" -o pesnya/fonts/OFL-Rubik.txt || echo "skip"
+
+      - name: Import project
+        working-directory: pesnya
+        run: godot --headless --import 2>&1 | grep -vE "mesh_get_surface|^\s+at:" || true
+
+      - name: Smoke test (headless run)
+        working-directory: pesnya
+        run: |
+          timeout 120 godot --headless --path . --fixed-fps 30 -- --autotest 2>&1 | grep -vE "mesh_get_surface|^\s+at:" | tee ../smoke.txt || true
+          grep -q AUTOTEST_DONE ../smoke.txt || echo "::warning::autotest did not finish"
+          ! grep -q "SCRIPT ERROR" ../smoke.txt || echo "::warning::script errors in smoke test"
+
+      - name: Export APK
+        working-directory: pesnya
+        run: |
+          godot --headless --export-debug "Android" ../pesnya-test.apk 2>&1 | grep -vE "mesh_get_surface|^\s+at:"
+          ls -la ../pesnya-test.apk
+          cp ../pesnya-test.apk ../pesnya-test-${{ github.run_number }}.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pesnya-test
+          path: |
+            pesnya-test-*.apk
+            smoke.txt
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: pesnya-test-${{ github.run_number }}
+          name: "Песня (тест геймплея) — сборка ${{ github.run_number }}"
+          body: "Тест геймплея MMORPG «Песня». Скачай pesnya-test-${{ github.run_number }}.apk и открой на телефоне."
+          files: pesnya-test-*.apk
+          make_latest: true
