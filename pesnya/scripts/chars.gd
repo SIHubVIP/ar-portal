@@ -757,3 +757,105 @@ static func granny_npc() -> Dictionary:
 	for k in range(4):
 		Kit.part(bag, Kit.SPH, _m(Color("ff9a1c"), 0.6), Vector3.ONE * 0.18, Vector3(-0.2 + k * 0.13, 0.13 + (k % 2) * 0.05, 0))
 	return h
+
+
+# ------------------------------------------------------------------ yard mobs: scooter and vacuum
+static func scooter() -> Dictionary:
+	var g := Node3D.new()
+	var body := Node3D.new()
+	g.add_child(body)
+	var deck := _m(Color("2fb8a8"), 0.4, 0.3)
+	var dark := _m(Color("1a1b22"), 0.5)
+	var steel := _m(Color("c4c9d4"), 0.3, 0.9)
+	Kit.part(body, Kit.BOX, deck, Vector3(0.38, 0.09, 1.15), Vector3(0, 0.22, 0))
+	Kit.part(body, Kit.BOX, dark, Vector3(0.34, 0.02, 0.9), Vector3(0, 0.27, -0.05))
+	var wheels := []
+	for z in [-0.52, 0.52]:
+		var w := Node3D.new()
+		w.position = Vector3(0, 0.16, z)
+		body.add_child(w)
+		Kit.part(w, Kit.CYL, dark, Vector3(0.32, 0.1, 0.32), Vector3.ZERO, Vector3(0, 0, PI / 2))
+		Kit.part(w, Kit.CYL, steel, Vector3(0.14, 0.11, 0.14), Vector3.ZERO, Vector3(0, 0, PI / 2))
+		wheels.append(w)
+	var stem := Node3D.new()
+	stem.position = Vector3(0, 0.25, 0.5)
+	body.add_child(stem)
+	Kit.part(stem, Kit.CYL, steel, Vector3(0.08, 1.1, 0.08), Vector3(0, 0.55, 0))
+	Kit.part(stem, Kit.CYL, steel, Vector3(0.06, 0.62, 0.06), Vector3(0, 1.1, 0), Vector3(0, 0, PI / 2))
+	for s in [-1, 1]:
+		Kit.part(stem, Kit.CYL, dark, Vector3(0.08, 0.14, 0.08), Vector3(0.3 * s, 1.1, 0), Vector3(0, 0, PI / 2))
+	Kit.part(stem, Kit.SPH, _m(Color("f2c14e"), 0.2, 1.0), Vector3.ONE * 0.09, Vector3(-0.18, 1.16, 0))
+	# angry face on the stem
+	Kit.part(stem, Kit.BOX, dark, Vector3(0.36, 0.2, 0.08), Vector3(0, 0.82, 0.04))
+	for s in [-1, 1]:
+		Kit.part(stem, Kit.SPH, Kit.neon(Color("ff4a2a"), 3.0), Vector3(0.09, 0.07, 0.04), Vector3(0.08 * s, 0.83, 0.09))
+		Kit.part(stem, Kit.BOX, _m(Color("2fb8a8")), Vector3(0.12, 0.03, 0.03), Vector3(0.08 * s, 0.9, 0.09), Vector3(0, 0, -0.5 * s))
+	Kit.part(stem, Kit.CYL, Kit.neon(Color("fff0b0"), 2.0), Vector3(0.12, 0.03, 0.12), Vector3(0, 0.6, 0.06), Vector3(PI / 2, 0, 0))
+	return {"root": g, "body": body, "head": stem, "wheels": wheels}
+
+
+static func vacuum() -> Dictionary:
+	var g := Node3D.new()
+	var body := Node3D.new()
+	g.add_child(body)
+	var red := _m(Color("d8323c"), 0.35, 0.2)
+	var dark := _m(Color("22232b"), 0.5)
+	var grey := _m(Color("8a8f9a"), 0.4, 0.5)
+	Kit.part(body, Kit.SPH, red, Vector3(0.95, 0.7, 1.2), Vector3(0, 0.48, -0.1))
+	Kit.part(body, Kit.SPH, dark, Vector3(0.7, 0.3, 0.8), Vector3(0, 0.8, -0.2))
+	Kit.part(body, Kit.CYL, grey, Vector3(0.5, 0.06, 0.5), Vector3(0, 0.93, -0.25))
+	for s in [-1, 1]:
+		Kit.part(body, Kit.CYL, dark, Vector3(0.36, 0.12, 0.36), Vector3(0.48 * s, 0.18, -0.35), Vector3(0, 0, PI / 2))
+		Kit.part(body, Kit.SPH, Kit.neon(Color("ffd84a"), 3.0), Vector3(0.14, 0.1, 0.06), Vector3(0.17 * s, 0.62, 0.48))
+		Kit.part(body, Kit.BOX, dark, Vector3(0.18, 0.04, 0.04), Vector3(0.17 * s, 0.72, 0.48), Vector3(0, 0, -0.45 * s))
+	# cord tail with plug
+	for k in range(4):
+		Kit.part(body, Kit.CYL, dark, Vector3(0.04, 0.3, 0.04), Vector3(0.05 * k, 0.12, -0.75 - k * 0.25), Vector3(PI / 2 - 0.2, 0.3 * k, 0))
+	Kit.part(body, Kit.BOX, _m(Color("f4f4f4")), Vector3(0.12, 0.12, 0.16), Vector3(0.2, 0.1, -1.75))
+	# the hose that sways
+	var hose := Node3D.new()
+	hose.position = Vector3(0, 0.75, 0.45)
+	body.add_child(hose)
+	for k in range(5):
+		Kit.part(hose, Kit.SPH, grey if k % 2 else dark, Vector3(0.18, 0.18, 0.18), Vector3(0, 0.18 * k - 0.02 * k * k, 0.16 * k))
+	Kit.part(hose, Kit.CYL, grey, Vector3(0.09, 0.7, 0.09), Vector3(0, 0.55, 1.0), Vector3(0.9, 0, 0))
+	Kit.part(hose, Kit.BOX, dark, Vector3(0.42, 0.1, 0.18), Vector3(0, 0.25, 1.32))
+	return {"root": g, "body": body, "head": hose, "wheels": []}
+
+
+# ------------------------------------------------------------------ townsfolk
+static func _mustache(h: Dictionary, c: Color) -> void:
+	Kit.part(h.head, Kit.SPH, _m(c, 0.8), Vector3(0.3, 0.07, 0.08), Vector3(0, -0.11, 0.32))
+
+
+static func misha_npc() -> Dictionary:
+	var h := human({"top": Color("3a4a6a"), "pants": Color("2a3a5a"), "shoes": Color("2a2a2a"), "hair": "beanie", "hair_color": Color("e86a1c"),
+		"vest": Color("ff7a10"), "smirk": 0.3, "brow": Color("6a5a4a"), "skin": Color("e2a882")})
+	_mustache(h, Color("6a5a4a"))
+	var broom := Node3D.new()
+	h.hands[1].add_child(broom)
+	broom.rotation = Vector3(0.2, 0, 0.15)
+	Kit.part(broom, Kit.CYL, _m(Color("c8a06a"), 0.8), Vector3(0.06, 1.6, 0.06), Vector3(0, -0.2, 0))
+	Kit.part(broom, Kit.CONE, _m(Color("d8b85a"), 0.95), Vector3(0.4, 0.5, 0.4), Vector3(0, -1.15, 0), Vector3(PI, 0, 0))
+	return h
+
+
+static func lyuba_npc() -> Dictionary:
+	var h := human({"top": Color("e86a9a"), "pants": Color("3a3a4a"), "shoes": Color("6a2a3a"), "hair": "bun", "hair_color": Color("c84a2a"),
+		"skirt": true, "skirt_color": Color("5a3a6a"), "width": 1.12, "smirk": 0.35, "skin": Color("f0c0a0")})
+	Kit.part(h.body, Kit.BOX, _m(Color("f8f6f0"), 0.8), Vector3(0.62, 0.8, 0.06), Vector3(0, 0.7, 0.33))
+	label(h.body, "ЛЮБА", 40, Color("e8426a"), Vector3(0, 1.02, 0.37), Vector3.ZERO, 0.003, 0)
+	return h
+
+
+static func petrovich_npc() -> Dictionary:
+	var h := human({"top": Color("6a5a3a"), "pants": Color("3a3a3a"), "shoes": Color("2a2018"), "hair": "slick", "hair_color": Color("9a9a9a"),
+		"width": 1.15, "brow": Color("9a9a9a"), "smirk": 0.1, "glasses": false})
+	_mustache(h, Color("b0b0b0"))
+	var board := Node3D.new()
+	h.hands[0].add_child(board)
+	board.position = Vector3(0.05, -0.05, 0.12)
+	board.rotation = Vector3(-0.9, 0, 0)
+	Kit.part(board, Kit.BOX, _m(Color("8a5a32"), 0.8), Vector3(0.32, 0.42, 0.03))
+	Kit.part(board, Kit.BOX, _m(Color("f4f4f4"), 0.8), Vector3(0.26, 0.32, 0.035), Vector3(0, -0.02, 0))
+	return h

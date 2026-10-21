@@ -31,6 +31,14 @@ var bag_panel: Control
 var pause_panel: Control
 var dead_panel: Control
 var loading_panel: Control
+var list_panel: Control
+var list_title: Label
+var list_sub: Label
+var list_box: VBoxContainer
+var list_close: Button
+var menu_continue: Button
+var menu_new: Button
+var loading_title: Label
 var dialog_name: Label
 var dialog_text: Label
 var dialog_opts: VBoxContainer
@@ -70,6 +78,7 @@ func setup(game) -> void:
 	_build_pause()
 	_build_dead()
 	_build_loading()
+	_build_list()
 
 
 # ================================================================== theme & helpers
@@ -177,14 +186,16 @@ func _build_menu() -> void:
 	logo.custom_minimum_size = Vector2(220, 60)
 	v.add_child(logo)
 	v.add_child(_label("ПЕСНЯ ♪", 76, true, GOLD))
-	var sub := _label("Тестовая сборка геймплея · двор «Берёзки»", 22, false, CREAM)
+	var sub := _label("Офлайн-версия 0.2 · двор «Берёзки» и ГК «Песня»", 22, false, CREAM)
 	sub.custom_minimum_size = Vector2(520, 0)
 	v.add_child(sub)
 	var d := _label("Бей в бит — урон ×2. Разгони голубей-вымогателей, помоги бабе Зине и победи Голубиного Пахана.", 18, false, Color(0.75, 0.8, 0.88))
 	d.custom_minimum_size = Vector2(520, 0)
 	v.add_child(d)
-	var b := _btn("ИГРАТЬ", func(): g.open_select(), 260)
-	v.add_child(b)
+	menu_continue = _btn("ПРОДОЛЖИТЬ", func(): g.continue_game(), 260)
+	v.add_child(menu_continue)
+	menu_new = _btn("НОВЫЙ ГЕРОЙ", func(): g.open_select(), 260)
+	v.add_child(menu_new)
 	v.add_child(_label("Игра студии Aolovo · aolovo.com", 15, false, Color(0.6, 0.66, 0.75)))
 
 
@@ -323,7 +334,7 @@ func _build_bag() -> void:
 func show_bag() -> void:
 	for c in bag_list.get_children():
 		c.queue_free()
-	bag_stats.text = "Уровень %d · Сила %d · Здоровье %d · Монеты %d" % [g.level, g.power, int(g.hp_max), g.coins]
+	bag_stats.text = "Уровень %d · Сила %d · Здоровье %d · Монеты %d · Шаурма %d\n%s" % [g.level, g.power, int(g.hp_max), g.coins, g.food, g.res_line()]
 	if g.inventory.is_empty():
 		bag_list.add_child(_label("Пока пусто. Добыча падает с голубей — подходи к светящимся столбам.", 18))
 	var sorted: Array = g.inventory.duplicate()
@@ -383,7 +394,8 @@ func _build_loading() -> void:
 	r.set_anchors_preset(Control.PRESET_FULL_RECT)
 	loading_panel.add_child(r)
 	var v := _center_card(loading_panel, 480)
-	v.add_child(_label("Загружаем двор «Берёзки»…", 26, true, GOLD))
+	loading_title = _label("Загружаем двор «Берёзки»…", 26, true, GOLD)
+	v.add_child(loading_title)
 	v.add_child(_label("Совет: жми атаку, когда золотое кольцо сжимается до кнопки. Это бит.", 18))
 
 
@@ -397,6 +409,7 @@ func btn_pos(name: String) -> Vector2:
 		"s3": return Vector2(s.x - 140, s.y - 268)
 		"ult": return Vector2(s.x - 400, s.y - 96)
 		"talk": return Vector2(s.x - 405, s.y - 240)
+		"food": return Vector2(s.x - 262, s.y - 330)
 		"pause": return Vector2(s.x - 214, 40)
 		"bag": return Vector2(s.x - 214, 104)
 	return Vector2(-999, -999)
@@ -407,14 +420,15 @@ func btn_radius(name: String) -> float:
 		"attack": return 68.0
 		"pause", "bag": return 28.0
 		"ult", "talk": return 48.0
+		"food": return 36.0
 	return 44.0
 
 
 func button_at(p: Vector2) -> String:
-	var names := ["attack", "s1", "s2", "s3", "pause", "bag"]
+	var names := ["attack", "s1", "s2", "s3", "pause", "bag", "food"]
 	if g.vibe >= 100.0:
 		names.append("ult")
-	if g.can_talk():
+	if g.interact_label() != "":
 		names.append("talk")
 	for n in names:
 		if p.distance_to(btn_pos(n)) < btn_radius(n) + 10:
@@ -578,14 +592,24 @@ func _draw() -> void:
 		_bar(Rect2(sp.x - bw / 2, sp.y - 10, bw, 11), m.hp / m.hp_max, Color("e8424c"))
 		if m.stun > 0.0:
 			_txt(sp + Vector2(0, -42), "ОГЛУШЁН", 15, Color("ffe066"), false, HORIZONTAL_ALIGNMENT_CENTER, -1, 3)
-	var npc_p: Vector3 = g.npc_pos + Vector3(0, 2.2, 0)
-	if not cam.is_position_behind(npc_p) and npc_p.distance_to(cam.global_position) < 40:
+	for n in g.npcs:
+		var npc_p: Vector3 = n.pos + Vector3(0, 2.2, 0)
+		if cam.is_position_behind(npc_p) or npc_p.distance_to(cam.global_position) > 40:
+			continue
 		var sp2 := cam.unproject_position(npc_p)
-		_txt(sp2, "Баба Зина", 18, Color("ffe6a0"), true, HORIZONTAL_ALIGNMENT_CENTER, -1, 4)
-		var mk: String = g.npc_marker()
+		_txt(sp2, n.name, 18, Color("ffe6a0"), true, HORIZONTAL_ALIGNMENT_CENTER, -1, 4)
+		_txt(sp2 + Vector2(0, 18), n.role, 13, Color(0.85, 0.9, 1.0), false, HORIZONTAL_ALIGNMENT_CENTER, -1, 3)
+		var mk: String = g.npc_marker(n.id)
 		if mk != "":
 			var bounce := sin(g.time * 5.0) * 5.0
 			_txt(sp2 + Vector2(0, -24 + bounce), mk, 46, GOLD, true, HORIZONTAL_ALIGNMENT_CENTER, -1, 6)
+	for e in g.world_labels():
+		var lp2: Vector3 = e[0]
+		if cam.is_position_behind(lp2) or lp2.distance_to(cam.global_position) > 30:
+			continue
+		var sp5 := cam.unproject_position(lp2)
+		var bounce2 := sin(g.time * 5.0) * 4.0
+		_txt(sp5 + Vector2(0, bounce2), e[1], e[2], e[3], true, HORIZONTAL_ALIGNMENT_CENTER, -1, 5)
 	for l in g.loots:
 		var lp: Vector3 = l.pos + Vector3(0, 1.3, 0)
 		if cam.is_position_behind(lp) or lp.distance_to(cam.global_position) > 26:
@@ -640,7 +664,7 @@ func _draw() -> void:
 	var sc2 := mr / 26.0
 	var pp: Vector3 = g.pos
 	var to_map := func(w: Vector3) -> Vector2: return mc + Vector2(w.x - pp.x, w.z - pp.z) * sc2
-	for r in [Rect2(-6, -31, 12, 50), Rect2(-20, -27, 40, 7)]:
+	for r in g.world.map_rects:
 		var a2: Vector2 = to_map.call(Vector3(r.position.x, 0, r.position.y))
 		var b2: Vector2 = to_map.call(Vector3(r.end.x, 0, r.end.y))
 		var rr := Rect2(a2, b2 - a2).intersection(Rect2(mc - Vector2(mr, mr) * 0.72, Vector2(mr, mr) * 1.44))
@@ -651,9 +675,14 @@ func _draw() -> void:
 			var d2: Vector2 = to_map.call(m.pos)
 			if d2.distance_to(mc) < mr - 5:
 				draw_circle(d2, 6 if m.kind == "pakhan" else 4, Color("ff4a4a"))
-	var nz: Vector2 = to_map.call(g.npc_pos)
-	if nz.distance_to(mc) < mr - 5:
-		draw_circle(nz, 5, GOLD)
+	for n in g.npcs:
+		var nz: Vector2 = to_map.call(n.pos)
+		if nz.distance_to(mc) < mr - 5:
+			draw_circle(nz, 5, GOLD)
+	for pt in g.world.portals:
+		var pz: Vector2 = to_map.call(pt.pos)
+		if pz.distance_to(mc) < mr - 5:
+			draw_circle(pz, 6, TEAL)
 	for l in g.loots:
 		var lz: Vector2 = to_map.call(l.pos)
 		if lz.distance_to(mc) < mr - 5:
@@ -664,7 +693,7 @@ func _draw() -> void:
 	draw_colored_polygon(PackedVector2Array([mc + fwd * 11, mc - fwd * 7 + rt * 7, mc - fwd * 3, mc - fwd * 7 - rt * 7]), GOLD)
 	draw_arc(mc, mr, 0, TAU, 64, GOLD, 2.5)
 	_rrect(Rect2(mc.x - 92, mc.y + mr + 10, 168, 30), PANEL, 12)
-	_txt(Vector2(mc.x - 8, mc.y + mr + 31), "Двор «Берёзки»", 15, CREAM, false, HORIZONTAL_ALIGNMENT_CENTER)
+	_txt(Vector2(mc.x - 8, mc.y + mr + 31), g.world.name, 15, CREAM, false, HORIZONTAL_ALIGNMENT_CENTER)
 	# coins
 	_rrect(Rect2(s.x - 470, 18, 150, 40), PANEL, 20)
 	draw_circle(Vector2(s.x - 448, 38), 13, GOLD)
@@ -722,11 +751,22 @@ func _draw() -> void:
 		draw_circle(uc, 58 * pulse, Color(GOLD, 0.3))
 		draw_circle(uc, 48, GOLD)
 		_txt(uc + Vector2(0, 9), "ХИТ!", 24, NAVY, true, HORIZONTAL_ALIGNMENT_CENTER)
-	if g.can_talk():
+	var il: String = g.interact_label()
+	if il != "":
 		var tc := btn_pos("talk")
+		draw_circle(tc, 52 + 3 * sin(g.time * 4.0), Color(0.95, 0.75, 0.3, 0.3))
 		draw_circle(tc, 48, Color(0.95, 0.75, 0.3, 0.95))
-		_icon("talk", tc + Vector2(0, -6), 40, NAVY)
-		_txt(tc + Vector2(0, 30), "Говорить", 14, NAVY, true, HORIZONTAL_ALIGNMENT_CENTER)
+		_icon("talk", tc + Vector2(0, -8), 36, NAVY)
+		_txt(tc + Vector2(0, 26), il, 13, NAVY, true, HORIZONTAL_ALIGNMENT_CENTER)
+	var fc := btn_pos("food")
+	draw_circle(fc, 36, Color(0.12, 0.1, 0.2, 0.86))
+	draw_arc(fc, 36, 0, TAU, 40, Color(1, 0.7, 0.35, 0.6), 3)
+	_rrect(Rect2(fc + Vector2(-16, -10), Vector2(32, 18)), Color("e8b060"), 8)
+	draw_line(fc + Vector2(-12, -2), fc + Vector2(12, -2), Color("7a3a1a"), 2)
+	_txt(fc + Vector2(0, 26), "×%d" % g.food, 14, CREAM, true, HORIZONTAL_ALIGNMENT_CENTER, -1, 3)
+	if g.cd.get("food", 0.0) > 0.0:
+		draw_circle(fc, 36, Color(0, 0, 0, 0.55))
+		_txt(fc + Vector2(0, 9), str(int(ceil(g.cd.food))), 24, CREAM, true, HORIZONTAL_ALIGNMENT_CENTER)
 
 	# beat track
 	var bw2 := 440.0
@@ -760,3 +800,58 @@ func _draw() -> void:
 			_txt(Vector2(s.x / 2, s.y * 0.36 + 42), big_sub, 22, Color(CREAM, a4), true, HORIZONTAL_ALIGNMENT_CENTER, -1, 5)
 	# fps (test build)
 	_txt(Vector2(18, s.y - 18), "%d FPS · сборка теста" % Engine.get_frames_per_second(), 13, Color(1, 1, 1, 0.55))
+
+
+# ================================================================== generic list panel (shop, base, robot, dailies)
+func _build_list() -> void:
+	list_panel = _modal()
+	var dim := ColorRect.new()
+	dim.color = Color(0, 0, 0, 0.35)
+	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
+	list_panel.add_child(dim)
+	var v := _center_card(list_panel, 680)
+	list_title = _label("", 28, true, GOLD)
+	v.add_child(list_title)
+	list_sub = _label("", 17, false, Color(0.8, 0.85, 0.92))
+	list_sub.custom_minimum_size = Vector2(640, 0)
+	v.add_child(list_sub)
+	var sc := ScrollContainer.new()
+	sc.custom_minimum_size = Vector2(640, 330)
+	sc.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	v.add_child(sc)
+	list_box = VBoxContainer.new()
+	list_box.add_theme_constant_override("separation", 8)
+	list_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	sc.add_child(list_box)
+	list_close = _secondary(_btn("ЗАКРЫТЬ", func(): g.close_list()))
+	v.add_child(list_close)
+
+
+## rows: Array of {text, sub, btn, cb, enabled, color}
+func show_list(title: String, sub: String, rows: Array) -> void:
+	list_title.text = title
+	list_sub.text = sub
+	for c in list_box.get_children():
+		c.queue_free()
+	for r in rows:
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 12)
+		var tv := VBoxContainer.new()
+		tv.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		var t := _label(r.get("text", ""), 19, true, r.get("color", CREAM))
+		tv.add_child(t)
+		if r.get("sub", "") != "":
+			tv.add_child(_label(r.sub, 15, false, Color(0.72, 0.78, 0.86)))
+		row.add_child(tv)
+		if r.has("btn"):
+			var cb: Callable = r.cb
+			var b := _btn(r.btn, cb, 170)
+			b.disabled = not r.get("enabled", true)
+			b.add_theme_font_size_override("font_size", 16)
+			row.add_child(b)
+		list_box.add_child(row)
+		var sep := ColorRect.new()
+		sep.color = Color(1, 1, 1, 0.08)
+		sep.custom_minimum_size = Vector2(0, 1)
+		list_box.add_child(sep)
+	list_panel.visible = true

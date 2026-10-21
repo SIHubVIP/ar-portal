@@ -216,6 +216,24 @@ static func tile_material(base: Color, line: Color) -> StandardMaterial3D:
 
 
 # ------------------------------------------------------------------ batching (fewer draw calls on phones)
+# Plain colour materials are baked into vertex colours and merged into one surface per roughness/metal bucket.
+# Special materials (textures, emission, neon, transparency) stay as separate surfaces.
+static var _vc_mats := {}
+
+
+static func _vc_mat(r: float, m: float) -> StandardMaterial3D:
+	var key := "%.1f|%.1f" % [r, m]
+	if _vc_mats.has(key):
+		return _vc_mats[key]
+	var mat := StandardMaterial3D.new()
+	mat.vertex_color_use_as_albedo = true
+	mat.vertex_color_is_srgb = true
+	mat.roughness = r
+	mat.metallic = m
+	_vc_mats[key] = mat
+	return mat
+
+
 static func _mergeable(mi: MeshInstance3D) -> bool:
 	if mi.mesh == null or mi.transparency > 0.0 or not mi.visible:
 		return false
@@ -226,14 +244,79 @@ static func _mergeable(mi: MeshInstance3D) -> bool:
 	return mi.mesh is PrimitiveMesh or mi.mesh is ArrayMesh
 
 
+static func _plain(m) -> bool:
+	return m is StandardMaterial3D and m.albedo_texture == null and not m.emission_enabled \
+		and m.shading_mode == BaseMaterial3D.SHADING_MODE_PER_PIXEL and not m.uv1_triplanar and not m.vertex_color_use_as_albedo
+
+
+static func _acc_new() -> Dictionary:
+	return {"v": PackedVector3Array(), "n": PackedVector3Array(), "c": PackedColorArray(), "i": PackedInt32Array()}
+
+
+static func _acc_add(acc: Dictionary, mesh: Mesh, xf: Transform3D, col: Color) -> void:
+	var nb := xf.basis.inverse().transposed()
+	for s in range(mesh.get_surface_count()):
+		var arr := mesh.surface_get_arrays(s)
+		var v: PackedVector3Array = arr[Mesh.ARRAY_VERTEX]
+		var n: PackedVector3Array = arr[Mesh.ARRAY_NORMAL]
+		var idx = arr[Mesh.ARRAY_INDEX]
+		var base: int = acc.v.size()
+		var vv: PackedVector3Array = acc.v
+		var nn: PackedVector3Array = acc.n
+		var cc: PackedColorArray = acc.c
+		var ii: PackedInt32Array = acc.i
+		for k in range(v.size()):
+			vv.append(xf * v[k])
+			nn.append((nb * n[k]).normalized())
+			cc.append(col)
+		if idx is PackedInt32Array and idx.size() > 0:
+			for j in idx:
+				ii.append(base + j)
+		else:
+			for j in range(v.size()):
+				ii.append(base + j)
+		acc.v = vv
+		acc.n = nn
+		acc.c = cc
+		acc.i = ii
+
+
+static func _add_part(groups: Dictionary, mi: MeshInstance3D, xf: Transform3D) -> void:
+	var mat = mi.material_override
+	if _plain(mat):
+		var key := "vc|%.1f|%.1f" % [snappedf(mat.roughness, 0.1), snappedf(mat.metallic, 0.1)]
+		if not groups.has(key):
+			groups[key] = {"acc": _acc_new(), "mat": _vc_mat(snappedf(mat.roughness, 0.1), snappedf(mat.metallic, 0.1))}
+		_acc_add(groups[key].acc, mi.mesh, xf, mat.albedo_color)
+	else:
+		if not groups.has(mat):
+			var st := SurfaceTool.new()
+			st.begin(Mesh.PRIMITIVE_TRIANGLES)
+			groups[mat] = {"st": st, "mat": mat}
+		for s in range(mi.mesh.get_surface_count()):
+			groups[mat].st.append_from(mi.mesh, s, xf)
+
+
 static func _flush(groups: Dictionary, parent: Node3D, name := "Baked") -> void:
 	if groups.is_empty():
 		return
 	var am := ArrayMesh.new()
-	for mat in groups:
-		var st: SurfaceTool = groups[mat]
-		st.commit(am)
-		am.surface_set_material(am.get_surface_count() - 1, mat)
+	for key in groups:
+		var g: Dictionary = groups[key]
+		if g.has("acc"):
+			var a: Dictionary = g.acc
+			if a.v.size() == 0:
+				continue
+			var arrays := []
+			arrays.resize(Mesh.ARRAY_MAX)
+			arrays[Mesh.ARRAY_VERTEX] = a.v
+			arrays[Mesh.ARRAY_NORMAL] = a.n
+			arrays[Mesh.ARRAY_COLOR] = a.c
+			arrays[Mesh.ARRAY_INDEX] = a.i
+			am.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+		else:
+			g.st.commit(am)
+		am.surface_set_material(am.get_surface_count() - 1, g.mat)
 	var out := MeshInstance3D.new()
 	out.name = name
 	out.mesh = am
@@ -251,13 +334,7 @@ static func bake_tree(root: Node) -> void:
 	var gone := []
 	for c in root.get_children():
 		if c is MeshInstance3D and c.get_child_count() == 0 and _mergeable(c):
-			var mat = c.material_override
-			if not groups.has(mat):
-				var st := SurfaceTool.new()
-				st.begin(Mesh.PRIMITIVE_TRIANGLES)
-				groups[mat] = st
-			for s in range(c.mesh.get_surface_count()):
-				groups[mat].append_from(c.mesh, s, c.transform)
+			_add_part(groups, c, c.transform)
 			gone.append(c)
 	if gone.size() < 2:
 		return
@@ -267,7 +344,7 @@ static func bake_tree(root: Node) -> void:
 	_flush(groups, root)
 
 
-## Flatten a fully static tree into chunked meshes (one surface per material per chunk).
+## Flatten a fully static tree into chunked meshes.
 static func bake_static(root: Node3D, chunk := 24.0) -> void:
 	var chunks := {}
 	var gone := []
@@ -282,14 +359,7 @@ static func bake_static(root: Node3D, chunk := 24.0) -> void:
 			var key := Vector2i(int(floor(t.origin.x / chunk)), int(floor(t.origin.z / chunk)))
 			if not chunks.has(key):
 				chunks[key] = {}
-			var groups: Dictionary = chunks[key]
-			var mat = n.material_override
-			if not groups.has(mat):
-				var st := SurfaceTool.new()
-				st.begin(Mesh.PRIMITIVE_TRIANGLES)
-				groups[mat] = st
-			for s in range(n.mesh.get_surface_count()):
-				groups[mat].append_from(n.mesh, s, t)
+			_add_part(chunks[key], n, t)
 			gone.append(n)
 	for n in gone:
 		n.get_parent().remove_child(n)

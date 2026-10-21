@@ -61,7 +61,7 @@ jobs:
           echo "GODOT_ANDROID_KEYSTORE_DEBUG_PATH=$KS" >> $GITHUB_ENV
           echo "GODOT_ANDROID_KEYSTORE_DEBUG_USER=androiddebugkey" >> $GITHUB_ENV
           echo "GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD=android" >> $GITHUB_ENV
-          sed -i "s/^version\/code=.*/version\/code=$((1000 + ${{ github.run_number }}))/; s/^version\/name=.*/version\/name=\"0.1.${{ github.run_number }}\"/" pesnya/export_presets.cfg
+          sed -i "s/^version\/code=.*/version\/code=$((1000 + ${{ github.run_number }}))/; s/^version\/name=.*/version\/name=\"0.2.${{ github.run_number }}\"/" pesnya/export_presets.cfg
           grep version pesnya/export_presets.cfg
 
       - name: Font licenses
