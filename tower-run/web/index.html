@@ -954,8 +954,10 @@
       if (Math.abs(S.theta) > TILT_MAX) { dropTop(Math.sign(S.theta)); S.theta = Math.sign(S.theta) * TILT_MAX * 0.55; S.omega *= -0.3; }
     } else { S.theta *= 0.9; S.omega = 0; }
     S.pitchV += (-S.pitch * 30 - S.pitchV * 6) * dt; S.pitch += S.pitchV * dt;
-    const share = n ? 1 / n : 0;
-    for (let i = 0; i < n; i++) {
+    // items may have fallen off above, so always read the live tower size
+    const nt = S.tower.length;
+    const share = nt ? 1 / nt : 0;
+    for (let i = 0; i < nt; i++) {
       const l = S.tower[i].link;
       l.rotation.z = S.theta * share * (i === 0 ? 1.4 : 0.96);
       l.rotation.x = S.pitch * share * 0.6;
@@ -963,7 +965,8 @@
     }
 
     const towerTop = new THREE.Vector3();
-    if (n) { S.tower[n - 1].link.getWorldPosition(towerTop); towerTop.y += S.tower[n - 1].type.h * 0.5; }
+    const topItem = S.tower[S.tower.length - 1];
+    if (topItem) { topItem.link.getWorldPosition(towerTop); towerTop.y += topItem.type.h * 0.5; }
     else towerTop.set(S.x, S.y + 1.6, S.z);
 
     S.droneTimer -= dt;
@@ -1120,7 +1123,7 @@
     state = "play";
     show("startScreen", false); show("overScreen", false); show("pauseScreen", false); show("hud", true);
     $("muteBtn").textContent = Audio.isMuted() ? "♪ выкл" : "♪ вкл";
-    Audio.start();
+    try { Audio.start(); } catch (e) { console.error(e); }
     last = performance.now();
     try { navigator.wakeLock && navigator.wakeLock.request("screen").catch(() => {}); } catch (e) {}
   }
@@ -1170,9 +1173,18 @@
   resetRun();
   for (const i of [0, 3, 7, 8]) addToTower(ITEM_TYPES[i]);
   let last = performance.now();
+  let loopErrors = 0;
   function frame(now) {
+    requestAnimationFrame(frame);  // schedule first: one bad frame must never stop the game
     const dt = Math.min(0.05, (now - last) / 1000);
     last = now;
+    try { tick(dt); } catch (e) {
+      loopErrors++;
+      console.error(e);
+      if (loopErrors === 1 || loopErrors % 300 === 0) pop("Сбой: " + String(e && e.message || e).slice(0, 60), "bad");
+    }
+  }
+  function tick(dt) {
     if (state === "play") { step(dt); updateHud(); }
     else if (state === "menu") {
       if (!segAt(S.z - 3.4) && S.onGround) S.jumpBuf = 0.1;
@@ -1182,7 +1194,6 @@
       if (S.tower.length < keep) addToTower(pickRandomType());
     } else updateParticles(dt * 0.3);
     renderer.render(scene, camera);
-    requestAnimationFrame(frame);
   }
   // automated smoke test used by the APK build (index.html#autotest)
   if (location.hash === "#autotest") {
