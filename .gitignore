@@ -7,3 +7,4 @@ local.properties
 .DS_Store
 captures/
 *.apk
+tower-run/app/src/main/assets/

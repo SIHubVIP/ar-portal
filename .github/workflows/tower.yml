@@ -1,0 +1,86 @@
+name: Bashnya APK
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "tower-run/**"
+      - ".github/workflows/tower.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: bashnya-apk
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Put the game and its libraries into the app assets
+        run: |
+          A=tower-run/app/src/main/assets
+          mkdir -p $A/fonts
+          cp tower-run/web/index.html $A/index.html
+          curl -fsSL https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js -o $A/three.min.js
+          sed -i 's#https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js#three.min.js#' $A/index.html
+          curl -fsSL "https://github.com/google/fonts/raw/main/ofl/russoone/RussoOne-Regular.ttf" -o $A/fonts/RussoOne-Regular.ttf || echo "font download skipped"
+          curl -fsSL "https://github.com/google/fonts/raw/main/ofl/rubik/Rubik%5Bwght%5D.ttf" -o $A/fonts/Rubik.ttf || echo "font download skipped"
+          ls -la $A $A/fonts
+
+      - name: Smoke test the game in headless Chrome
+        run: |
+          A=$PWD/tower-run/app/src/main/assets
+          CHROME=$(command -v google-chrome || command -v chromium || command -v chromium-browser)
+          $CHROME --headless=new --no-sandbox --use-angle=swiftshader --enable-unsafe-swiftshader --allow-file-access-from-files \
+            --window-size=1280,640 --virtual-time-budget=9000 --dump-dom "file://$A/index.html#autotest" > dom.html 2> chrome.log || true
+          grep -o "<title>[^<]*</title>" dom.html | tee result.txt
+          $CHROME --headless=new --no-sandbox --use-angle=swiftshader --enable-unsafe-swiftshader --allow-file-access-from-files \
+            --window-size=1280,640 --virtual-time-budget=4000 --screenshot=menu.png "file://$A/index.html" 2>/dev/null || true
+          $CHROME --headless=new --no-sandbox --use-angle=swiftshader --enable-unsafe-swiftshader --allow-file-access-from-files \
+            --window-size=1280,640 --virtual-time-budget=5500 --screenshot=play.png "file://$A/index.html#autotest" 2>/dev/null || true
+          grep -q "AUTOTEST_OK" result.txt || (echo "::warning::Game smoke test did not report OK"; tail -40 chrome.log)
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: smoke-test
+          path: |
+            result.txt
+            menu.png
+            play.png
+            chrome.log
+          if-no-files-found: ignore
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.7"
+
+      - name: Build APK
+        working-directory: tower-run
+        run: gradle assembleDebug --no-daemon --stacktrace
+
+      - name: Rename APK
+        run: cp tower-run/app/build/outputs/apk/debug/app-debug.apk bashnya-${{ github.run_number }}.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bashnya-apk
+          path: bashnya-*.apk
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: bashnya-${{ github.run_number }}
+          name: "Башня на спине — сборка ${{ github.run_number }}"
+          body: "Скачай файл bashnya-${{ github.run_number }}.apk ниже и открой его на телефоне."
+          files: bashnya-*.apk
+          make_latest: true
