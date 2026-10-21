@@ -28,14 +28,25 @@
     { id: "balloon", name: "Шарик", value: 15, h: 0.75, tag: "башня легче" },
     { id: "brick", name: "Кирпич", value: 50, h: 0.3, tag: "тяжёлый" },
     { id: "magnet", name: "Магнит", value: 25, h: 0.45, tag: "притягивает вещи" },
+    // rapper's set
+    { id: "mic", name: "Микрофон", value: 30, h: 0.62, tag: "фристайл: комбо ×2", rap: true },
+    { id: "boombox", name: "Бумбокс", value: 40, h: 0.5, tag: "бит ×2", rap: true },
+    { id: "player", name: "Плеер", value: 20, h: 0.46, tag: "шафл: шанс хита", rap: true },
+    { id: "notebook", name: "Блокнот рифм", value: 15, h: 0.13, tag: "рифма за пару", rap: true },
+    { id: "tablet", name: "Планшет", value: 25, h: 0.08, tag: "стрим: звёзды капают", rap: true },
+    { id: "headphones", name: "Шумоизоляция", value: 30, h: 0.5, tag: "глушит выстрел дрона", rap: true },
+    { id: "chain", name: "Золотая цепь", value: 70, h: 0.12, tag: "дорогая и тяжёлая", rap: true },
+    { id: "vinyl", name: "Пластинка", value: 80, h: 0.05, tag: "редкость", rap: true, rare: true },
+    { id: "sneakers", name: "Коробка кроссов", value: 35, h: 0.36, tag: "прыжок выше", rap: true },
+    { id: "spray", name: "Баллончик", value: 15, h: 0.55, tag: "тег: сдача +10%", rap: true },
   ];
   const TYPE = Object.fromEntries(ITEM_TYPES.map((t) => [t.id, t]));
-  const AD_TEXTS = [["ЛАПША 24/7", "#ff5d7a"], ["КИНО", "#7af0ff"], ["СУПЕР ПИЦЦА", "#ffc65c"], ["ДИСКО", "#c38bff"],
+  const AD_TEXTS = [["AOLOVO", "#ffc65c"], ["РЭП-БАТТЛ", "#ff5d7a"], ["СТУДИЯ ЗВУКА", "#7af0ff"], ["AOLOVO", "#7af0ff"], ["ЛАПША 24/7", "#ff5d7a"], ["КИНО", "#7af0ff"], ["СУПЕР ПИЦЦА", "#ffc65c"], ["ДИСКО", "#c38bff"],
                     ["ХОТ-ДОГИ", "#2ed38f"], ["КАРАОКЕ", "#ff8ad8"], ["РЕМОНТ ДРОНОВ", "#7af0ff"], ["ПЕЛЬМЕНИ", "#ffc65c"]];
 
   // ================================================================== audio
   const Audio = (() => {
-    let ctx = null, master, music, sfx, noiseBuf, nextTime = 0, step = 0, timer = null;
+    let ctx = null, master, music, sfx, noiseBuf, nextTime = 0, step = 0, timer = null, origin = 0;
     let musicOn = P.settings().music, sfxOn = P.settings().sfx;
     const BPM = 132;
     const bassLine = [45, 45, 57, 45, 48, 48, 60, 48, 43, 43, 55, 43, 40, 40, 52, 47];
@@ -84,7 +95,14 @@
       }
     }
     return {
-      start() { init(); if (!ctx) return; if (!timer) { nextTime = ctx.currentTime + 0.05; timer = setInterval(schedule, 25); } },
+      start() { init(); if (!ctx) return; if (!timer) { nextTime = ctx.currentTime + 0.05; step = 0; origin = nextTime; timer = setInterval(schedule, 25); } },
+      /** 0..1 position inside the current beat, from the music clock (null when the music is not playing). */
+      beatPhase() {
+        if (!ctx || !timer || !musicOn || ctx.state !== "running") return null;
+        const t = ctx.currentTime - (ctx.outputLatency || ctx.baseLatency || 0) - origin;
+        const q = 60 / BPM;
+        return ((t / q) % 1 + 1) % 1;
+      },
       stopMusic() { if (timer) { clearInterval(timer); timer = null; } },
       setMusic(on) { musicOn = on; P.setSetting("music", on); if (music) music.gain.value = on ? 0.42 : 0; },
       setSfx(on) { sfxOn = on; P.setSetting("sfx", on); if (sfx) sfx.gain.value = on ? 0.7 : 0; },
@@ -192,7 +210,10 @@
     wood: toon(0xc48e52), woodD: toon(0x8c5f34), red: toon(0xd8483e), blue: toon(0x3c6ec8), gold: toon(0xf0c446),
     steel: toon(0xb2b7c2), steelD: toon(0x5a5e6a), pink: toon(0xe0447a), green: toon(0x50aa5a), terra: toon(0xc8644a),
     white: toon(0xf2f2f4), glass: toon(0xc6e8f4, { emissive: 0x2a6070 }), purple: toon(0x6b4bc4), cyan: toon(0x56e0ff, { emissive: 0x1c6a80 }),
-    parapet: toon(0x8a4a44), roofs: [], facades: [], balloon: toon(0xe8434f, { emissive: 0x401010 }), brick: toon(0xb5543c),
+    parapet: toon(0x8a4a44), roofs: [], facades: [],
+    goldChain: toon(0xf5c64a, { emissive: 0x5a4210 }), shine: new THREE.MeshBasicMaterial({ color: 0xffffff }),
+    vinyl: toon(0x1a1a20), label: toon(0xe0447a), boombox: toon(0x3a3d4a), notebook: toon(0xf0c446), paper: toon(0xfaf6ea),
+    spray: toon(0x8a4fe0), sneakerBox: toon(0xff8a3c), balloon: toon(0xe8434f, { emissive: 0x401010 }), brick: toon(0xb5543c),
     glowSp: (c) => new THREE.SpriteMaterial({ map: glowTex, color: c, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, fog: false }),
     shadowBlob: new THREE.MeshBasicMaterial({ color: 0x1a0a20, transparent: true, opacity: 0.3, depthWrite: false }),
     laser: new THREE.MeshBasicMaterial({ color: 0xff3b5c, transparent: true, opacity: 0.8, depthWrite: false, blending: THREE.AdditiveBlending }),
@@ -316,7 +337,21 @@
     H.body.color.setHex(sk.body); H.pants.color.setHex(sk.pants); H.cap.color.setHex(sk.cap);
     H.capD.color.setHex(sk.capD); H.skin.color.setHex(sk.skin);
   }
-  function makeHero() {
+  function heroCommon(root, body, legs, arms, packZ, kind, extra) {
+    outline(root);
+    const flame = new THREE.Mesh(CONE, new THREE.MeshBasicMaterial({ color: 0xffa040 }));
+    flame.scale.set(0.22, 0.45, 0.22); flame.position.set(0, 0.45, packZ); flame.rotation.x = Math.PI; flame.visible = false;
+    body.add(flame);
+    const flameGlow = new THREE.Sprite(M.glowSp(0xff9a40)); flameGlow.scale.set(1.4, 1.4, 1); flameGlow.position.set(0, 0.35, packZ); flame.add(flameGlow);
+    const dashGlow = new THREE.Sprite(M.glowSp(0x7af0ff)); dashGlow.scale.set(3.2, 3.2, 1); dashGlow.position.set(0, 1, 0.2);
+    dashGlow.material.opacity = 0; body.add(dashGlow);
+    const towerBase = new THREE.Group(); towerBase.position.set(0, 1.22, packZ - 0.03); body.add(towerBase);
+    const blob = new THREE.Mesh(DISC, M.shadowBlob); blob.rotation.x = -Math.PI / 2; blob.scale.set(1.3, 1, 1);
+    scene.add(blob);
+    root.rotation.y = Math.PI;
+    return Object.assign({ kind, root, body, legs, arms, flame, towerBase, blob, dashGlow }, extra || {});
+  }
+  function makeRunner() {
     const root = new THREE.Group();
     const body = new THREE.Group(); root.add(body);
     const legs = [], arms = [];
@@ -342,19 +377,52 @@
     part(BOX, M.dark, 0.16, 0.04, 0.04, 0, 1.33, 0.33, body);
     part(BOX, M.pack, 0.5, 0.56, 0.24, 0, 0.92, -0.33, body);
     part(BOX, M.yellow, 0.12, 0.4, 0.04, 0, 0.94, -0.46, body);
-    outline(root);
-    const flame = new THREE.Mesh(CONE, new THREE.MeshBasicMaterial({ color: 0xffa040 }));
-    flame.scale.set(0.22, 0.45, 0.22); flame.position.set(0, 0.45, -0.33); flame.rotation.x = Math.PI; flame.visible = false;
-    body.add(flame);
-    const flameGlow = new THREE.Sprite(M.glowSp(0xff9a40)); flameGlow.scale.set(1.4, 1.4, 1); flameGlow.position.set(0, 0.35, -0.33); flame.add(flameGlow);
-    const dashGlow = new THREE.Sprite(M.glowSp(0x7af0ff)); dashGlow.scale.set(3.2, 3.2, 1); dashGlow.position.set(0, 1, 0.2);
-    dashGlow.material.opacity = 0; body.add(dashGlow);
-    const towerBase = new THREE.Group(); towerBase.position.set(0, 1.22, -0.36); body.add(towerBase);
-    const blob = new THREE.Mesh(DISC, M.shadowBlob); blob.rotation.x = -Math.PI / 2; blob.scale.set(1.3, 1, 1);
-    scene.add(blob);
-    root.rotation.y = Math.PI;
-    return { root, body, legs, arms, flame, towerBase, blob, dashGlow };
+    return heroCommon(root, body, legs, arms, -0.33, "runner");
   }
+  function makeRapper() {
+    const root = new THREE.Group();
+    const body = new THREE.Group(); root.add(body);
+    const legs = [], arms = [];
+    for (const s of [-1, 1]) {
+      const hip = new THREE.Group(); hip.position.set(0.18 * s, 0.58, 0); body.add(hip);
+      part(BOX, H.pants, 0.3, 0.52, 0.3, 0, -0.24, 0, hip);
+      part(BOX, M.white, 0.33, 0.17, 0.44, 0, -0.52, 0.06, hip);
+      part(BOX, H.capD, 0.34, 0.05, 0.22, 0, -0.49, 0.03, hip);
+      part(BOX, M.dark, 0.34, 0.04, 0.45, 0, -0.6, 0.06, hip);
+      legs.push(hip);
+      const sh = new THREE.Group(); sh.position.set(0.47 * s, 1.17, 0); body.add(sh);
+      part(BOX, H.body, 0.25, 0.56, 0.25, 0, -0.26, 0, sh);
+      part(BOX, H.skin, 0.2, 0.15, 0.2, 0, -0.6, 0, sh);
+      arms.push(sh);
+    }
+    // oversized hoodie with hood, pocket and drawstrings
+    part(BOX, H.body, 0.76, 0.7, 0.5, 0, 0.92, 0, body);
+    part(BOX, H.body, 0.58, 0.26, 0.22, 0, 1.22, -0.27, body);
+    part(BOX, H.pants, 0.46, 0.16, 0.04, 0, 0.76, 0.255, body);
+    for (const x of [-0.09, 0.09]) part(BOX, M.white, 0.03, 0.2, 0.02, x, 1.07, 0.26, body);
+    // head, backwards cap, shades
+    part(BOX, H.skin, 0.66, 0.62, 0.62, 0, 1.5, 0, body);
+    part(BOX, H.cap, 0.71, 0.17, 0.69, 0, 1.84, 0, body);
+    part(BOX, H.capD, 0.56, 0.06, 0.3, 0, 1.79, -0.45, body);
+    part(BOX, M.dark, 0.54, 0.13, 0.05, 0, 1.56, 0.32, body);
+    part(BOX, M.shine, 0.12, 0.03, 0.06, -0.13, 1.585, 0.33, body);
+    part(BOX, M.shine, 0.12, 0.03, 0.06, 0.15, 1.585, 0.33, body);
+    part(BOX, M.dark, 0.18, 0.04, 0.04, 0, 1.33, 0.32, body);
+    // headphones around the neck
+    for (const s of [-1, 1]) { const cup = part(CYL, M.dark, 0.26, 0.12, 0.26, 0.37 * s, 1.2, 0.02, body); cup.rotation.z = Math.PI / 2; }
+    part(BOX, M.dark, 0.78, 0.06, 0.08, 0, 1.27, -0.14, body);
+    // gold chain with an "A" pendant
+    const chain = new THREE.Mesh(new THREE.TorusGeometry(0.25, 0.035, 8, 22), M.goldChain);
+    chain.position.set(0, 1.18, 0.1); chain.rotation.x = Math.PI / 2 - 0.42; chain.castShadow = true; body.add(chain);
+    part(BOX, M.goldChain, 0.14, 0.16, 0.05, 0, 0.98, 0.27, body);
+    // speaker backpack: the tower stands on it and it pulses with the beat
+    part(BOX, M.dark, 0.54, 0.6, 0.28, 0, 0.92, -0.39, body);
+    const speaker = new THREE.Group(); speaker.position.set(0, 0.92, -0.54); body.add(speaker);
+    part(CYL, M.steelD, 0.38, 0.04, 0.38, 0, 0, 0, speaker).rotation.x = Math.PI / 2;
+    part(CYL, M.cyan, 0.16, 0.06, 0.16, 0, 0, -0.01, speaker).rotation.x = Math.PI / 2;
+    return heroCommon(root, body, legs, arms, -0.39, "rapper", { speaker, chain });
+  }
+  function makeHero(kind) { return kind === "runner" ? makeRunner() : makeRapper(); }
 
   // ================================================================== items
   function makeItem(type) {
@@ -404,6 +472,41 @@
         part(BOX, M.brick, 0.8, 0.3, 0.42, 0, 0.15, 0, g);
         for (const x of [-0.2, 0.2]) part(CYL, M.dark, 0.14, 0.04, 0.14, x, 0.3, 0, g);
         break;
+      case "mic":
+        part(CYL, M.dark, 0.13, 0.4, 0.13, 0, 0.2, 0, g); part(CYL, M.steelD, 0.17, 0.06, 0.17, 0, 0.4, 0, g);
+        part(SPH, M.steel, 0.27, 0.27, 0.27, 0, 0.5, 0, g); part(CYL, M.goldChain, 0.28, 0.03, 0.28, 0, 0.44, 0, g); break;
+      case "boombox":
+        part(BOX, M.boombox, 0.86, 0.42, 0.3, 0, 0.21, 0, g);
+        for (const x of [-0.24, 0.24]) { part(CYL, M.dark, 0.3, 0.04, 0.3, x, 0.21, 0.15, g).rotation.x = Math.PI / 2; part(CYL, M.steel, 0.1, 0.05, 0.1, x, 0.21, 0.165, g).rotation.x = Math.PI / 2; }
+        part(BOX, M.cyan, 0.16, 0.08, 0.02, 0, 0.3, 0.155, g);
+        part(BOX, M.steelD, 0.6, 0.05, 0.05, 0, 0.47, 0, g);
+        for (const x of [-0.28, 0.28]) part(BOX, M.steelD, 0.05, 0.08, 0.05, x, 0.43, 0, g);
+        break;
+      case "player":
+        part(BOX, M.white, 0.32, 0.46, 0.08, 0, 0.23, 0, g); part(BOX, M.cyan, 0.24, 0.16, 0.085, 0, 0.33, 0, g);
+        part(CYL, M.steel, 0.16, 0.09, 0.16, 0, 0.12, 0, g).rotation.x = Math.PI / 2; break;
+      case "notebook":
+        part(BOX, M.notebook, 0.62, 0.06, 0.46, 0, 0.03, 0, g); part(BOX, M.paper, 0.58, 0.05, 0.42, 0.01, 0.08, 0, g);
+        part(BOX, M.notebook, 0.62, 0.03, 0.46, 0, 0.12, 0, g);
+        for (let i = -2; i <= 2; i++) part(CYL, M.steelD, 0.04, 0.16, 0.04, -0.31, 0.07, i * 0.08, g);
+        break;
+      case "tablet":
+        part(BOX, M.dark, 0.74, 0.05, 0.52, 0, 0.025, 0, g); part(BOX, M.cyan, 0.64, 0.055, 0.42, 0, 0.03, 0, g); break;
+      case "headphones":
+        for (const x of [-0.27, 0.27]) { const c = part(CYL, M.dark, 0.26, 0.12, 0.26, x, 0.17, 0, g); c.rotation.z = Math.PI / 2; part(CYL, H.capD, 0.18, 0.13, 0.18, x, 0.17, 0, g).rotation.z = Math.PI / 2; }
+        { const band = new THREE.Mesh(new THREE.TorusGeometry(0.27, 0.035, 8, 16, Math.PI), M.dark); band.position.y = 0.2; band.castShadow = true; g.add(band); }
+        break;
+      case "chain":
+        { const ch = new THREE.Mesh(new THREE.TorusGeometry(0.3, 0.05, 8, 24), M.goldChain); ch.rotation.x = Math.PI / 2; ch.position.y = 0.05; ch.castShadow = true; g.add(ch); }
+        part(BOX, M.goldChain, 0.16, 0.08, 0.18, 0, 0.05, 0.33, g); break;
+      case "vinyl":
+        part(CYL, M.vinyl, 0.86, 0.025, 0.86, 0, 0.0125, 0, g); part(CYL, M.label, 0.3, 0.03, 0.3, 0, 0.015, 0, g); break;
+      case "sneakers":
+        part(BOX, M.sneakerBox, 0.82, 0.3, 0.5, 0, 0.15, 0, g); part(BOX, M.white, 0.84, 0.06, 0.52, 0, 0.3, 0, g);
+        part(BOX, M.dark, 0.3, 0.12, 0.02, 0, 0.15, 0.26, g); break;
+      case "spray":
+        part(CYL, M.spray, 0.22, 0.42, 0.22, 0, 0.21, 0, g); part(CYL, M.steel, 0.16, 0.08, 0.16, 0, 0.46, 0, g);
+        part(BOX, M.white, 0.06, 0.06, 0.08, 0, 0.53, 0.05, g); break;
       case "magnet":
         part(BOX, M.red, 0.16, 0.34, 0.22, -0.2, 0.25, 0, g); part(BOX, M.red, 0.16, 0.34, 0.22, 0.2, 0.25, 0, g);
         part(BOX, M.red, 0.56, 0.12, 0.22, 0, 0.39, 0, g);
@@ -415,8 +518,13 @@
 
   // ================================================================== state
   let state = "menu";
-  const hero = makeHero();
+  let hero = makeHero(P.hero().id);
   scene.add(hero.root);
+  function setHero(id) {
+    if (hero.kind === id) return;
+    scene.remove(hero.root); scene.remove(hero.blob);
+    hero = makeHero(id); scene.add(hero.root);
+  }
   const S = {};
   const segs = [];
   const things = [];
@@ -551,8 +659,17 @@
     }
   }
 
+  const BASE_POOL = ITEM_TYPES.slice(0, 10);
+  const RAP_POOL = ITEM_TYPES.filter((t) => t.rap && !t.rare);
   function pickRandomType() {
     const r = Math.random();
+    if (hero.kind === "rapper") {
+      if (r < 0.04) return TYPE.vinyl;
+      if (r < 0.1) return TYPE.balloon;
+      if (r < 0.15) return TYPE.magnet;
+      if (r < 0.85) return RAP_POOL[Math.floor(Math.random() * RAP_POOL.length)];
+      return BASE_POOL[Math.floor(Math.random() * BASE_POOL.length)];
+    }
     if (r < 0.04) return TYPE.gem;
     if (r < 0.12) return TYPE.balloon;
     if (r < 0.19) return TYPE.brick;
@@ -672,7 +789,8 @@
   function bankTower(pos) {
     if (!S.tower.length && !S.pool) { pop("Башня пуста", "bad"); return; }
     const sum = S.tower.reduce((a, t) => a + t.type.value, 0);
-    const gain = Math.round(sum * multiplier()) + S.pool;
+    const gain = Math.round((Math.round(sum * multiplier()) + S.pool) * (1 + 0.1 * countType("spray")));
+    S.danceT = 1.2;
     quest("bigbank", S.tower.length); quest("banktotal", gain);
     if (state === "play" && !P.tutorialDone()) { P.finishTutorial(); setTimeout(() => tip("Отлично! Звёзды из банка тратятся в Гараже на улучшения и образы", 4.5), 900); }
     S.bank += gain; S.pool = 0;
@@ -686,6 +804,25 @@
   function multiplier() { return 1 + Math.max(0, S.tower.length - 1) * 0.25; }
   function hasRocket() { return S.tower.some((t) => t.type.id === "rocket"); }
   function countType(id) { let c = 0; for (const t of S.tower) if (t.type.id === id) c++; return c; }
+  const BEAT = 60 / 132;
+  function beatPhase() {
+    const a = Audio.beatPhase();
+    return a === null ? ((S.time / BEAT) % 1) : a;
+  }
+  function onBeat() { const ph = beatPhase(); return Math.min(ph, 1 - ph) * BEAT < 0.11; }
+  function abilityList() {
+    const out = [];
+    const c = (id) => countType(id);
+    if (hasRocket()) out.push("Ракета: двойной прыжок");
+    if (c("mic")) out.push("Фристайл ×2");
+    if (c("boombox")) out.push("Бит ×" + (2 * c("boombox")));
+    if (c("tablet")) out.push("Стрим +" + (2 * c("tablet")) + "★/с");
+    if (c("headphones")) { const live = S.tower.filter((t) => t.type.id === "headphones" && !t.spent).length; if (live) out.push("Шумоизоляция ×" + live); }
+    if (c("notebook")) out.push("Рифмы");
+    if (c("player")) out.push("Шафл");
+    if (c("spray")) out.push("Тег +" + (10 * c("spray")) + "%");
+    return out.join(" · ");
+  }
   function quest(id, v) {
     if (state !== "play") return;
     const done = P.questEvent(id, v);
@@ -769,7 +906,10 @@
     setText("cp", gate === Infinity ? "скоро" : Math.round(gate) + " м");
     const k = Math.max(-1, Math.min(1, S.theta / S.tiltMax));
     $("needle").style.left = `calc(${50 + k * 47}% - 3.5px)`;
-    const r = hasRocket(); if ($("abil").hidden === r) $("abil").hidden = !r;
+    const ab = abilityList();
+    setText("abil", ab); if ($("abil").hidden === !!ab) $("abil").hidden = !ab;
+    const ph = beatPhase();
+    $("jumpBtn").classList.toggle("beat", ph < 0.16 || ph > 0.94);
     const c = $("combo");
     if (S.combo >= 2) { if (c.hidden) c.hidden = false; setText("combo", "Комбо ×" + S.combo); } else if (!c.hidden) c.hidden = true;
     $("dashBtn").style.setProperty("--cd", (360 * (1 - Math.max(0, S.dashCd) / S.dashCdMax)) + "deg");
@@ -789,6 +929,8 @@
     if (S.stumble > 0) { S.stumble -= dt; fwd *= 0.35; }
     S.z -= fwd * dt;
     S.comboT -= dt; if (S.comboT <= 0 && S.combo) S.combo = 0;
+    const tabs = countType("tablet");
+    if (tabs) { S.streamAcc = (S.streamAcc || 0) + 2 * tabs * dt; if (S.streamAcc >= 1) { const w = Math.floor(S.streamAcc); S.pool += w; S.streamAcc -= w; } }
 
     const steer = Math.max(-1, Math.min(1, input.steer + keySteer()));
     const prevVx = S.vx;
@@ -804,10 +946,15 @@
     if (S.onGround) S.coyote = 0.12; else S.coyote -= dt;
     if (S.jumpBuf > 0) {
       const power = 9.2 * (1 - Math.min(0.18, n * 0.012)) * (1 + 0.04 * P.level("legs"))
-                  * (1 + 0.03 * countType("balloon")) * (1 - 0.03 * countType("brick"));
+                  * (1 + 0.03 * countType("balloon") + 0.04 * countType("sneakers")) * (1 - 0.03 * countType("brick"));
       if (S.onGround || S.coyote > 0) {
         S.vy = power; S.onGround = false; S.coyote = 0; S.jumpBuf = 0; S.jumpsLeft = hasRocket() ? 1 : 0;
         S.pitchV -= 1.2; Audio.play("jump");
+        if (onBeat()) {
+          const bonus = 5 * (hero.kind === "rapper" ? 2 : 1) * (1 + countType("boombox"));
+          S.pool += bonus; S.omega *= 0.35; S.beatPulse = 0.35;
+          pop("В бит! +" + bonus, "neon", new THREE.Vector3(S.x, S.y + 2.6, S.z)); Audio.play("near"); quest("beat", 1);
+        }
         burst(new THREE.Vector3(S.x, S.y + 0.1, S.z), 8, [5], 3, 0.12, 1.5, 0.4, 6);
       } else if (S.jumpsLeft > 0) {
         S.vy = power * 0.95; S.jumpsLeft--; S.jumpBuf = 0; S.rocketT = 0.45;
@@ -834,7 +981,8 @@
       const L = 0.9 + towerHeight() * 0.85, g = 9.8 * 0.55;
       S.windT -= dt;
       if (S.windT <= 0) { S.wind = (Math.random() - 0.5) * (0.6 + hard * 1.6); S.windT = 1 + Math.random() * 2; }
-      const stab = (1 - 0.08 * P.level("frame")) * Math.max(0.55, 1 - 0.12 * countType("balloon")) * (1 + 0.15 * countType("brick"));
+      const stab = (1 - 0.08 * P.level("frame")) * Math.max(0.55, 1 - 0.12 * countType("balloon"))
+                 * (1 + 0.15 * countType("brick") + 0.1 * countType("chain")) * (hero.kind === "runner" ? 0.9 : 1);
       const inst = (g / L) * (0.35 + n * 0.12) * stab;
       const alpha = inst * Math.sin(S.theta) - (S.ax / L) * 0.3 * (1 + n * 0.06) * Math.cos(S.theta) - 2.7 * S.omega + S.wind * (0.4 + n * 0.06) / L;
       S.omega += alpha * dt; S.theta += S.omega * dt;
@@ -872,7 +1020,10 @@
           scene.remove(t.obj); things.splice(i, 1);
           addToTower(t.type);
           S.combo = S.comboT > 0 ? S.combo + 1 : 1; S.comboT = 2.6;
-          if (S.combo >= 2) { S.pool += S.combo * 5; const c = $("combo"); c.classList.add("kick"); setTimeout(() => c.classList.remove("kick"), 120); }
+          if (countType("player") && Math.random() < 0.25 * countType("player")) { S.pool += 15; setTimeout(() => pop("Хит! +15", "neon"), 250); }
+          if (countType("notebook") && S.lastPick === t.type.id) { const rb = 20 * countType("notebook"); S.pool += rb; setTimeout(() => pop("Рифма! +" + rb, "neon"), 450); }
+          S.lastPick = t.type.id;
+          if (S.combo >= 2) { S.pool += S.combo * 5 * (countType("mic") ? 2 : 1); const c = $("combo"); c.classList.add("kick"); setTimeout(() => c.classList.remove("kick"), 120); }
           pop("+" + t.type.name + (t.type.tag ? " · " + t.type.tag : ""), t.type.tag ? "neon" : "good", new THREE.Vector3(S.x, S.y + 2.2, S.z));
           quest("items", 1); if (S.combo >= 2) quest("combo", S.combo);
           burst(new THREE.Vector3(t.x, t.y, t.z), 14, [0, 6, 2], 6, 0.12, 5, 0.6, 10);
@@ -930,7 +1081,11 @@
         if (dd < 0.9) {
           scene.remove(t.obj); things.splice(i, 1);
           burst(t.obj.position, 16, [1, 6], 8, 0.14, 4, 0.5);
-          if (S.tower.length) { dropTop(Math.sign(t.v.x) || 1); S.omega += (Math.sign(t.v.x) || 1) * 0.8; }
+          const hp = S.tower.find((x) => x.type.id === "headphones" && !x.spent);
+          if (hp) {
+            hp.spent = true; hp.link.children[0].scale.setScalar(0.8);
+            pop("Шумоизоляция!", "neon", towerTop); Audio.play("near"); S.omega += (Math.sign(t.v.x) || 1) * 0.3;
+          } else if (S.tower.length) { dropTop(Math.sign(t.v.x) || 1); S.omega += (Math.sign(t.v.x) || 1) * 0.8; }
           else stumble("Попали!");
           continue;
         }
@@ -959,6 +1114,19 @@
     hero.body.position.y = moving ? Math.abs(Math.cos(S.phase)) * 0.09 : 0;
     hero.body.rotation.z = -S.vx * 0.035 - S.theta * 0.15;
     hero.body.rotation.x = 0.14 + (S.dash > 0 ? 0.3 : 0) + (S.stumble > 0 ? 0.35 : 0);
+    if (S.danceT > 0) {
+      S.danceT -= dt;
+      const w = Math.sin(S.time * 18);
+      hero.arms[0].rotation.x = -2.7 + w * 0.3; hero.arms[1].rotation.x = -2.7 - w * 0.3;
+      hero.arms[0].rotation.z = 0.3 * w; hero.arms[1].rotation.z = 0.3 * w;
+    } else { hero.arms[0].rotation.z = 0; hero.arms[1].rotation.z = 0; }
+    if (hero.speaker) {
+      const ph = beatPhase();
+      const k = 1 + Math.max(0, 0.18 - Math.min(ph, 1 - ph)) * 1.4 + Math.max(0, S.beatPulse || 0);
+      hero.speaker.scale.setScalar(k);
+      if (moving) hero.body.position.y += Math.max(0, 0.05 - Math.min(ph, 1 - ph) * 0.2);
+    }
+    S.beatPulse = Math.max(0, (S.beatPulse || 0) - dt);
     hero.root.position.set(S.x, S.y, S.z);
     S.rocketT = Math.max(0, S.rocketT - dt);
     hero.flame.visible = S.rocketT > 0 || S.dash > 0;
@@ -991,6 +1159,7 @@
     } else if (T.stage === 1 && S.tower.length > 0) {
       T.stage = 2; tip("Вещи растут башней за спиной. Следи за шкалой крена и подбегай под башню", 5);
     }
+    if (T.stage >= 2 && !T.beatTip && T.t > 14 && hero.kind === "rapper") { T.beatTip = true; tip("Прыгай в бит: кнопка «Прыжок» и колонка на спине мигают в ритм музыки", 5); }
     if (!T.gapTip && S.onGround && !segAt(S.z - 13) && segAt(S.z)) { T.gapTip = true; tip("Пропасть впереди — жми «Прыжок»!", 2.5); }
     if (!T.gateTip) {
       for (const t of things) if (t.gate && !t.used && t.z < S.z && S.z - t.z < 45) { T.gateTip = true; tip("Ворота! Беги в левый проход, чтобы сдать добычу в банк", 4); break; }
@@ -1043,6 +1212,7 @@
     for (const id of ["mWallet", "gWallet", "qWallet"]) setText(id, v);
     const u = P.unclaimed();
     $("questBadge").hidden = !u; $("questBadge").textContent = u;
+    $("heroLine").textContent = "Герой: " + P.hero().name;
     showBest();
   }
   function startRun() {
@@ -1063,9 +1233,9 @@
   }
   function gameOver(title, text) {
     if (state === "menu") { attract(); return; }
-    state = "over";
     const dist = Math.round(-S.z);
-    quest("dist", dist); quest("runs", 1);
+    state = "play"; quest("dist", dist); quest("runs", 1);
+    state = "over";
     P.saveQuestProgress();
     const newBest = P.finishRun({ banked: S.bank, dist });
     $("overTitle").textContent = title; $("overText").textContent = text;
@@ -1089,7 +1259,20 @@
   function renderGarage() {
     refreshWallets();
     $("tabUp").classList.toggle("on", garageTab === "up"); $("tabSkins").classList.toggle("on", garageTab === "skins");
-    $("upList").hidden = garageTab !== "up"; $("skinList").hidden = garageTab !== "skins";
+    $("tabHeroes").classList.toggle("on", garageTab === "heroes");
+    $("upList").hidden = garageTab !== "up"; $("skinList").hidden = garageTab !== "skins"; $("heroList").hidden = garageTab !== "heroes";
+    const hl = $("heroList"); hl.textContent = "";
+    for (const h of P.HEROES) {
+      const row = document.createElement("div"); row.className = "row-card";
+      const info = document.createElement("div");
+      const t = document.createElement("h3"); t.textContent = h.name;
+      const p = document.createElement("p"); p.textContent = h.desc;
+      info.append(t, p);
+      const btn = document.createElement("button"); btn.className = "buy";
+      if (P.hero().id === h.id) { btn.textContent = "В игре"; btn.disabled = true; }
+      else { btn.textContent = "Выбрать"; btn.classList.add("green"); btn.addEventListener("click", () => { P.setHero(h.id); setHero(h.id); attract(); renderGarage(); }); }
+      row.append(info, btn); hl.appendChild(row);
+    }
     const ul = $("upList"); ul.textContent = "";
     for (const u of P.UPGRADES) {
       const lvl = P.level(u.id), cost = P.upgradeCost(u.id);
@@ -1199,6 +1382,7 @@
   for (const id of ["garageBack", "questBack", "settingsBack"]) $(id).addEventListener("click", () => { resetArmed = false; toMenu(); });
   $("tabUp").addEventListener("click", () => { garageTab = "up"; renderGarage(); });
   $("tabSkins").addEventListener("click", () => { garageTab = "skins"; renderGarage(); });
+  $("tabHeroes").addEventListener("click", () => { garageTab = "heroes"; renderGarage(); });
   $("pauseBtn").addEventListener("click", togglePause);
   $("resumeBtn").addEventListener("click", togglePause);
   $("quitBtn").addEventListener("click", () => { state = "play"; gameOver("Забег окончен", "Сданное в банк засчитано."); });
@@ -1255,7 +1439,11 @@
       }, 6000);
     }, 500);
   }
-  window.__TR = { S, input, things, step: (dt) => step(dt), state: () => state, segAt, requestJump, requestDash, P };
+  const splash = $("splash");
+  const hideSplash = () => { splash.classList.add("out"); setTimeout(() => (splash.hidden = true), 700); };
+  if (location.hash === "#autotest") splash.hidden = true;
+  else { splash.addEventListener("click", hideSplash); setTimeout(hideSplash, 2300); }
+  window.__TR = { S, input, things, step: (dt) => step(dt), state: () => state, segAt, requestJump, requestDash, P, addToTower, TYPE };
   const boot = () => requestAnimationFrame(frame);
   if (window.claude?.hot?.ready) window.claude.hot.ready(boot); else boot(window.claude?.hot?.data ?? {});
 })();

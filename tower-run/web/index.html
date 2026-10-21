@@ -103,6 +103,19 @@
   @media (orientation: portrait) and (max-width: 700px) { .rotate { display: block; } .tilt { width: 150px; } .big { font-size: 17px; } }
   @media (prefers-reduced-motion: reduce) { .pop { animation-duration: .01s; } }
   .h-gold { color: var(--sun) !important; }
+  .rbtn.jump.beat { box-shadow: 0 0 0 7px rgba(122, 240, 255, .45), 0 0 26px rgba(122, 240, 255, .55); }
+  .brand { font-family: var(--font-display); letter-spacing: .32em; font-size: 13px; color: var(--muted); }
+  .foot { font-size: 12.5px; color: var(--muted); }
+  .heroes { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 8px; }
+  #splash { position: fixed; inset: 0; z-index: 20; display: grid; place-items: center; background: #120a1c; cursor: pointer;
+            transition: opacity .6s ease; }
+  #splash.out { opacity: 0; pointer-events: none; }
+  #splash .logo { font-family: var(--font-display); color: #fff6ea; font-size: clamp(42px, 11vw, 96px); letter-spacing: .5em;
+                  padding-left: .5em; animation: logoIn 1.4s cubic-bezier(.2,.8,.2,1) both; }
+  #splash .sub { font-family: var(--font-body); color: var(--muted); letter-spacing: .4em; font-size: 13px; text-align: center; margin-top: 10px;
+                 text-transform: uppercase; animation: subIn 1.6s ease both; }
+  @keyframes logoIn { from { letter-spacing: 1.2em; opacity: 0; filter: blur(8px); } to { letter-spacing: .5em; opacity: 1; filter: blur(0); } }
+  @keyframes subIn { 0%, 45% { opacity: 0; } 100% { opacity: 1; } }
   .menu-top { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
   .wallet { font-family: var(--font-display); font-size: 22px; color: var(--sun); background: var(--panel); border-radius: 999px; padding: 6px 16px; }
   .badge { background: var(--risk); color: #fff; border-radius: 999px; font-size: 12px; padding: 1px 7px; margin-left: 6px; font-family: var(--font-body); }
@@ -138,6 +151,7 @@
   .go:disabled, .go2:disabled, .tab:focus-visible, .buy:focus-visible, .seg button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
 </style>
 
+<div id="splash" role="button" aria-label="Пропустить заставку"><div><div class="logo">AOLOVO</div><div class="sub">представляет</div></div></div>
 <canvas id="game" aria-label="Игровое поле: крыши города на закате"></canvas>
 <div id="vignette"></div>
 <div id="flash"></div>
@@ -172,8 +186,9 @@
 
 <div class="screen" id="startScreen">
   <div class="card">
+    <div class="brand">AOLOVO</div>
     <h1>Башня на спине</h1>
-    <div class="menu-top"><span class="wallet" id="mWallet">★ 0</span><span class="hint" id="bestLine"></span></div>
+    <div class="menu-top"><span class="wallet" id="mWallet">★ 0</span><span class="hint" id="heroLine"></span><span class="hint" id="bestLine"></span></div>
     <p>Несись по крышам и хватай всё подряд. Добыча растёт башней у тебя за спиной: чем выше башня, тем больше множитель и тем сильнее её качает. Сдай её в воротах, пока всё не рассыпалось.</p>
     <div class="btns">
       <button class="go" id="startBtn">Бежать</button>
@@ -182,19 +197,22 @@
       <button class="go2" id="settingsBtn">Настройки</button>
     </div>
     <div class="rules">
+      <div class="rule"><b>Прыгай в бит</b>Колонка на спине мигает в ритм. Прыжок в бит даёт бонус и успокаивает башню.</div>
       <div class="rule"><b>Лови равновесие</b>Башню кренит — подбегай под неё, как будто держишь швабру на ладони.</div>
       <div class="rule"><b>Рывок-таран</b>Рывок разносит трубы и кондиционеры, но сильно раскачивает башню.</div>
       <div class="rule"><b>Сдай или рискни</b>Ворота: влево — сдать в банк, вправо — дальше за бо́льшим множителем.</div>
     </div>
     <p class="hint rotate">Удобнее играть, повернув телефон горизонтально.</p>
+    <p class="foot">Игра студии Aolovo · aolovo.ru · aolovo.com</p>
   </div>
 </div>
 
 <div class="screen" id="garageScreen" hidden>
   <div class="card">
     <div class="menu-top"><h2 class="h-gold">Гараж</h2><span class="wallet" id="gWallet">★ 0</span></div>
-    <div class="tabs"><button class="tab on" id="tabUp">Улучшения</button><button class="tab" id="tabSkins">Образы</button></div>
+    <div class="tabs"><button class="tab on" id="tabUp">Улучшения</button><button class="tab" id="tabHeroes">Герои</button><button class="tab" id="tabSkins">Образы</button></div>
     <div class="list" id="upList"></div>
+    <div class="heroes" id="heroList" hidden></div>
     <div class="skins" id="skinList" hidden></div>
     <div class="btns"><button class="go" id="garageRun">Бежать</button><button class="go2" id="garageBack">Назад</button></div>
   </div>

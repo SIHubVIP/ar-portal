@@ -11,8 +11,13 @@
     { id: "insurance", name: "Страховка", desc: "Ловит падающую вещь: один раз за забег на уровень", max: 3, costs: [600, 1800, 4500] },
   ];
 
+  const HEROES = [
+    { id: "rapper", name: "Рэпер-непоседа", desc: "Ловит бит: прыжок в бит музыки даёт двойной бонус. Его вещи — микрофон, бумбокс, плеер, блокнот рифм.", cost: 0 },
+    { id: "runner", name: "Бегун Петя", desc: "Классический бегун: башня на 10% устойчивее. Собирает всё, что плохо лежит.", cost: 0 },
+  ];
+
   const SKINS = [
-    { id: "classic", name: "Классика", cost: 0, body: 0xec7634, pants: 0x34406a, cap: 0x2c966e, capD: 0x1f6f51, skin: 0xf3cba2 },
+    { id: "classic", name: "Фирменный", cost: 0, body: 0xec7634, pants: 0x34406a, cap: 0x2c966e, capD: 0x1f6f51, skin: 0xf3cba2 },
     { id: "ninja", name: "Ниндзя", cost: 500, body: 0x2e2a36, pants: 0x1c1a22, cap: 0xd8483e, capD: 0x9a2a24, skin: 0xf3cba2 },
     { id: "cosmo", name: "Космонавт", cost: 900, body: 0xf2f2f4, pants: 0x9aa6c0, cap: 0x3c6ec8, capD: 0x2a4c8c, skin: 0xe8b88f },
     { id: "pirate", name: "Пират", cost: 1200, body: 0xc33a3a, pants: 0x2a2632, cap: 0x1c1a22, capD: 0xf0c446, skin: 0xd9a074 },
@@ -30,12 +35,13 @@
     { id: "items", text: (n) => `Собери ${n} вещей`, goals: [30, 60, 100], reward: [90, 160, 250], mode: "sum" },
     { id: "combo", text: (n) => `Сделай комбо ×${n}`, goals: [4, 6, 8], reward: [100, 170, 260], mode: "max" },
     { id: "runs", text: (n) => `Сыграй ${n} забега`, goals: [3, 5, 8], reward: [80, 140, 220], mode: "sum" },
+    { id: "beat", text: (n) => `Прыгни в бит ${n} раз`, goals: [5, 12, 25], reward: [100, 180, 300], mode: "sum" },
   ];
 
   const DEFAULT = () => ({
     v: 1, stars: 0, best: 0, bestDist: 0, runs: 0, totalBanked: 0,
     up: { frame: 0, legs: 0, dash: 0, magnet: 0, insurance: 0 },
-    skins: ["classic"], skin: "classic",
+    skins: ["classic"], skin: "classic", hero: "rapper",
     quests: { day: "", list: [] },
     settings: { music: true, sfx: true, vibro: true, quality: "high" },
     tutorialDone: false,
@@ -81,7 +87,7 @@
   const questDef = (id) => QUESTS.find((q) => q.id === id);
 
   const P = {
-    UPGRADES, SKINS,
+    UPGRADES, SKINS, QUEST_IDS: QUESTS.map((q) => q.id),
     get: () => data,
     save,
     stars: () => data.stars,
@@ -96,6 +102,9 @@
       if (c === null || data.stars < c) return false;
       data.stars -= c; data.up[id] = (data.up[id] || 0) + 1; save(); return true;
     },
+    HEROES,
+    hero: () => HEROES.find((h) => h.id === data.hero) || HEROES[0],
+    setHero(id) { if (HEROES.some((h) => h.id === id)) { data.hero = id; save(); return true; } return false; },
     skin: () => SKINS.find((s) => s.id === data.skin) || SKINS[0],
     ownsSkin: (id) => data.skins.includes(id),
     buySkin(id) {
