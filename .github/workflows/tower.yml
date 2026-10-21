@@ -25,7 +25,11 @@ jobs:
         run: |
           A=tower-run/app/src/main/assets
           mkdir -p $A/fonts
-          cp tower-run/web/index.html $A/index.html
+          { echo '<!doctype html><html lang="ru"><head><meta charset="utf-8">'
+            echo '<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">'
+            echo '</head><body>'
+            cat tower-run/web/index.html
+            echo '</body></html>'; } > $A/index.html
           curl -fsSL https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js -o $A/three.min.js
           sed -i 's#https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js#three.min.js#' $A/index.html
           curl -fsSL "https://github.com/google/fonts/raw/main/ofl/russoone/RussoOne-Regular.ttf" -o $A/fonts/RussoOne-Regular.ttf || echo "font download skipped"

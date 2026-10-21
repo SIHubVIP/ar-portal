@@ -20,6 +20,7 @@
     --font-body: "Rubik", "Rubik Local", "Segoe UI", Roboto, system-ui, sans-serif;
     color-scheme: dark;
   }
+  [hidden] { display: none !important; }
   html, body { height: 100%; }
   body {
     margin: 0; background: var(--sky); color: var(--ink); font-family: var(--font-body);
@@ -286,7 +287,7 @@
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   const scene = new THREE.Scene();
   const FOG = new THREE.Color(0xd8788a);
-  scene.fog = new THREE.Fog(FOG, 35, 150);
+  scene.fog = new THREE.Fog(FOG, 28, 150);
 
   function canvasTex(w, h, draw) {
     const c = document.createElement("canvas"); c.width = w; c.height = h;
@@ -406,15 +407,15 @@
   // ================================================================== city backdrop
   let backdropGroup;
   (function backdrop() {
-    const far = new THREE.MeshLambertMaterial({ color: 0x5a2f6a });
-    const far2 = new THREE.MeshLambertMaterial({ color: 0x3e2152 });
+    const far = new THREE.MeshLambertMaterial({ color: 0x8a4a7e });
+    const far2 = new THREE.MeshLambertMaterial({ color: 0x6a3a72 });
     const count = 160;
     const inst = new THREE.InstancedMesh(BOX, far, count), inst2 = new THREE.InstancedMesh(BOX, far2, count);
     const m4 = new THREE.Matrix4();
     for (let i = 0; i < count; i++) {
       const side = i % 2 ? 1 : -1;
       const h = 8 + Math.random() * 28;
-      m4.compose(new THREE.Vector3(side * (24 + Math.random() * 30), -18 + h / 2 - 6, -i * 9 + 40), new THREE.Quaternion(),
+      m4.compose(new THREE.Vector3(side * (34 + Math.random() * 30), -22 + h / 2 - 6, -i * 9 + 40), new THREE.Quaternion(),
                  new THREE.Vector3(6 + Math.random() * 8, h, 6 + Math.random() * 8));
       inst.setMatrixAt(i, m4);
       const h2 = 14 + Math.random() * 45;
@@ -594,7 +595,8 @@
     for (const s of [-1, 1]) {
       if (Math.random() < 0.25) continue;
       const h = 30 + Math.random() * 6, w = 6 + Math.random() * 3;
-      const nb = new THREE.Mesh(BOX, M.facades[(S.segN + 1 + (s > 0 ? 1 : 0)) % M.facades.length]);
+      const nf = M.facades[(S.segN + 1 + (s > 0 ? 1 : 0)) % M.facades.length];
+      const nb = new THREE.Mesh(BOX, [nf, nf, M.roofs[(S.segN + 1) % M.roofs.length], nf, nf, nf]);
       const by = y - 3 - Math.random() * 6;
       nb.scale.set(w, h, Math.min(len, 18 + Math.random() * 10)); nb.position.set(s * (ROOF_HALF + 3.2 + w / 2), by - h / 2, zc);
       group.add(nb);
