@@ -30,6 +30,7 @@ jobs:
             echo '</head><body>'
             cat tower-run/web/index.html
             echo '</body></html>'; } > $A/index.html
+          cp -r tower-run/web/js $A/js
           curl -fsSL https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js -o $A/three.min.js
           sed -i 's#https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js#three.min.js#' $A/index.html
           curl -fsSL "https://github.com/google/fonts/raw/main/ofl/russoone/RussoOne-Regular.ttf" -o $A/fonts/RussoOne-Regular.ttf || echo "font download skipped"
