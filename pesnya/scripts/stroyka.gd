@@ -179,7 +179,8 @@ static func build(parent: Node3D) -> Dictionary:
 	var beacon := Kit.part(root, Kit.SPH, Kit.neon(Color("ff1a2a"), 8.0), Vector3.ONE * 2.2, Vector3(-50, 73.5, 0))
 	return {"root": root, "rects": rects, "circles": circles, "id": "stroyka", "name": "Стройка Глушилки", "bounds": BOUNDS,
 		"map_rects": [Rect2(-16, -3, 44, 6), Rect2(-25, -9, 18, 18)],
-		"spawns": {"from_garages": [Vector3(24.0, 0, 0), -PI / 2], "start": [Vector3(24.0, 0, 0), -PI / 2], "respawn": [Vector3(21, 0, 4), -PI / 2]},
+		"spawns": {"from_garages": [Vector3(24.0, 0, 0), -PI / 2], "start": [Vector3(24.0, 0, 0), -PI / 2], "respawn": [Vector3(21, 0, 4), -PI / 2],
+			"from_server": [Vector3(-9.0, 0, 3.0), PI / 2]},
 		"portals": [{"pos": Vector3(26.6, 0, 0), "r": 1.3, "to": "garages", "spawn": "from_stroyka", "label": "ГК «Песня»"}],
 		"npcs": [],
 		"beacon": beacon,

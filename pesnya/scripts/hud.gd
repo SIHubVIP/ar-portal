@@ -186,10 +186,10 @@ func _build_menu() -> void:
 	logo.custom_minimum_size = Vector2(220, 60)
 	v.add_child(logo)
 	v.add_child(_label("ПЕСНЯ ♪", 76, true, GOLD))
-	var sub := _label("Офлайн-версия 0.3 · новое: стройка Глушилки", 22, false, CREAM)
+	var sub := _label("Офлайн-версия 0.4 · новое: серверная Кощея", 22, false, CREAM)
 	sub.custom_minimum_size = Vector2(520, 0)
 	v.add_child(sub)
-	var d := _label("Бей в бит — урон ×2. Голуби-вымогатели, свой гараж с роботом Васей, а теперь — Тишинки, босс Шумодав и маунт Избушка-Бас.", 18, false, Color(0.75, 0.8, 0.88))
+	var d := _label("Бей в бит — урон ×2. Голуби, свой гараж, стройка Глушилки с Шумодавом, а теперь — серверная Кощея и рэп-баттл за музыку города.", 18, false, Color(0.75, 0.8, 0.88))
 	d.custom_minimum_size = Vector2(520, 0)
 	v.add_child(d)
 	menu_continue = _btn("ПРОДОЛЖИТЬ", func(): g.continue_game(), 260)
@@ -604,7 +604,7 @@ func _draw() -> void:
 		if m.stun > 0.0:
 			_txt(sp + Vector2(0, -42), "ОГЛУШЁН", 15, Color("ffe066"), false, HORIZONTAL_ALIGNMENT_CENTER, -1, 3)
 	for n in g.npcs:
-		var npc_p: Vector3 = n.pos + Vector3(0, 2.2, 0)
+		var npc_p: Vector3 = n.pos + Vector3(0, n.get("h", 2.2), 0)
 		if cam.is_position_behind(npc_p) or npc_p.distance_to(cam.global_position) > 40:
 			continue
 		var sp2 := cam.unproject_position(npc_p)
@@ -676,6 +676,13 @@ func _draw() -> void:
 		_txt(Vector2(tx + 38, 57), str(t.lvl), 20, CREAM, true, HORIZONTAL_ALIGNMENT_CENTER)
 		_txt(Vector2(tx + 76, 38), t.name, 20, Color("ff9a9a") if t.boss else CREAM, true)
 		_bar(Rect2(tx + 76, 50, tw - 94, 20), t.hp / t.hp_max, Color("e8424c"), "%d%%" % int(ceil(100.0 * t.hp / t.hp_max)))
+		if t.kind == "koschei":
+			var dots := ""
+			for i in range(3):
+				dots += "●" if i < int(t.rap) else "○"
+			var st2: String = ("ПОДПИСКА: урон −92% · рэп-баттл " + dots) if t.shield else ("Подписка отменена: %d с — бей!" % int(ceil(t.shield_t)))
+			_rrect(Rect2(tx, 90, tw, 30), PANEL, 12)
+			_txt(Vector2(s.x / 2, 112), st2, 17, Color("dfe6ff") if t.shield else GOLD, true, HORIZONTAL_ALIGNMENT_CENTER)
 
 	# minimap
 	var mc := Vector2(s.x - 92, 92)
@@ -793,6 +800,17 @@ func _draw() -> void:
 	if g.cd.get("food", 0.0) > 0.0:
 		draw_circle(fc, 36, Color(0, 0, 0, 0.55))
 		_txt(fc + Vector2(0, 9), str(int(ceil(g.cd.food))), 24, CREAM, true, HORIZONTAL_ALIGNMENT_CENTER)
+
+	# rap-code door prompt
+	if g.lock_active:
+		var lw := 440.0
+		var lx := (s.x - lw) / 2
+		_rrect(Rect2(lx, s.y - 112, lw, 52), Color(0.1, 0.06, 0.02, 0.85), 18)
+		var hits := ""
+		for i in range(GameData.RAP_LOCK):
+			hits += "● " if i < g.lock_hits else "○ "
+		_txt(Vector2(s.x / 2, s.y - 92), "РЭП-КОД  " + hits, 20, GOLD, true, HORIZONTAL_ALIGNMENT_CENTER)
+		_txt(Vector2(s.x / 2, s.y - 70), "атакуй точно в бит — дверь слушает рифму", 14, CREAM, false, HORIZONTAL_ALIGNMENT_CENTER)
 
 	# beat track
 	var bw2 := 440.0

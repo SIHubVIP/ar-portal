@@ -916,3 +916,90 @@ static func bubble() -> Node3D:
 	Kit.part(n, Kit.SPH, m, Vector3.ONE * 0.62)
 	Kit.part(n, Kit.SPH, Kit.neon(Color("e8eeff"), 1.4), Vector3(0.12, 0.08, 0.06), Vector3(-0.14, 0.15, 0.24))
 	return n
+
+
+# ------------------------------------------------------------------ 0.4: Кощей, ковёр-самолёт, робо-зайцы
+static func koschei() -> Dictionary:
+	var h := human({"top": Color("15151a"), "top_rough": 0.35, "pants": Color("15151a"), "shoes": Color("0e0e10"), "hair": "slick",
+		"hair_color": Color("cfd3da"), "skin": Color("b4c8a8"), "width": 0.82, "scale": Vector3(0.92, 1.2, 0.92), "brow": Color("cfd3da"),
+		"angry": 0.5, "smirk": -0.25})
+	var silver := Kit.mat(Color("d8dde6"), 0.2, 1.0)
+	Kit.torus(h.head, silver, 0.3, 0.34, Vector3(0, 0.26, 0), Vector3(0, 0, 0))
+	for k in range(5):
+		var a := -1.0 + k * 0.5
+		Kit.part(h.head, Kit.CONE, silver, Vector3(0.05, 0.16, 0.05), Vector3(sin(a) * 0.32, 0.36, cos(a) * 0.32))
+	Kit.part(h.head, Kit.SPH, Kit.neon(Color("9af0ff"), 2.0), Vector3.ONE * 0.06, Vector3(0.3, 0.05, 0.12))
+	Kit.part(h.head, Kit.CONE, Kit.mat(Color("cfd3da"), 0.8), Vector3(0.14, 0.36, 0.1), Vector3(0, -0.4, 0.22), Vector3(PI, 0, 0))
+	# flying carpet under his feet
+	var carpet := Node3D.new()
+	carpet.position = Vector3(0, 0.05, 0)
+	h.root.add_child(carpet)
+	Kit.part(carpet, Kit.BOX, Kit.mat(Color("8a1a2a"), 0.8), Vector3(1.5, 0.06, 2.2))
+	Kit.part(carpet, Kit.BOX, Kit.mat(Color("e8b84a"), 0.6, 0.4), Vector3(1.2, 0.065, 1.9))
+	Kit.part(carpet, Kit.BOX, Kit.mat(Color("2a3a7a"), 0.8), Vector3(0.9, 0.07, 1.6))
+	for k in range(6):
+		Kit.part(carpet, Kit.SPH, Kit.mat(Color("e8b84a"), 0.6, 0.4), Vector3.ONE * 0.1, Vector3(-0.6 + k * 0.24, 0, 1.12))
+		Kit.part(carpet, Kit.SPH, Kit.mat(Color("e8b84a"), 0.6, 0.4), Vector3.ONE * 0.1, Vector3(-0.6 + k * 0.24, 0, -1.12))
+	# a grey "subscription" dome (shown while his shield is up)
+	var dm := StandardMaterial3D.new()
+	dm.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	dm.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	dm.albedo_color = Color(0.75, 0.8, 0.92, 0.22)
+	var dome := Kit.part(h.root, Kit.SPH, dm, Vector3(2.6, 3.4, 2.6), Vector3(0, 1.4, 0))
+	h["carpet"] = carpet
+	h["dome"] = dome
+	return h
+
+
+static func robohare(safe := false) -> Dictionary:
+	var g := Node3D.new()
+	var body := Node3D.new()
+	g.add_child(body)
+	var white := Kit.mat(Color("e8ecf2"), 0.3, 0.2)
+	var steel := Kit.mat(Color("8a92a2"), 0.3, 0.8)
+	var dark := Kit.mat(Color("23262e"), 0.4, 0.5)
+	Kit.part(body, Kit.SPH, white, Vector3(0.9, 0.85, 1.15), Vector3(0, 0.7, 0))
+	if safe:
+		# a safe door on the belly
+		Kit.part(body, Kit.BOX, steel, Vector3(0.62, 0.55, 0.08), Vector3(0, 0.68, 0.55))
+		Kit.part(body, Kit.CYL, Kit.mat(Color("f2c14e"), 0.2, 1.0), Vector3(0.2, 0.06, 0.2), Vector3(0.12, 0.68, 0.6), Vector3(PI / 2, 0, 0))
+		Kit.part(body, Kit.BOX, Kit.mat(Color("f2c14e"), 0.2, 1.0), Vector3(0.05, 0.16, 0.04), Vector3(-0.18, 0.68, 0.6))
+	var head := Node3D.new()
+	head.position = Vector3(0, 1.25, 0.35)
+	body.add_child(head)
+	Kit.part(head, Kit.SPH, white, Vector3(0.62, 0.55, 0.62))
+	Kit.part(head, Kit.BOX, dark, Vector3(0.5, 0.14, 0.1), Vector3(0, 0.05, 0.28))
+	Kit.part(head, Kit.BOX, Kit.neon(Color("ff3a4a"), 3.5), Vector3(0.42, 0.05, 0.02), Vector3(0, 0.05, 0.335))
+	Kit.part(head, Kit.SPH, Kit.mat(Color("ff9ab0"), 0.5), Vector3.ONE * 0.08, Vector3(0, -0.08, 0.3))
+	var ears := []
+	for s in [-1, 1]:
+		var e := Node3D.new()
+		e.position = Vector3(0.14 * s, 0.25, -0.02)
+		e.rotation = Vector3(-0.15, 0, -0.18 * s)
+		head.add_child(e)
+		Kit.part(e, Kit.BOX, white, Vector3(0.14, 0.75, 0.06), Vector3(0, 0.38, 0))
+		Kit.part(e, Kit.BOX, Kit.neon(Color("ff9ab0"), 1.0), Vector3(0.07, 0.55, 0.02), Vector3(0, 0.38, 0.035))
+		ears.append(e)
+	var legs := []
+	for s in [-1, 1]:
+		var l := Node3D.new()
+		l.position = Vector3(0.28 * s, 0.4, -0.2)
+		body.add_child(l)
+		Kit.part(l, Kit.BOX, steel, Vector3(0.16, 0.42, 0.16), Vector3(0, -0.2, 0))
+		Kit.part(l, Kit.BOX, dark, Vector3(0.2, 0.08, 0.5), Vector3(0, -0.4, 0.15))
+		legs.append(l)
+	Kit.part(body, Kit.SPH, white, Vector3.ONE * 0.3, Vector3(0, 0.75, -0.6))
+	Kit.part(body, Kit.CYL, Kit.neon(Kit.TEAL, 2.0), Vector3(0.1, 0.4, 0.1), Vector3(0, 1.2, -0.3))
+	return {"root": g, "body": body, "head": head, "wings": ears, "wheels": legs}
+
+
+## Rubber duck that squeaks «ПИИ-ИК» (pickup fx in the server room)
+static func duck() -> Node3D:
+	var n := Node3D.new()
+	var y := Kit.mat(Color("ffd21a"), 0.35)
+	Kit.part(n, Kit.SPH, y, Vector3(0.7, 0.5, 0.85), Vector3(0, 0.25, 0))
+	Kit.part(n, Kit.SPH, y, Vector3.ONE * 0.4, Vector3(0, 0.62, 0.22))
+	Kit.part(n, Kit.SPH, Kit.mat(Color("ff7a1a"), 0.4), Vector3(0.22, 0.1, 0.22), Vector3(0, 0.6, 0.45))
+	for s in [-1, 1]:
+		Kit.part(n, Kit.SPH, Kit.mat(Color("101010"), 0.2), Vector3.ONE * 0.06, Vector3(0.1 * s, 0.7, 0.38))
+	return n

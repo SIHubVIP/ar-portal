@@ -61,7 +61,7 @@ jobs:
           echo "GODOT_ANDROID_KEYSTORE_DEBUG_PATH=$KS" >> $GITHUB_ENV
           echo "GODOT_ANDROID_KEYSTORE_DEBUG_USER=androiddebugkey" >> $GITHUB_ENV
           echo "GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD=android" >> $GITHUB_ENV
-          sed -i "s/^version\/code=.*/version\/code=$((1000 + ${{ github.run_number }}))/; s/^version\/name=.*/version\/name=\"0.3.${{ github.run_number }}\"/" pesnya/export_presets.cfg
+          sed -i "s/^version\/code=.*/version\/code=$((1000 + ${{ github.run_number }}))/; s/^version\/name=.*/version\/name=\"0.4.${{ github.run_number }}\"/" pesnya/export_presets.cfg
           grep version pesnya/export_presets.cfg
 
       - name: Font licenses
@@ -99,6 +99,6 @@ jobs:
         with:
           tag_name: pesnya-test-${{ github.run_number }}
           name: "Песня (тест геймплея) — сборка ${{ github.run_number }}"
-          body: "Песня 0.3.${{ github.run_number }}: стройка Глушилки, Тишинки, босс Шумодав, баба Зина в напарницах и маунт Избушка-Бас. Скачай pesnya-test-${{ github.run_number }}.apk и открой на телефоне."
+          body: "Песня 0.4.${{ github.run_number }}: серверная Кощея — дверь с рэп-кодом, робо-зайцы, заяц-сейф, рэп-баттл с Кощеем и напарник Вася-3000. Скачай pesnya-test-${{ github.run_number }}.apk и открой на телефоне."
           files: pesnya-test-*.apk
           make_latest: true

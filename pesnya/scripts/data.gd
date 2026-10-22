@@ -2,7 +2,7 @@ class_name GameData
 ## All tunable numbers and texts of «Песня» in one place.
 
 const SAVE_PATH := "user://pesnya_save.json"
-const SAVE_VERSION := 3
+const SAVE_VERSION := 4
 
 const ITEMS := {
 	"seeds": {"name": "Семки", "rarity": 0, "slot": "", "power": 0, "desc": "Голубиная валюта. Баба Зина говорит, полезные."},
@@ -28,6 +28,14 @@ const ITEMS := {
 	"rebar": {"name": "Арматура-метроном", "rarity": 2, "slot": "weapon", "power": 18, "desc": "Отбивает ритм сама. +18 к силе."},
 	"vest": {"name": "Жилет сигнальный", "rarity": 2, "slot": "body", "power": 15, "desc": "Светится в темноте и на танцполе."},
 	"megaphone": {"name": "Рупор Шумодава", "rarity": 3, "slot": "weapon", "power": 34, "desc": "Легендарный. Шептать в него запрещено."},
+	# 0.4 — серверная Кощея
+	"ears": {"name": "Уши робо-зайца", "rarity": 0, "slot": "", "power": 0, "desc": "Ловят Wi-Fi и сплетни."},
+	"chip": {"name": "Микросхема тишины", "rarity": 0, "slot": "", "power": 0, "desc": "Отвечает за «ш-ш-ш». Больше не отвечает."},
+	"duck": {"name": "Резиновая уточка", "rarity": 1, "slot": "neck", "power": 12, "desc": "Пищит в бит. ПИИ-ИК! Лучший отладчик."},
+	"headset": {"name": "Корона-гарнитура", "rarity": 2, "slot": "head", "power": 22, "desc": "Серебряная. Звонки Кощею больше не приходят."},
+	"turtleneck": {"name": "Водолазка технодиректора", "rarity": 2, "slot": "body", "power": 24, "desc": "Чёрная. Носишь — и хочется всё оптимизировать."},
+	"gusli": {"name": "Гусли Кощея", "rarity": 3, "slot": "weapon", "power": 46, "desc": "Отобрал у соседа 500 лет назад. Теперь они звучат у тебя."},
+	"flash": {"name": "Флешка «ПЕСНЯ_ФИНАЛ»", "rarity": 3, "slot": "neck", "power": 30, "desc": "Перепрошитое бессмертие. Внутри — только музыка."},
 }
 
 const SELL_PRICE := [5, 20, 60, 0]
@@ -47,6 +55,13 @@ const MOBS := {
 	"drone": {"name": "Тишинка", "hp": [55.0, 24.0], "dmg": [6.0, 2.6], "xp": [30, 10], "scale": 1.0, "height": 2.7, "radius": 0.6,
 		"speed": 3.4, "aggro": 10.0, "leash": 17.0, "atk": 2.6,
 		"loot": [[0.04, "rebar|vest"], [0.18, "helmet|core"], [0.6, "lens|foam"]], "res": [[0.6, "wires", 1, 3], [0.3, "cement", 1, 2]]},
+	"hare": {"name": "Робо-заяц", "hp": [95.0, 30.0], "dmg": [9.0, 3.2], "xp": [40, 12], "scale": 1.0, "height": 2.3, "radius": 0.6,
+		"speed": 5.0, "aggro": 8.0, "leash": 16.0, "atk": 2.2,
+		"loot": [[0.04, "headset|turtleneck"], [0.2, "duck|core"], [0.6, "ears|chip"]], "res": [[0.5, "wires", 2, 3]]},
+	"safe_hare": {"name": "Заяц-сейф", "hp": [4000.0, 0.0], "dmg": [18.0, 0.0], "xp": [300, 0], "scale": 1.7, "height": 2.3, "radius": 0.7,
+		"speed": 4.6, "aggro": 30.0, "leash": 60.0, "atk": 1.6, "loot": [], "res": [], "boss": true},
+	"koschei": {"name": "Кощей Бессмертный", "hp": [11000.0, 0.0], "dmg": [30.0, 0.0], "xp": [900, 0], "scale": 1.0, "height": 3.0, "radius": 0.8,
+		"speed": 3.0, "aggro": 30.0, "leash": 60.0, "atk": 1.8, "loot": [], "res": [], "boss": true},
 	"shumodav": {"name": "Шумодав", "hp": [6500.0, 0.0], "dmg": [34.0, 0.0], "xp": [700, 0], "scale": 0.62, "height": 7.6, "radius": 2.6,
 		"speed": 2.6, "aggro": 14.0, "leash": 30.0, "atk": 2.2, "loot": [], "res": [], "boss": true},
 }
@@ -103,8 +118,13 @@ const DAILIES := [
 ]
 
 # Map names (loading screen, minimap)
-const MAP_NAMES := {"yard": "двор «Берёзки»", "garages": "ГК «Песня»", "stroyka": "стройку Глушилки"}
+const MAP_NAMES := {"yard": "двор «Берёзки»", "garages": "ГК «Песня»", "stroyka": "стройку Глушилки", "server": "серверную Кощея"}
 
 # Quest 3 «Флешка Кощея»
 const Q3_DRONES := 8
 const MOUNT_SPEED := 11.0
+
+# Quest 4 «Перепрошивка»
+const Q4_HARES := 6
+const RAP_LOCK := 4
+const RAP_LINES := ["Тишина — не продукт,", "бит — не по подписке,", "открывай, железный друг,", "я пришёл без записки!"]
