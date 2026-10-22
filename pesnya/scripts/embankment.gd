@@ -124,7 +124,7 @@ static func build(parent: Node3D) -> Dictionary:
 		"spawns": {"from_yard": [Vector3(30.0, 0, 0), -PI / 2], "start": [Vector3(30.0, 0, 0), -PI / 2], "respawn": [Vector3(28, 0, -2), -PI / 2]},
 		"portals": [{"pos": Vector3(32.2, 0, 0), "r": 1.3, "to": "yard", "spawn": "from_embankment", "label": "Двор «Берёзки»"}],
 		"npcs": [],
-		"mobs": [["autoplay", Vector3(20, 0, -3), 10], ["autoplay", Vector3(12, 0, 3), 10], ["autoplay", Vector3(3, 0, -4), 10],
-			["autoplay", Vector3(-4, 0, 2), 10], ["autoplay", Vector3(-26, 0, -4), 10], ["autoplay", Vector3(-30, 0, 3), 10],
-			["gull", Vector3(24, 0, 2), 9], ["gull", Vector3(16, 0, -6), 10], ["gull", Vector3(6, 0, 1), 10], ["gull", Vector3(-8, 0, -5), 10],
-			["gull", Vector3(-24, 0, 1), 10]]}
+		"mobs": [["autoplay", Vector3(20, 0, -3), 10], ["autoplay", Vector3(12, 0, 3), 10], ["autoplay", Vector3(6, 0, 2), 10],
+			["autoplay", Vector3(-4, 0, 2), 10], ["autoplay", Vector3(-24, 0, -3), 10], ["autoplay", Vector3(-28, 0, 1), 10],
+			["gull", Vector3(19, 0, 1), 9], ["gull", Vector3(17, 0, -3), 10], ["gull", Vector3(2, 0, 3), 10], ["gull", Vector3(-9, 0, -7), 10],
+			["gull", Vector3(-21, 0, -1), 10]]}

@@ -52,6 +52,7 @@ var pause_music: Button
 var pause_quality: Button
 var pause_offset: Label
 var theme_main: Theme
+var tracker_rect := Rect2()   # 0.6: tap on the quest tracker opens the journal
 
 const RACES := [["rapper", "Рэпер", true], ["punk", "Панк", true], ["goth", "Гот", false], ["gopnik", "Пацан", false], ["hipster", "Хипстер", false], ["granny", "Бабушка", false], ["it", "Айтишник", false]]
 const CLASSES := [["cop", "Коп", true], ["medic", "Медик", true], ["guard", "Охранник", false], ["hacker", "Хакер", false], ["cook", "Повар", false], ["courier", "Курьер", false], ["dj", "Диджей", false]]
@@ -186,10 +187,10 @@ func _build_menu() -> void:
 	logo.custom_minimum_size = Vector2(220, 60)
 	v.add_child(logo)
 	v.add_child(_label("ПЕСНЯ ♪", 76, true, GOLD))
-	var sub := _label("Офлайн-версия 0.5 · новое: концерт и Змей Горыныч", 22, false, CREAM)
+	var sub := _label("Офлайн-версия 0.6 · «Новые соседи»: 12 персонажей и их задания", 22, false, CREAM)
 	sub.custom_minimum_size = Vector2(520, 0)
 	v.add_child(sub)
-	var d := _label("Бей в бит — урон ×2. Голуби, свой гараж, Шумодав и рэп-баттл с Кощеем, а теперь — концерт в ГК и трёхголовый Змей Горыныч.", 18, false, Color(0.75, 0.8, 0.88))
+	var d := _label("Бей в бит — урон ×2. Голуби, гараж, Шумодав, Кощей и Горыныч — а теперь Павлин Футболист, Меткий Змей, Ярик-Фонарик и ещё девять соседей. Журнал заданий, уровни до 70, вещи с характеристиками.", 18, false, Color(0.75, 0.8, 0.88))
 	d.custom_minimum_size = Vector2(520, 0)
 	v.add_child(d)
 	menu_continue = _btn("ПРОДОЛЖИТЬ", func(): g.continue_game(), 260)
@@ -317,12 +318,14 @@ func hide_dialog() -> void:
 
 func _build_bag() -> void:
 	bag_panel = _modal()
-	var v := _center_card(bag_panel, 620)
+	var v := _center_card(bag_panel, 780)
 	v.add_child(_label("СУМКА", 30, true, GOLD))
-	bag_stats = _label("", 18, false, Color(0.8, 0.85, 0.92))
+	bag_stats = _label("", 16, false, Color(0.8, 0.85, 0.92))
+	bag_stats.custom_minimum_size = Vector2(740, 0)
 	v.add_child(bag_stats)
 	var sc := ScrollContainer.new()
-	sc.custom_minimum_size = Vector2(580, 300)
+	sc.custom_minimum_size = Vector2(740, 330)
+	sc.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	v.add_child(sc)
 	bag_list = VBoxContainer.new()
 	bag_list.add_theme_constant_override("separation", 6)
@@ -331,20 +334,75 @@ func _build_bag() -> void:
 	v.add_child(_btn("ЗАКРЫТЬ", func(): g.close_bag()))
 
 
+func _is_on(it: Dictionary) -> bool:
+	return str(it.slot) != "" and is_same(g.equipped.get(it.slot, null), it)
+
+
 func show_bag() -> void:
 	for c in bag_list.get_children():
 		c.queue_free()
-	bag_stats.text = "Уровень %d · Сила %d · Здоровье %d · Монеты %d · Шаурма %d\n%s" % [g.level, g.power, int(g.hp_max), g.coins, g.food, g.res_line()]
+	var bonus: String = GameData.stats_text(g.stats)
+	bag_stats.text = "Уровень %d · Сила %d · Здоровье %d · Монеты %d · Шаурма %d\n%s%s" % [g.level, g.power, int(g.hp_max), g.coins, g.food,
+		("Бонусы вещей: %s\n" % bonus) if bonus != "" else "", g.res_line()]
 	if g.inventory.is_empty():
 		bag_list.add_child(_label("Пока пусто. Добыча падает с голубей — подходи к светящимся столбам.", 18))
-	var sorted: Array = g.inventory.duplicate()
-	sorted.sort_custom(func(a, b): return a.rarity > b.rarity)
-	for it in sorted:
-		var on: bool = is_same(g.equipped.get(it.slot, null), it)
-		var l := _label("%s%s  ·  %s%s" % ["✓ " if on else "", it.name, RARITY_NAME[it.rarity], ("  ·  +%d силы" % it.power) if it.power > 0 else ""], 19, false, RARITY[it.rarity])
-		bag_list.add_child(l)
-		var d := _label(it.desc, 15, false, Color(0.7, 0.75, 0.82))
-		bag_list.add_child(d)
+	var gear: Array = []
+	var junk := {}
+	for it in g.inventory:
+		if str(it.slot) == "":
+			if junk.has(it.id):
+				junk[it.id][1] += 1
+			else:
+				junk[it.id] = [it, 1]
+		else:
+			gear.append(it)
+	gear.sort_custom(func(a, b):
+		var ea := _is_on(a)
+		var eb := _is_on(b)
+		if ea != eb:
+			return ea
+		if a.rarity != b.rarity:
+			return a.rarity > b.rarity
+		return a.power > b.power)
+	for it in gear:
+		var on := _is_on(it)
+		var need := GameData.item_level(it)
+		var low: bool = g.level < need
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 10)
+		var tv := VBoxContainer.new()
+		tv.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		tv.add_theme_constant_override("separation", 2)
+		tv.add_child(_label(("[надето] " if on else "") + it.name, 18, true, RARITY[it.rarity]))
+		var st2 := GameData.stats_text(GameData.item_stats(it))
+		tv.add_child(_label("%s · ур. %d · %s · +%d силы%s" % [RARITY_NAME[it.rarity], need, GameData.SLOT_NAMES.get(it.slot, ""), it.power, (" · " + st2) if st2 != "" else ""],
+			14, false, Color("ff8a8a") if low else Color(0.78, 0.85, 0.95)))
+		tv.add_child(_label(it.desc, 13, false, Color(0.62, 0.67, 0.76)))
+		row.add_child(tv)
+		var b: Button
+		if on:
+			b = _secondary(_btn("Надето", func(): pass, 140))
+			b.disabled = true
+		elif low:
+			b = _btn("С ур. %d" % need, func(): pass, 140)
+			b.disabled = true
+		else:
+			var item: Dictionary = it
+			b = _btn("Надеть", func():
+				g.equip(item)
+				show_bag(), 140)
+		b.add_theme_font_size_override("font_size", 16)
+		row.add_child(b)
+		bag_list.add_child(row)
+		var sep := ColorRect.new()
+		sep.color = Color(1, 1, 1, 0.07)
+		sep.custom_minimum_size = Vector2(0, 1)
+		bag_list.add_child(sep)
+	if not junk.is_empty():
+		bag_list.add_child(_label("Мелочи и квестовые вещи", 17, true, GOLD))
+		for id in junk:
+			var e: Array = junk[id]
+			bag_list.add_child(_label("%s ×%d — %s" % [e[0].name, e[1], e[0].desc], 15, false, Color(0.82, 0.86, 0.92)))
 	bag_panel.visible = true
 
 
@@ -413,20 +471,21 @@ func btn_pos(name: String) -> Vector2:
 		"pause": return Vector2(s.x - 214, 40)
 		"bag": return Vector2(s.x - 214, 104)
 		"mount": return Vector2(s.x - 214, 170)
+		"journal": return Vector2(s.x - 278, 40)
 	return Vector2(-999, -999)
 
 
 func btn_radius(name: String) -> float:
 	match name:
 		"attack": return 68.0
-		"pause", "bag", "mount": return 28.0
+		"pause", "bag", "mount", "journal": return 28.0
 		"ult", "talk": return 48.0
 		"food": return 36.0
 	return 44.0
 
 
 func button_at(p: Vector2) -> String:
-	var names := ["attack", "s1", "s2", "s3", "pause", "bag", "food"]
+	var names := ["attack", "s1", "s2", "s3", "pause", "bag", "food", "journal"]
 	if g.vibe >= 100.0:
 		names.append("ult")
 	if g.interact_label() != "":
@@ -436,6 +495,8 @@ func button_at(p: Vector2) -> String:
 	for n in names:
 		if p.distance_to(btn_pos(n)) < btn_radius(n) + 10:
 			return n
+	if tracker_rect.has_point(p):
+		return "journal"
 	return ""
 
 
@@ -547,6 +608,12 @@ func _icon(kind: String, c: Vector2, s: float, col: Color) -> void:
 			draw_rect(Rect2(c + Vector2(-10, -2) * k, Vector2(20, 11) * k), col)
 			draw_line(c + Vector2(-5, 9) * k, c + Vector2(-8, 17) * k, col, 3 * k)
 			draw_line(c + Vector2(5, 9) * k, c + Vector2(8, 17) * k, col, 3 * k)
+		"book":
+			_rrect(Rect2(c + Vector2(-14, -12) * k, Vector2(13, 24) * k), col, 3)
+			_rrect(Rect2(c + Vector2(1, -12) * k, Vector2(13, 24) * k), col, 3)
+			for i in range(3):
+				draw_line(c + Vector2(-11, -6 + i * 6) * k, c + Vector2(-4, -6 + i * 6) * k, NAVY, 1.5)
+				draw_line(c + Vector2(4, -6 + i * 6) * k, c + Vector2(11, -6 + i * 6) * k, NAVY, 1.5)
 		"talk":
 			_rrect(Rect2(c + Vector2(-16, -14) * k, Vector2(32, 22) * k), col, 6)
 			draw_colored_polygon(PackedVector2Array([c + Vector2(-8, 8) * k, c + Vector2(0, 8) * k, c + Vector2(-10, 17) * k]), col)
@@ -668,6 +735,9 @@ func _draw() -> void:
 		sy += 22
 	if g.mounted:
 		_txt(Vector2(24, sy), "Верхом на Избушке · атака — спешиться", 15, GOLD, false, HORIZONTAL_ALIGNMENT_LEFT, -1, 3)
+		sy += 22
+	if g.player_safe():
+		_txt(Vector2(24, sy), "Тихая зона у жителя: мобы не нападают", 15, Color("a8f0c8"), false, HORIZONTAL_ALIGNMENT_LEFT, -1, 3)
 
 	# target frame
 	var t = g.target
@@ -731,11 +801,11 @@ func _draw() -> void:
 	_txt(Vector2(s.x - 448, 44), "A", 15, Color("7a4a14"), true, HORIZONTAL_ALIGNMENT_CENTER)
 	_txt(Vector2(s.x - 428, 46), str(g.coins), 20, CREAM, true)
 	# pause & bag
-	for nm in ["pause", "bag"]:
+	for nm in ["pause", "bag", "journal"]:
 		var bc := btn_pos(nm)
 		draw_circle(bc, 28, Color(0.06, 0.08, 0.14, 0.85))
 		draw_arc(bc, 28, 0, TAU, 32, Color(1, 1, 1, 0.3), 2)
-		_icon(nm, bc, 28, CREAM)
+		_icon("book" if nm == "journal" else nm, bc, 28, CREAM)
 	if g.mount_owned:
 		var mc2 := btn_pos("mount")
 		draw_circle(mc2, 28, Color(0.95, 0.75, 0.3, 0.95) if g.mounted else Color(0.06, 0.08, 0.14, 0.85))
@@ -744,15 +814,19 @@ func _draw() -> void:
 
 	# quest tracker
 	var ql: Array = g.quest_lines()
+	tracker_rect = Rect2()
 	if ql.size() > 0:
-		var qx := s.x - 360
+		var qx := s.x - 372
 		var qy := 214.0
-		var qh := 46 + 28 * (ql.size() - 1)
-		_rrect(Rect2(qx, qy, 340, qh), Color(0.04, 0.05, 0.1, 0.62), 14)
+		var qh := 44 + 25 * (ql.size() - 1)
+		tracker_rect = Rect2(qx, qy, 352, qh)
+		_rrect(tracker_rect, Color(0.04, 0.05, 0.1, 0.62), 14)
 		_rrect(Rect2(qx, qy, 6, qh), GOLD, 3)
-		_txt(Vector2(qx + 18, qy + 28), ql[0], 18, GOLD, true)
+		_txt(Vector2(qx + 18, qy + 27), ql[0], 18, GOLD, true)
 		for i in range(1, ql.size()):
-			_txt(Vector2(qx + 18, qy + 28 + i * 28), ql[i], 16, CREAM)
+			var line: String = ql[i]
+			var side_line := line.begins_with("● ")
+			_txt(Vector2(qx + 18, qy + 27 + i * 25), line, 15 if side_line else 16, Color("8ff5e6") if side_line else CREAM, false, HORIZONTAL_ALIGNMENT_LEFT, -1, 3 if side_line else 0)
 
 	# joystick
 	if g.joy_idx != -1:

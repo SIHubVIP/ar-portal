@@ -87,6 +87,8 @@ static func human(o: Dictionary) -> Dictionary:
 		# short hair on the back and sides of the head
 		Kit.part(head, Kit.SPH, _m(hc, 0.85), Vector3(0.72, 0.6, 0.62), Vector3(0, 0.04, -0.07))
 	match hair:
+		"none":
+			pass
 		"police_cap":
 			var navy := _m(Color("1d2b4a"), 0.6)
 			var cap := Node3D.new()

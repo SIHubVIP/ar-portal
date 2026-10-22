@@ -121,6 +121,10 @@ var vasya_mate: Dictionary = {}
 var quest5 := 0         # «Бэкап Горыныча»: 0 none, 1 concert, 2 run to Zina, 3 go to the embankment, 4 speakers, 5 Gorynych, 6 return, 7 done
 var q5_kills := 0
 var concert: Dictionary = {}
+var side: SideRun             # 0.6: side quests of the new neighbours
+var stats := {}               # 0.6: secondary stats from equipment (rhythm, luck, hp, speed, vibe)
+const SAFE_R := 6.5           # 0.6: «quiet zone» around NPCs — mobs do not start fights there
+const RESPAWN_T := 45.0       # 0.6: was 20 s
 var concert_nodes: Array = []
 var waves: Array = []         # expanding noise rings (speakers, Gorynych)
 var traps: Array = []         # delayed red circles on the ground
@@ -154,6 +158,7 @@ func _ready() -> void:
 	Kit.init()
 	randomize()
 	Engine.max_fps = 60
+	side = SideRun.new(self)
 	autotest = OS.get_cmdline_user_args().has("--autotest")
 	if autotest:
 		save_path = "user://pesnya_autotest.json"
@@ -551,7 +556,9 @@ func _reset_progress() -> void:
 	b_since = {"grill": 0.0, "garden": 0.0}
 	robot_task = {"task": "", "start": 0.0, "end": 0.0, "told": false}
 	daily = {"date": "", "pigeon": 0, "scooter": 0, "vacuum": 0, "claimed": []}
+	side.reset()
 	map_id = "yard"
+	_recalc_power()
 	_recalc_stats()
 	hp = hp_max
 
@@ -567,7 +574,7 @@ func _save_dict() -> Dictionary:
 	return {"ver": GameData.SAVE_VERSION, "race": race, "cls": cls, "level": level, "xp": xp, "coins": coins, "inv": inv, "eq": eq,
 		"quest": quest, "quest_kills": quest_kills, "feather_kills": feather_kills, "quest2": quest2, "quest3": quest3, "q3_kills": q3_kills, "quest4": quest4, "q4_kills": q4_kills, "quest5": quest5, "q5_kills": q5_kills,
 		"mount": mount_owned, "res": res, "food": food,
-		"buildings": buildings, "b_since": b_since, "robot": robot_task, "daily": daily, "map": map_id,
+		"buildings": buildings, "b_since": b_since, "robot": robot_task, "daily": daily, "map": map_id, "side": side.to_save(),
 		"settings": {"music": music_on, "quality": quality, "beat_offset": beat_offset}, "saved_at": now()}
 
 
@@ -646,6 +653,7 @@ func load_game() -> bool:
 	var dl: Dictionary = d.get("daily", {})
 	daily = {"date": str(dl.get("date", "")), "pigeon": int(dl.get("pigeon", 0)), "scooter": int(dl.get("scooter", 0)), "vacuum": int(dl.get("vacuum", 0)), "claimed": dl.get("claimed", []),
 		"concert": bool(dl.get("concert", false))}
+	side.load_from(d.get("side", {}))
 	inventory.clear()
 	equipped.clear()
 	for id in d.get("inv", []):
@@ -717,6 +725,10 @@ func _enter_map(id: String, spawn: String) -> void:
 		cd[k] = 0.0
 	for n in world.npcs:
 		_spawn_npc(n.id, n.pos, n.rot)
+	for sid in SideQ.NPCS:
+		var sn: Dictionary = SideQ.NPCS[sid]
+		if sn.map == id:
+			_spawn_npc(sid, sn.pos, sn.rot)
 	for e in world.mobs:
 		_spawn_mob(e[0], e[1], e[2])
 	if id == "yard" and quest == 3:
@@ -763,9 +775,20 @@ func _enter_map(id: String, spawn: String) -> void:
 		_refresh_robot()
 	_play_music(run_stream)
 	_check_daily_reset()
+	side.refresh_marks()
 
 
 func _spawn_npc(id: String, at: Vector3, rot: float) -> void:
+	if SideQ.NPCS.has(id):
+		var sh := Npcs.build(id)
+		world.root.add_child(sh.root)
+		sh.root.position = at
+		sh.root.rotation.y = rot
+		Kit.bake_tree(sh.root)
+		var sn: Dictionary = SideQ.NPCS[id]
+		npcs.append({"id": id, "name": sn.name, "role": sn.role, "act": "Говорить", "pos": at, "node": sh.root, "body": sh.body, "head": sh.head,
+			"h": Npcs.PLATE_H.get(id, 2.3), "r": sn.get("r", 3.2)})
+		return
 	var h: Dictionary
 	match id:
 		"zina": h = Chars.granny_npc()
@@ -895,14 +918,19 @@ func _bval(id: String) -> float:
 
 func _recalc_stats() -> void:
 	var ratio := hp / hp_max if hp_max > 0 else 1.0
-	hp_max = (300.0 + (level - 1) * 45.0) * (1.2 if race == "punk" else 1.0) * (1.0 + _bval("gym"))
+	hp_max = (300.0 + (level - 1) * 45.0 + stat("hp") * 12.0) * (1.2 if race == "punk" else 1.0) * (1.0 + _bval("gym"))
 	hp = clampf(hp_max * ratio, 1.0, hp_max)
 
 
 func _recalc_power() -> void:
 	power = 0
+	stats = {}
 	for s in equipped:
 		power += equipped[s].power
+		var add: Dictionary = GameData.item_stats(equipped[s])
+		for k in add:
+			stats[k] = int(stats.get(k, 0)) + int(add[k])
+	beat_win = 0.13 + minf(0.05, stat("rhythm") * 0.002)
 
 
 func res_line() -> String:
@@ -914,6 +942,19 @@ func res_line() -> String:
 
 # ================================================================== quests
 func quest_lines() -> Array:
+	var out: Array = main_quest_lines()
+	var sl: Array = side.tracker_lines()
+	if sl.size() > 0 and out.size() > 2:
+		out = out.slice(0, 2)
+	out += sl
+	var done := _daily_ready_count()
+	var finished: int = daily.claimed.size()
+	if quest >= 1:
+		out.append("Ежедневные дяди Миши: %d/3%s" % [finished, (" · можно забрать: %d" % done) if done > 0 else ""])
+	return out
+
+
+func main_quest_lines() -> Array:
 	var out: Array = []
 	if quest < 5:
 		match quest:
@@ -960,12 +1001,79 @@ func quest_lines() -> Array:
 			5: out = ["Бэкап Горыныча", "Победи Змея Горыныча", "Три головы — три беды"]
 			6: out = ["Бэкап Горыныча", "Вернись к бабе Зине во двор"]
 	else:
-		out = ["Часть вторая началась!", "Концерт в ГК — хоть каждый день", "Продолжение следует…"]
-	var done := _daily_ready_count()
-	var finished: int = daily.claimed.size()
-	if quest >= 1:
-		out.append("Ежедневные дяди Миши: %d/3%s" % [finished, (" · можно забрать: %d" % done) if done > 0 else ""])
+		out = ["Часть вторая началась!", "Помоги новым соседям — «!» над головой", "Журнал заданий — кнопка-книжка вверху"]
 	return out
+
+
+# ================================================================== 0.6 helpers: dialogs, items, quiet zones, journal
+func npc_title(id: String) -> String:
+	if NPC_INFO.has(id):
+		return NPC_INFO[id][0]
+	return id
+
+
+func open_dialog(who: String, text: String, opts: Array) -> void:
+	state = DIALOG
+	hud.show_dialog(who, text, opts)
+
+
+func close_dialog() -> void:
+	_close_dialog()
+
+
+func count_item(id: String) -> int:
+	var n := 0
+	for it in inventory:
+		if it.id == id:
+			n += 1
+	return n
+
+
+func remove_items(id: String, n: int) -> void:
+	for it in inventory.duplicate():
+		if n <= 0:
+			break
+		if it.id == id and not equipped.values().has(it):
+			inventory.erase(it)
+			n -= 1
+
+
+func stat(k: String) -> int:
+	return int(stats.get(k, 0))
+
+
+## Mobs ignore the player standing next to an NPC (reading a quest) — unless the player attacks from there.
+func player_safe() -> bool:
+	if idle_t < 2.5 or state != PLAY:
+		return false
+	for n in npcs:
+		if Vector2(pos.x - n.pos.x, pos.z - n.pos.z).length() < SAFE_R:
+			return true
+	return false
+
+
+func equip(it: Dictionary) -> void:
+	if str(it.slot) == "":
+		return
+	var need := GameData.item_level(it)
+	if level < need:
+		hud.toast("«%s» — с %d уровня" % [it.name, need], Hud.RED)
+		return
+	equipped[it.slot] = it
+	_recalc_power()
+	_recalc_stats()
+	play_sfx("pickup", 1.1)
+	hud.toast("Надето: %s · сила %d" % [it.name, power], Hud.GREEN)
+
+
+func open_journal() -> void:
+	if state != PLAY:
+		return
+	open_list("journal")
+
+
+func _list_journal() -> void:
+	hud.show_list("ЖУРНАЛ ЗАДАНИЙ", "Уровень %d · соседи: выполнено %d из %d · здесь можно спокойно перечитать тексты заданий" % [level, side.done_count(), SideQ.ORDER.size()], side.journal_rows())
 
 
 func npc_marker(id: String) -> String:
@@ -990,13 +1098,14 @@ func npc_marker(id: String) -> String:
 				return "?"
 			if quest >= 1 and daily.claimed.size() == 0 and daily.pigeon + daily.scooter + daily.vacuum == 0:
 				return "!"
-	return ""
+	return side.marker(id)
 
 
 func world_labels() -> Array:
 	var out := []
 	if not world.has("root"):
 		return out
+	out += side.world_labels()
 	for pt in world.portals:
 		out.append([pt.pos + Vector3(0, 2.2, 0), "→ " + pt.label, 18, Hud.TEAL])
 	if map_id == "garages" and quest2 >= 2:
@@ -1044,6 +1153,7 @@ func _finish_quest() -> void:
 
 
 func _on_kill(m: Dictionary) -> void:
+	side.on_kill(m)
 	if not m.temp and daily.has(m.kind):
 		daily[m.kind] = int(daily[m.kind]) + 1
 		for dd in GameData.DAILIES:
@@ -1125,6 +1235,7 @@ func _interactables() -> Array:
 	var out := []
 	for n in npcs:
 		out.append({"label": n.act, "kind": "npc", "id": n.id, "pos": n.pos, "r": n.get("r", 3.2)})
+	out += side.interactables()
 	if map_id == "server" and world.has("door"):
 		if quest4 == 2:
 			out.append({"label": "Рэп-код", "kind": "door", "id": "door", "pos": Vector3(ServerRoom.DOOR_X + 1.6, 0, 0), "r": 3.2})
@@ -1170,6 +1281,8 @@ func interact() -> void:
 	play_sfx("ui")
 	match e.kind:
 		"npc":
+			if side.talk(e.id):
+				return
 			match e.id:
 				"zina": _talk_zina()
 				"misha": open_list("daily")
@@ -1177,6 +1290,7 @@ func interact() -> void:
 				"petrovich": _talk_petrovich()
 				"shumodav": _talk_shumodav()
 				"gorynych": _talk_gorynych()
+		"side_find": side.inspect(e.id)
 		"door": _start_rap_lock()
 		"concert": start_concert()
 		"chest": _open_chest()
@@ -1305,6 +1419,7 @@ func open_list(kind: String, arg := "") -> void:
 		"daily": _list_daily()
 		"slot": _list_slot(arg)
 		"robot": _list_robot()
+		"journal": _list_journal()
 
 
 func close_list() -> void:
@@ -1328,17 +1443,16 @@ func _list_shop() -> void:
 			"cb": func(): _buy(id, price, e[3])})
 	var junk := 0
 	var junk_n := 0
-	for it in inventory:
-		if _is_junk(it):
-			junk += GameData.SELL_PRICE[it.rarity]
-			junk_n += 1
-	rows.append({"text": "Продать ненужное (%d шт.)" % junk_n, "sub": "Обычный хлам и лишняя экипировка (надетое не трогаем) — +%d монет" % junk, "btn": "Продать",
+	for it in _junk_items():
+		junk += GameData.SELL_PRICE[it.rarity]
+		junk_n += 1
+	rows.append({"text": "Продать ненужное (%d шт.)" % junk_n, "sub": "Хлам и лишняя экипировка (надетое, уникальное и нужное соседям не трогаем) — +%d монет" % junk, "btn": "Продать",
 		"enabled": junk_n > 0, "cb": func(): _sell_junk(), "color": Hud.GOLD})
 	hud.show_list("Ларёк «Шаурма» · Люба", "«Бери, пока горячая!» · Монеты: %d · Шаурма: %d\n%s" % [coins, food, res_line()], rows)
 
 
 func _is_junk(it: Dictionary) -> bool:
-	if it.rarity >= 3:
+	if it.rarity >= 3 or it.get("unique", false):
 		return false
 	for s in equipped:
 		if is_same(equipped[s], it):
@@ -1360,12 +1474,25 @@ func _buy(id: String, price: int, amount: int) -> void:
 	_refresh_list()
 
 
+## Junk minus the items accepted side quests still need.
+func _junk_items() -> Array:
+	var keep: Dictionary = side.reserved()
+	var out := []
+	for it in inventory:
+		if not _is_junk(it):
+			continue
+		if int(keep.get(it.id, 0)) > 0:
+			keep[it.id] = int(keep[it.id]) - 1
+			continue
+		out.append(it)
+	return out
+
+
 func _sell_junk() -> void:
 	var gain := 0
-	for it in inventory.duplicate():
-		if _is_junk(it):
-			gain += GameData.SELL_PRICE[it.rarity]
-			inventory.erase(it)
+	for it in _junk_items():
+		gain += GameData.SELL_PRICE[it.rarity]
+		inventory.erase(it)
 	coins += gain
 	hud.toast("Продано на %d монет" % gain, Hud.GOLD)
 	play_sfx("bank")
@@ -1662,12 +1789,12 @@ func _update_robot(dt: float) -> void:
 
 # ================================================================== items, xp
 func xp_next() -> int:
-	return 80 + level * 60
+	return GameData.xp_for_level(level)
 
 
 func gain_xp(v: int) -> void:
 	xp += v
-	while xp >= xp_next() and level < 10:
+	while xp >= xp_next() and level < GameData.MAX_LEVEL:
 		xp -= xp_next()
 		level += 1
 		_recalc_stats()
@@ -1675,7 +1802,7 @@ func gain_xp(v: int) -> void:
 		hud.big("НОВЫЙ УРОВЕНЬ %d!" % level, "Здоровье и урон выросли", 2.5)
 		play_sfx("bank", 1.1)
 		_ring_fx(pos + Vector3(0, 0.1, 0), Kit.GOLD, 2.5, 0.8)
-	if level >= 10:
+	if level >= GameData.MAX_LEVEL:
 		xp = mini(xp, xp_next() - 1)
 
 
@@ -1688,10 +1815,13 @@ func add_item(id: String) -> void:
 	hud.toast("+ %s (%s)" % [it.name, Hud.RARITY_NAME[it.rarity]], col)
 	if it.slot != "":
 		var cur = equipped.get(it.slot, null)
-		if cur == null or cur.power < it.power:
+		if (cur == null or cur.power < it.power) and level >= GameData.item_level(it):
 			equipped[it.slot] = it
 			_recalc_power()
+			_recalc_stats()
 			hud.toast("Надето: %s · сила %d" % [it.name, power], Hud.GREEN)
+		elif level < GameData.item_level(it):
+			hud.toast("Наденешь с %d уровня — вещь в сумке" % GameData.item_level(it), Hud.CREAM)
 	if id == "luck" and quest == 2:
 		quest = 3
 		if map_id == "yard":
@@ -1730,8 +1860,8 @@ func _drop_loot(m: Dictionary) -> void:
 		res.brick += 8
 		hud.float_text(m.pos + Vector3(0, m.height * 0.6, 0), "+8 цемента · +8 кирпича", Hud.TEAL, 22, 40)
 	else:
-		coins += randi_range(4, 12) + m.lvl * 2
-		var r := randf()
+		coins += int((randi_range(4, 12) + m.lvl * 2) * (1.0 + stat("luck") * 0.01))
+		var r := randf() / (1.0 + stat("luck") * 0.015)
 		for e in d.loot:
 			if r < e[0]:
 				var opts: PackedStringArray = str(e[1]).split("|")
@@ -1793,9 +1923,10 @@ func _base_dmg() -> float:
 
 func _beat_action(_name: String) -> bool:
 	var ok := on_beat()
-	var vg := 1.0 + _bval("stage")
+	var vg := (1.0 + _bval("stage")) * (1.0 + stat("vibe") * 0.02)
 	if ok:
 		combo += 1
+		side.on_combo(combo)
 		vibe = minf(100.0, vibe + 14.0 * vg)
 		play_sfx("beat", 1.0 + minf(combo, 8) * 0.03, -3.0)
 		if lock_active:
@@ -1844,6 +1975,7 @@ func press(name: String) -> void:
 		"food": _eat()
 		"pause": toggle_pause()
 		"bag": open_bag()
+		"journal": open_journal()
 
 
 func _eat() -> void:
@@ -2013,18 +2145,28 @@ func _kill(m: Dictionary) -> void:
 	m.alive = false
 	m.st = "dead"
 	m.dead_t = 0.0
-	m.respawn = 20.0
+	m.respawn = RESPAWN_T
 	if m.tele and is_instance_valid(m.tele):
 		m.tele.queue_free()
 		m.tele = null
-	gain_xp(m.xp)
-	hud.float_text(m.pos + Vector3(0, m.height, 0), "+%d опыта" % m.xp, Color("b9a6ff"), 20, 40)
+	var gx := mob_xp(m)
+	gain_xp(gx)
+	hud.float_text(m.pos + Vector3(0, m.height, 0), "+%d опыта" % gx, Color("b9a6ff") if gx >= int(m.xp) else Color(0.7, 0.7, 0.75), 20, 40)
 	_drop_loot(m)
 	_burst(m.pos + Vector3(0, 1.0, 0), [Color("c8ccd8"), Color("8a93a8"), Color.WHITE], 24)
 	play_sfx("drop", 0.8)
 	if is_same(target, m):
 		target = null
 	_on_kill(m)
+
+
+## Mobs much weaker than the hero give less experience (−15% per level beyond 3, at least 10%).
+func mob_xp(m: Dictionary) -> int:
+	var diff := level - int(m.lvl)
+	var f := 1.0
+	if diff > 3:
+		f = maxf(0.1, 1.0 - (diff - 3) * 0.15)
+	return maxi(1, int(round(int(m.xp) * f)))
 
 
 func hurt_player(dmg: float, _from: Vector3) -> void:
@@ -2198,6 +2340,7 @@ func _input(event: InputEvent) -> void:
 			KEY_F: press("food")
 			KEY_I: press("bag")
 			KEY_M: press("mount")
+			KEY_Q: press("journal")
 			KEY_ESCAPE: toggle_pause()
 
 
@@ -2294,6 +2437,7 @@ func _process(delta: float) -> void:
 			_update_traps(dt)
 			_update_beacon()
 			_update_camera(dt)
+			side.update(dt)
 			save_t += dt
 			if save_t > 30.0:
 				save_game()
@@ -2371,7 +2515,7 @@ func _update_player(dt: float) -> void:
 		spd = 1.0
 	elif jv.length() > 0.0:
 		var md := _move_dir(jv)
-		var vmax := GameData.MOUNT_SPEED if mounted else 6.2
+		var vmax: float = GameData.MOUNT_SPEED if mounted else 6.2 * (1.0 + stat("speed") * 0.012)
 		var sp := vmax * minf(1.0, jv.length() * 1.3)
 		pos += md.normalized() * sp * dt
 		spd = sp / vmax
@@ -2446,6 +2590,7 @@ func _update_camera(dt: float) -> void:
 
 
 func _update_mobs(dt: float) -> void:
+	var safe := player_safe()
 	for m in mobs:
 		var node: Node3D = m.node
 		if not m.alive:
@@ -2476,7 +2621,9 @@ func _update_mobs(dt: float) -> void:
 				node.visible = false
 			if not m.boss and not m.temp:
 				m.respawn -= dt
-				if m.respawn <= 0.0:
+				if m.respawn <= 0.0 and Vector2(pos.x - m.home.x, pos.z - m.home.z).length() < 14.0:
+					m.respawn = 3.0   # do not pop up right next to the player — wait until they walk away
+				elif m.respawn <= 0.0:
 					m.alive = true
 					m.hp = m.hp_max
 					m.pos = m.home
@@ -2505,11 +2652,11 @@ func _update_mobs(dt: float) -> void:
 				spd = 2.2 if m.kind in ["scooter", "drone"] else 1.2
 				m.yaw = lerp_angle(m.yaw, atan2(wd.x, wd.z), minf(1.0, dt * 4))
 				m.pos += wd.normalized() * spd * dt
-			if dp < m.aggro and state == PLAY:
+			if dp < m.aggro and state == PLAY and (m.boss or not safe):
 				m.st = "chase"
 				play_sfx("near", 1.4, -10.0)
 		elif m.st == "chase":
-			if state != PLAY or from_home > m.leash:
+			if state != PLAY or from_home > m.leash or (safe and not m.boss):
 				m.st = "return"
 				m.charge_t = 0.0
 			else:
@@ -3932,6 +4079,21 @@ func _bot_fight(frames_max: int, until: Callable) -> int:
 	return frames
 
 
+## Step on a portal until the map really changes (re-teleports if a mob pushed the hero off or the hero died).
+func _at_portal(p: Vector3, m: String) -> void:
+	var guard := 0
+	while (map_id != m or state != PLAY) and guard < 900:
+		if state == DEAD:
+			_respawn()
+		if state == PLAY and map_id != m:
+			pos = p
+			portal_cd = 0.0
+			hp = hp_max
+			invuln = 1.0
+		await get_tree().process_frame
+		guard += 1
+
+
 func _go_interact(p: Vector3) -> void:
 	pos = p + Vector3(1.2, 0, 0.6)
 	await get_tree().process_frame
@@ -3957,6 +4119,10 @@ func _run_autotest() -> void:
 	while state != PLAY:
 		await get_tree().process_frame
 	var t0 := Time.get_ticks_msec()
+	if args.has("--only06"):
+		await _shots06(shots_dir)
+		_finish_report(lg, t0)
+		return
 	if args.has("--only05"):
 		await _shots05(shots_dir)
 		_finish_report(lg, t0)
@@ -4004,10 +4170,7 @@ func _run_autotest() -> void:
 	_lg(lg, "dailies claimed=%d" % daily.claimed.size())
 	close_list()
 	# travel to the garages through the arch
-	pos = Vector3(15.6, 0, -27.6)
-	portal_cd = 0.0
-	while map_id != "garages" or state != PLAY:
-		await get_tree().process_frame
+	await _at_portal(Vector3(15.6, 0, -27.6), "garages")
 	_lg(lg, "map=%s npcs=%d" % [map_id, npcs.size()])
 	await _go_interact(Vector3(10.2, 0, 4.6))
 	_close_dialog()
@@ -4065,10 +4228,7 @@ func _run_autotest() -> void:
 	load_game()
 	_lg(lg, "save roundtrip coins=%d==%d len=%d" % [coins, c0, before])
 	# back to the yard
-	pos = Vector3(29.6, 0, 0)
-	portal_cd = 0.0
-	while map_id != "yard" or state != PLAY:
-		await get_tree().process_frame
+	await _at_portal(Vector3(29.6, 0, 0), "yard")
 	await _bot_fight(120 if shots_dir != "" else 400, func(): return false)
 	if shots_dir != "":
 		open_bag()
@@ -4077,6 +4237,7 @@ func _run_autotest() -> void:
 	await _autotest_q3(lg, shots_dir)
 	await _autotest_q4(lg, shots_dir)
 	await _autotest_q5(lg, shots_dir)
+	await _autotest_side(lg, shots_dir)
 	_lg(lg, "final level=%d coins=%d food=%d items=%d" % [level, coins, food, inventory.size()])
 	_finish_report(lg, t0)
 
@@ -4087,18 +4248,12 @@ func _autotest_q3(lg: Array, shots_dir: String) -> void:
 	_lg(lg, "q3 zina dialog=%s marker=%s" % [str(state == DIALOG), "ok"])
 	_close_dialog()
 	quest3 = 1
-	pos = Vector3(15.6, 0, -27.6)
-	portal_cd = 0.0
-	while map_id != "garages" or state != PLAY:
-		await get_tree().process_frame
+	await _at_portal(Vector3(15.6, 0, -27.6), "garages")
 	await _go_interact(Vector3(10.2, 0, 4.6))
 	_close_dialog()
 	_open_site_gate()
 	_lg(lg, "q3 gate quest3=%d portals=%d" % [quest3, world.portals.size()])
-	pos = Vector3(-29.6, 0, 0)
-	portal_cd = 0.0
-	while map_id != "stroyka" or state != PLAY:
-		await get_tree().process_frame
+	await _at_portal(Vector3(-29.6, 0, 0), "stroyka")
 	_lg(lg, "stroyka quest3=%d mobs=%d companion=%s" % [quest3, mobs.size(), str(not companion.is_empty())])
 	for k in range(30):
 		await get_tree().process_frame
@@ -4137,14 +4292,8 @@ func _autotest_q3(lg: Array, shots_dir: String) -> void:
 	for k in range(40):
 		await get_tree().process_frame
 	# back to Zina for the mount
-	pos = Vector3(26.6, 0, 0)
-	portal_cd = 0.0
-	while map_id != "garages" or state != PLAY:
-		await get_tree().process_frame
-	pos = Vector3(29.8, 0, 0)
-	portal_cd = 0.0
-	while map_id != "yard" or state != PLAY:
-		await get_tree().process_frame
+	await _at_portal(Vector3(26.6, 0, 0), "garages")
+	await _at_portal(Vector3(29.8, 0, 0), "yard")
 	await _go_interact(Vector3(-5.9, 0, -5.0))
 	_finish_q3()
 	_close_dialog()
@@ -4183,14 +4332,8 @@ func _autotest_q4(lg: Array, shots_dir: String) -> void:
 	_lg(lg, "q4 zina dialog=%s" % str(state == DIALOG))
 	_close_dialog()
 	quest4 = 1
-	pos = Vector3(15.6, 0, -27.6)
-	portal_cd = 0.0
-	while map_id != "garages" or state != PLAY:
-		await get_tree().process_frame
-	pos = Vector3(-29.6, 0, 0)
-	portal_cd = 0.0
-	while map_id != "stroyka" or state != PLAY:
-		await get_tree().process_frame
+	await _at_portal(Vector3(15.6, 0, -27.6), "garages")
+	await _at_portal(Vector3(-29.6, 0, 0), "stroyka")
 	var shu := false
 	for n in npcs:
 		if n.id == "shumodav":
@@ -4263,18 +4406,9 @@ func _autotest_q4(lg: Array, shots_dir: String) -> void:
 		quest4 = 7
 	for k in range(30):
 		await get_tree().process_frame
-	pos = Vector3(32.4, 0, 0)
-	portal_cd = 0.0
-	while map_id != "stroyka" or state != PLAY:
-		await get_tree().process_frame
-	pos = Vector3(26.6, 0, 0)
-	portal_cd = 0.0
-	while map_id != "garages" or state != PLAY:
-		await get_tree().process_frame
-	pos = Vector3(29.8, 0, 0)
-	portal_cd = 0.0
-	while map_id != "yard" or state != PLAY:
-		await get_tree().process_frame
+	await _at_portal(Vector3(32.4, 0, 0), "stroyka")
+	await _at_portal(Vector3(26.6, 0, 0), "garages")
+	await _at_portal(Vector3(29.8, 0, 0), "yard")
 	await _go_interact(Vector3(-5.9, 0, -5.0))
 	_finish_q4()
 	_close_dialog()
@@ -4347,10 +4481,7 @@ func _play_concert_bot(accuracy: float) -> void:
 
 
 func _autotest_q5(lg: Array, shots_dir: String) -> void:
-	pos = Vector3(15.6, 0, -27.6)
-	portal_cd = 0.0
-	while map_id != "garages" or state != PLAY:
-		await get_tree().process_frame
+	await _at_portal(Vector3(15.6, 0, -27.6), "garages")
 	_lg(lg, "q5 petrovich marker=%s stage=%s" % [npc_marker("petrovich"), str(world.root.has_node("ConcertStage"))])
 	await _go_interact(Vector3(10.2, 0, 4.6))
 	_close_dialog()
@@ -4365,18 +4496,12 @@ func _autotest_q5(lg: Array, shots_dir: String) -> void:
 		w += 1
 	_lg(lg, "phone call quest5=%d dialog=%s" % [quest5, str(state == DIALOG)])
 	_close_dialog()
-	pos = Vector3(29.8, 0, 0)
-	portal_cd = 0.0
-	while map_id != "yard" or state != PLAY:
-		await get_tree().process_frame
+	await _at_portal(Vector3(29.8, 0, 0), "yard")
 	await _go_interact(Vector3(-5.9, 0, -5.0))
 	_close_dialog()
 	_accept_q5()
 	_lg(lg, "q5 accepted quest5=%d portals=%d" % [quest5, world.portals.size()])
-	pos = Vector3(0, 0, 17.4)
-	portal_cd = 0.0
-	while map_id != "embankment" or state != PLAY:
-		await get_tree().process_frame
+	await _at_portal(Vector3(0, 0, 17.4), "embankment")
 	_lg(lg, "embankment quest5=%d mobs=%d zina=%s" % [quest5, mobs.size(), str(not companion.is_empty())])
 	var f := await _bot_fight(5000, func(): return quest5 >= 5)
 	_lg(lg, "speakers quest5=%d kills=%d frames=%d hp_min_ok=%s" % [quest5, q5_kills, f, str(hp > 0)])
@@ -4398,10 +4523,7 @@ func _autotest_q5(lg: Array, shots_dir: String) -> void:
 	_lg(lg, "gorynych quest5=%d frames=%d heads=%d" % [quest5, f, int(gb.heads) if gb != null else -1])
 	if quest5 < 6:
 		quest5 = 6
-	pos = Vector3(32.2, 0, 0)
-	portal_cd = 0.0
-	while map_id != "yard" or state != PLAY:
-		await get_tree().process_frame
+	await _at_portal(Vector3(32.2, 0, 0), "yard")
 	await _go_interact(Vector3(-5.9, 0, -5.0))
 	_finish_q5()
 	_close_dialog()
@@ -4466,6 +4588,293 @@ func _shots05(dir: String) -> void:
 	yaw = facing + PI - 0.3
 	await _bot_fight(70, func(): return false)
 	await _snap(dir, "14_gorynych")
+
+
+# ================================================================== 0.6 autotest: the new neighbours
+const _AT_PLACES := {"zina": ["yard", Vector3(-5.9, 0, -5.0)], "misha": ["yard", Vector3(4.6, 0, 13.6)], "lyuba": ["yard", Vector3(-9.7, 0, -13.1)],
+	"petrovich": ["garages", Vector3(10.2, 0, 4.6)], "gorynych": ["embankment", Vector3(-11.0, 0, 2.5)]}
+
+
+func _at_place(id: String) -> Array:
+	if SideQ.NPCS.has(id):
+		return [SideQ.NPCS[id].map, SideQ.NPCS[id].pos]
+	return _AT_PLACES[id]
+
+
+func _at_goto_map(m: String) -> void:
+	if map_id != m:
+		await _travel(m, "start")
+	invuln = 9999.0
+	hp = hp_max
+	for k in range(3):
+		await get_tree().process_frame
+
+
+func _at_talk(id: String) -> void:
+	var pl := _at_place(id)
+	await _at_goto_map(pl[0])
+	if state == DIALOG:
+		_close_dialog()
+	var p: Vector3 = pl[1]
+	await _go_interact(Vector3(p.x, 0, p.z))
+
+
+func _at_press(i := 0) -> bool:
+	if state != DIALOG:
+		return false
+	var live := []
+	for c in hud.dialog_opts.get_children():
+		if not c.is_queued_for_deletion():
+			live.append(c)
+	if i >= live.size():
+		return false
+	(live[i] as Button).pressed.emit()
+	await get_tree().process_frame
+	return true
+
+
+func _at_kill_kind(kind: String, until: Callable, max_frames := 6000) -> int:
+	var frames := 0
+	while frames < max_frames and not until.call():
+		var found = null
+		for m in mobs:
+			if m.alive and m.kind == kind:
+				found = m
+				break
+		if found != null:
+			pos = found.pos + Vector3(1.5, 0, 0)
+			target = found
+			damage_mob(found, 999999.0, false)
+		else:
+			pos = world.spawns.start[0]
+		await get_tree().process_frame
+		frames += 1
+		hp = hp_max
+	return frames
+
+
+func _at_side_quest(lg: Array, q: String) -> void:
+	var qd: Dictionary = SideQ.QUESTS[q]
+	var npc: String = qd.npc
+	var r: Array = qd.req
+	if int(get(r[0])) < int(r[1]):
+		set(r[0], int(r[1]))
+	while level < int(qd.lvl):
+		gain_xp(xp_next() - xp)
+	await _at_talk(npc)
+	var mk_ok: bool = state == DIALOG and hud.dialog_name.text == SideQ.NPCS[npc].name
+	await _at_press(0)   # accept
+	var guard := 0
+	while side.is_active(q) and guard < 12:
+		guard += 1
+		var s := side.step(q)
+		match s.type:
+			"kill", "collect":
+				await _at_goto_map(_kill_map(s.mob))
+				var si := int(side.st[q].s)
+				await _at_kill_kind(s.mob, func(): return int(side.st[q].s) != si or not side.is_active(q))
+			"give_items":
+				for id in s.items:
+					while count_item(id) < int(s.items[id]):
+						add_item(id)
+				await _at_talk(npc)
+				await _at_press(0)
+				if state == DIALOG:
+					_close_dialog()
+			"give_res":
+				if s.res == "food":
+					food += int(s.n)
+				else:
+					res[s.res] += int(s.n)
+				await _at_talk(npc)
+				await _at_press(0)
+				if state == DIALOG:
+					_close_dialog()
+			"talk":
+				await _at_talk(s.npc)
+				await _at_press(0)
+			"find":
+				await _at_goto_map(s.map)
+				var fp: Vector3 = s.pos
+				pos = fp + Vector3(0.8, 0, 0.8)
+				await get_tree().process_frame
+				await get_tree().process_frame
+				var beams := side.marks.size()
+				interact()
+				await _at_press(0)
+				_lg(lg, "side %s find %s beams=%d" % [q, s.label, beams])
+			"combo":
+				side.on_combo(int(s.n))
+			"timer":
+				time_shift += float(s.secs) + 5.0
+				await get_tree().process_frame
+				await get_tree().process_frame
+			"return":
+				await _at_talk(npc)
+				await _at_press(0)
+	if state == DIALOG:
+		_close_dialog()
+	_lg(lg, "side %s «%s» done=%s dialog_ok=%s level=%d" % [q, qd.title, str(side.is_done(q)), str(mk_ok), level])
+
+
+func _kill_map(kind: String) -> String:
+	match kind:
+		"scooter", "vacuum", "pigeon": return "yard"
+		"drone": return "stroyka"
+		"hare": return "server"
+		"gull", "autoplay": return "embankment"
+	return map_id
+
+
+func _autotest_side(lg: Array, shots_dir: String) -> void:
+	await _at_goto_map("yard")
+	# markers and journal before anything is accepted
+	var mk := npc_marker("pavlin")
+	open_journal()
+	var rows := hud.list_box.get_child_count()
+	close_list()
+	_lg(lg, "side start marker_pavlin=%s journal_rows=%d npcs_in_yard=%d" % [mk, rows, npcs.size()])
+	# quiet zone: an idle hero next to Baba Zina is ignored by a pigeon
+	pos = Vector3(-4.0, 0, -4.0)
+	idle_t = 10.0
+	invuln = 0.0
+	var pg = null
+	for m in mobs:
+		if m.alive and m.kind == "pigeon":
+			pg = m
+			break
+	pg.pos = pos + Vector3(2.0, 0, 0)
+	pg.st = "idle"
+	for k in range(30):
+		await get_tree().process_frame
+		idle_t = 10.0
+	var quiet_ok: bool = pg.st != "chase"
+	pg.pos = pg.home
+	pos = pg.home + Vector3(2.5, 0, 0)
+	idle_t = 0.0
+	pg.st = "idle"
+	for k in range(10):
+		await get_tree().process_frame
+	var outside_ok: bool = pg.st == "chase"
+	# respawn waits while the hero stands near the mob's home
+	damage_mob(pg, 999999.0, false)
+	pos = pg.home + Vector3(1, 0, 1)
+	pg.respawn = 0.05
+	for k in range(20):
+		await get_tree().process_frame
+	var deferred: bool = not pg.alive
+	pos = pg.home + Vector3(0, 0, 30)
+	pos = World.resolve(pos, 0.45, world.rects, world.circles, world.bounds)
+	var far_enough := Vector2(pos.x - pg.home.x, pos.z - pg.home.z).length() >= 14.0
+	pg.respawn = 0.05
+	for k in range(140):
+		await get_tree().process_frame
+	_lg(lg, "quiet_zone ignored=%s outside_aggro=%s respawn_deferred=%s respawned_later=%s(far=%s) respawn_t=%d" % [str(quiet_ok), str(outside_ok), str(deferred), str(pg.alive), str(far_enough), int(RESPAWN_T)])
+	invuln = 9999.0
+	for q in SideQ.ORDER:
+		await _at_side_quest(lg, q)
+	# reserved items survive «sell junk», unique rewards are never junk
+	add_item("dust")
+	side.st["clean"] = {"s": 1, "n": 0, "t": 0.0, "done": false}
+	var before := count_item("dust")
+	_sell_junk()
+	var kept := count_item("dust")
+	side.st["clean"].done = true
+	var lant := count_item("lantern")
+	# item level gating
+	var lv := level
+	level = 5
+	var w = equipped.get("weapon", null)
+	for it in inventory:
+		if it.id == "lantern":
+			equip(it)
+	var gated: bool = is_same(equipped.get("weapon", null), w)
+	level = lv
+	for it in inventory:
+		if it.id == "lantern":
+			equip(it)
+	var worn: bool = equipped.get("weapon", {}).get("id", "") == "lantern"
+	_lg(lg, "side summary done=%d/12 dust_kept=%d/%d lantern=%d gated_at5=%s worn=%s stats=%s beat_win=%.3f hp_max=%d" % [side.done_count(), kept, before, lant, str(gated), str(worn), str(stats), beat_win, int(hp_max)])
+	var total := 0
+	for l in range(1, GameData.MAX_LEVEL):
+		total += GameData.xp_for_level(l)
+	_lg(lg, "xp curve L10=%d L20=%d L40=%d L69=%d total_to_70=%d" % [GameData.xp_for_level(10), GameData.xp_for_level(20), GameData.xp_for_level(40), GameData.xp_for_level(69), total])
+	# save round trip keeps side progress
+	save_game()
+	var keep := side.done_count()
+	side.reset()
+	load_game()
+	_lg(lg, "side save roundtrip done=%d==%d ver=%d" % [side.done_count(), keep, GameData.SAVE_VERSION])
+	invuln = 0.0
+
+
+## Screenshots of the new neighbours (run with --only06 --shots DIR under xvfb).
+func _shots06(dir: String) -> void:
+	quest = 5
+	quest2 = 6
+	quest3 = 6
+	quest4 = 8
+	quest5 = 7
+	mount_owned = true
+	level = 12
+	_recalc_stats()
+	invuln = 9999.0
+	var shots := [["yard", "pavlin", 0.0], ["yard", "lis", 0.0], ["garages", "pilot", 0.0], ["garages", "kent", 0.0], ["garages", "jack", 0.0],
+		["stroyka", "klyukva", 0.0], ["server", "maloy", 0.0], ["embankment", "chef", 0.0], ["embankment", "melnik", 0.0],
+		["embankment", "zari", 0.0], ["embankment", "yarik", 0.0], ["stroyka", "shcheben", 0.0]]
+	for e in shots:
+		await _at_goto_map(e[0])
+		for m in mobs:
+			m.alive = false
+			m.node.visible = false
+			m.respawn = 9999.0
+		var sn: Dictionary = SideQ.NPCS[e[1]]
+		var p: Vector3 = sn.pos
+		var fwd := Vector3(sin(sn.rot), 0, cos(sn.rot))
+		var right := Vector3(fwd.z, 0, -fwd.x)
+		var jack: bool = e[1] == "jack"
+		pos = Vector3(p.x, 0, p.z) + fwd * (6.0 if jack else 2.4) + right * (0.0 if jack else 1.0)
+		pos = World.resolve(pos, 0.45, world.rects, world.circles, world.bounds)
+		facing = atan2(p.x - pos.x, p.z - pos.z)
+		yaw = facing + PI + (0.0 if jack else 0.3)
+		dist = 4.2 if jack else 3.2
+		pitch = 0.04 if jack else 0.16
+		hud.big_t = 0.0
+		for k in range(40):
+			if hero.has("root"):
+				hero.root.scale = Vector3.ONE * 0.001
+			if not companion.is_empty():
+				companion.root.visible = false
+			await get_tree().process_frame
+		await _snap(dir, "npc_" + e[1])
+	# dialog, journal, tracker and the bag
+	dist = 7.6
+	if hero.has("root"):
+		hero.root.scale = Vector3.ONE
+	await _at_goto_map("embankment")
+	side.st = {"soup": {"s": 0, "n": 2, "t": 0.0, "done": false}, "kvass": {"s": 2, "n": 0, "t": now() + 420.0, "done": false}}
+	var cp: Vector3 = SideQ.NPCS.yarik.pos
+	pos = cp + Vector3(-2.2, 0, -2.0)
+	facing = atan2(cp.x - pos.x, cp.z - pos.z)
+	yaw = facing + PI
+	pitch = 0.35
+	for k in range(20):
+		await get_tree().process_frame
+	await _snap(dir, "tracker")
+	interact()
+	await get_tree().process_frame
+	await _snap(dir, "dialog_yarik")
+	_close_dialog()
+	open_journal()
+	await get_tree().process_frame
+	await _snap(dir, "journal")
+	close_list()
+	for id in ["ladle", "compass", "mill_cap", "boots_pavlin", "lantern", "crumbs", "crumbs", "seeds"]:
+		add_item(id)
+	open_bag()
+	await get_tree().process_frame
+	await _snap(dir, "bag")
+	close_bag()
 
 
 func _lg(lg: Array, line: String) -> void:

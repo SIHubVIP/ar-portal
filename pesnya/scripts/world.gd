@@ -154,9 +154,9 @@ static func build_yard(parent: Node3D) -> Dictionary:
 		"portals": [{"pos": Vector3(15.6, 0, -28.4), "r": 1.3, "to": "garages", "spawn": "from_yard", "label": "ГК «Песня»"}],
 		"npcs": [{"id": "zina", "pos": Vector3(-5.9, 0, -5.0), "rot": PI / 2}, {"id": "misha", "pos": Vector3(4.6, 0, 13.6), "rot": PI + 0.4},
 			{"id": "lyuba", "pos": Vector3(-9.7, 0, -13.1), "rot": 0.5}],
-		"mobs": [["pigeon", Vector3(3, 0, -6), 2], ["pigeon", Vector3(-2, 0, -11), 3], ["pigeon", Vector3(6, 0, -14), 4], ["pigeon", Vector3(-9, 0, -19), 2],
-			["pigeon", Vector3(2, 0, -19), 3], ["pigeon", Vector3(-13, 0, 3), 4], ["pigeon", Vector3(12, 0, 9), 2],
-			["scooter", Vector3(0, 0, -2), 3], ["scooter", Vector3(-3, 0, -22), 4], ["scooter", Vector3(9, 0, 3), 5],
+		"mobs": [["pigeon", Vector3(3, 0, -6), 2], ["pigeon", Vector3(-2, 0, -11), 3], ["pigeon", Vector3(6, 0, -14), 4], ["pigeon", Vector3(-7, 0, -21), 2],
+			["pigeon", Vector3(2, 0, -19), 3], ["pigeon", Vector3(-13, 0, 3), 4], ["pigeon", Vector3(11, 0, 6.5), 2],
+			["scooter", Vector3(2, 0, 0), 3], ["scooter", Vector3(-3, 0, -22), 4], ["scooter", Vector3(9, 0, 3), 5],
 			["vacuum", Vector3(-15, 0, -21), 5], ["vacuum", Vector3(15, 0, -6), 6]]}
 
 

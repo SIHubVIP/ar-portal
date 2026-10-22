@@ -2,7 +2,7 @@ class_name GameData
 ## All tunable numbers and texts of «Песня» in one place.
 
 const SAVE_PATH := "user://pesnya_save.json"
-const SAVE_VERSION := 5
+const SAVE_VERSION := 6
 
 const ITEMS := {
 	"seeds": {"name": "Семки", "rarity": 0, "slot": "", "power": 0, "desc": "Голубиная валюта. Баба Зина говорит, полезные."},
@@ -19,7 +19,7 @@ const ITEMS := {
 	"turbo": {"name": "Турбо-кеды", "rarity": 2, "slot": "feet", "power": 11, "desc": "Сняты с самого быстрого самоката двора."},
 	"hose": {"name": "Шланг-скакалка", "rarity": 2, "slot": "weapon", "power": 14, "desc": "Им можно и прыгать, и бить в такт."},
 	"luck": {"name": "Перо удачи", "rarity": 2, "slot": "neck", "power": 10, "desc": "То самое перо, о котором шепчет весь двор."},
-	"pakhan_cap": {"name": "Кепка Пахана", "rarity": 3, "slot": "head", "power": 25, "desc": "Легендарная. Голуби кланяются при виде."},
+	"pakhan_cap": {"name": "Кепка Пахана", "rarity": 3, "slot": "head", "power": 25, "lvl": 5, "desc": "Легендарная. Голуби кланяются при виде."},
 	# 0.3 — стройка Глушилки
 	"lens": {"name": "Линза Тишинки", "rarity": 0, "slot": "", "power": 0, "desc": "В неё видно только тишину."},
 	"foam": {"name": "Кусок поролона", "rarity": 0, "slot": "", "power": 0, "desc": "Им обита вся Глушилка. Мягко и скучно."},
@@ -27,23 +27,48 @@ const ITEMS := {
 	"core": {"name": "Ядро Тишинки", "rarity": 1, "slot": "neck", "power": 9, "desc": "Гудит, если рядом кто-то не попадает в бит."},
 	"rebar": {"name": "Арматура-метроном", "rarity": 2, "slot": "weapon", "power": 18, "desc": "Отбивает ритм сама. +18 к силе."},
 	"vest": {"name": "Жилет сигнальный", "rarity": 2, "slot": "body", "power": 15, "desc": "Светится в темноте и на танцполе."},
-	"megaphone": {"name": "Рупор Шумодава", "rarity": 3, "slot": "weapon", "power": 34, "desc": "Легендарный. Шептать в него запрещено."},
+	"megaphone": {"name": "Рупор Шумодава", "rarity": 3, "slot": "weapon", "power": 34, "lvl": 8, "desc": "Легендарный. Шептать в него запрещено."},
 	# 0.4 — серверная Кощея
 	"ears": {"name": "Уши робо-зайца", "rarity": 0, "slot": "", "power": 0, "desc": "Ловят Wi-Fi и сплетни."},
 	"chip": {"name": "Микросхема тишины", "rarity": 0, "slot": "", "power": 0, "desc": "Отвечает за «ш-ш-ш». Больше не отвечает."},
 	"duck": {"name": "Резиновая уточка", "rarity": 1, "slot": "neck", "power": 12, "desc": "Пищит в бит. ПИИ-ИК! Лучший отладчик."},
 	"headset": {"name": "Корона-гарнитура", "rarity": 2, "slot": "head", "power": 22, "desc": "Серебряная. Звонки Кощею больше не приходят."},
 	"turtleneck": {"name": "Водолазка технодиректора", "rarity": 2, "slot": "body", "power": 24, "desc": "Чёрная. Носишь — и хочется всё оптимизировать."},
-	"gusli": {"name": "Гусли Кощея", "rarity": 3, "slot": "weapon", "power": 46, "desc": "Отобрал у соседа 500 лет назад. Теперь они звучат у тебя."},
-	"flash": {"name": "Флешка «ПЕСНЯ_ФИНАЛ»", "rarity": 3, "slot": "neck", "power": 30, "desc": "Перепрошитое бессмертие. Внутри — только музыка."},
+	"gusli": {"name": "Гусли Кощея", "rarity": 3, "slot": "weapon", "power": 46, "lvl": 10, "desc": "Отобрал у соседа 500 лет назад. Теперь они звучат у тебя."},
+	"flash": {"name": "Флешка «ПЕСНЯ_ФИНАЛ»", "rarity": 3, "slot": "neck", "power": 30, "lvl": 9, "desc": "Перепрошитое бессмертие. Внутри — только музыка."},
 	# 0.5 — набережная и Змей Горыныч
 	"gull_feather": {"name": "Перо чайки", "rarity": 0, "slot": "", "power": 0, "desc": "Пахнет рыбой и наглостью."},
 	"cassette": {"name": "Кассета с джинглом", "rarity": 0, "slot": "", "power": 0, "desc": "Одна и та же песня. Тридцать раз подряд."},
 	"keychain": {"name": "Колонка-брелок", "rarity": 1, "slot": "neck", "power": 14, "desc": "Маленькая, но басит."},
 	"captain": {"name": "Фуражка капитана", "rarity": 2, "slot": "head", "power": 27, "desc": "Чайка носила её с гордостью. Теперь ты."},
-	"phones": {"name": "Наушники Горыныча", "rarity": 3, "slot": "head", "power": 36, "desc": "Тройные. В каждом ухе — своя песня."},
-	"jacket": {"name": "Чешуйчатая косуха", "rarity": 3, "slot": "body", "power": 40, "desc": "Сброшена Горынычем после линьки. Огнеупорная, стильная."},
-	"golden_mic": {"name": "Микрофон «Золотой бит»", "rarity": 3, "slot": "weapon", "power": 54, "desc": "Награда двора. В него попадают даже те, кто не попадает в долю."},
+	"phones": {"name": "Наушники Горыныча", "rarity": 3, "slot": "head", "power": 36, "lvl": 10, "desc": "Тройные. В каждом ухе — своя песня."},
+	"jacket": {"name": "Чешуйчатая косуха", "rarity": 3, "slot": "body", "power": 40, "lvl": 10, "desc": "Сброшена Горынычем после линьки. Огнеупорная, стильная."},
+	"golden_mic": {"name": "Микрофон «Золотой бит»", "rarity": 3, "slot": "weapon", "power": 54, "lvl": 10, "desc": "Награда двора. В него попадают даже те, кто не попадает в долю."},
+	# 0.6 — награды новых соседей (уникальные: Люба их не скупает)
+	"boots_pavlin": {"name": "Бутсы Павлина", "rarity": 2, "slot": "feet", "power": 12, "lvl": 3, "stats": {"luck": 3}, "unique": true,
+		"desc": "Для газона, но по асфальту тоже. Шипы не царапают даже паркет."},
+	"apron": {"name": "Фартук чистюли", "rarity": 2, "slot": "body", "power": 13, "lvl": 4, "stats": {"hp": 4}, "unique": true,
+		"desc": "Белоснежный. Грязь к нему не липнет — стесняется."},
+	"goggles": {"name": "Лётные очки Пилота", "rarity": 2, "slot": "head", "power": 15, "lvl": 5, "stats": {"speed": 3}, "unique": true,
+		"desc": "С ними бит видно заранее. И кашу на взлёте."},
+	"gamepad": {"name": "Геймпад-брелок Кента", "rarity": 2, "slot": "neck", "power": 16, "lvl": 6, "stats": {"rhythm": 3}, "unique": true,
+		"desc": "Кнопки нажимаются в такт. Кент проверял — десять из десяти."},
+	"climb_shoes": {"name": "Кеды скалолаза", "rarity": 2, "slot": "feet", "power": 18, "lvl": 7, "stats": {"speed": 4}, "unique": true,
+		"desc": "Липкие подошвы. По стенам — почти. По лужам — точно."},
+	"beret": {"name": "Берет Товарища Клюквы", "rarity": 2, "slot": "head", "power": 24, "lvl": 9, "stats": {"hp": 5}, "unique": true,
+		"desc": "Клюквенного цвета. Носить с честью, снимать — с разрешения."},
+	"comb": {"name": "Каменный гребень", "rarity": 2, "slot": "weapon", "power": 26, "lvl": 9, "stats": {"rhythm": 4}, "unique": true,
+		"desc": "Гребень Щебня. Им и бороду, и врагов — строго в ритм."},
+	"phone": {"name": "Смартфон Малого", "rarity": 2, "slot": "neck", "power": 26, "lvl": 11, "stats": {"vibe": 5}, "unique": true,
+		"desc": "Трещина на экране — это не баг, это стиль. Вайб на максималках."},
+	"ladle": {"name": "Половник Змея", "rarity": 3, "slot": "weapon", "power": 50, "lvl": 12, "stats": {"luck": 5}, "unique": true,
+		"desc": "Мешает уху и бьёт в бит. Ссссильная вещь."},
+	"mill_cap": {"name": "Картуз Мельника", "rarity": 2, "slot": "head", "power": 30, "lvl": 12, "stats": {"luck": 4}, "unique": true,
+		"desc": "Пахнет хлебом и квасом. Голуби снимают кепки при встрече."},
+	"compass": {"name": "Компас Зари", "rarity": 3, "slot": "neck", "power": 34, "lvl": 13, "stats": {"speed": 4}, "unique": true,
+		"desc": "Показывает не на север, а туда, где интересно."},
+	"lantern": {"name": "Свет Ярика", "rarity": 3, "slot": "weapon", "power": 58, "lvl": 14, "stats": {"rhythm": 4, "vibe": 6}, "unique": true,
+		"desc": "Тёплая искра Жар-птицы. Мигает точно в бит."},
 }
 
 const SELL_PRICE := [5, 20, 60, 0]
@@ -153,3 +178,50 @@ const CONCERT_NOTES := [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 10.5, 11, 12, 13, 14, 
 	24, 25, 26, 27, 28, 28.5, 29, 29.5, 30, 32, 33, 34, 34.5, 35, 36, 37, 38, 38.5, 39, 40, 41, 42, 43, 44, 44.5, 45, 46, 47]
 const CONCERT_LINES := ["Это песня, песня, песня во дворе,", "от балкона до гаража — в одной игре!", "Если стало тихо — не беда, не грусти:",
 	"хлопни раз, хлопни два — и бит запусти!"]
+
+
+# ================================================================== 0.6: levels 1–70 and item stats
+const MAX_LEVEL := 70
+const STAT_NAMES := {"rhythm": "Ритм", "luck": "Удача", "hp": "Стойкость", "speed": "Скорость", "vibe": "Вайб"}
+const STAT_ORDER := ["rhythm", "luck", "hp", "speed", "vibe"]
+const SLOT_STAT := {"head": "rhythm", "neck": "luck", "body": "hp", "feet": "speed", "weapon": "vibe"}
+const SLOT_STAT_VAL := [0, 4, 7, 11]
+const SLOT_NAMES := {"head": "голова", "neck": "шея", "body": "тело", "feet": "ноги", "weapon": "в руках"}
+
+
+## Experience needed to go from level l to l + 1: gentle up to 10, then a steep curve.
+static func xp_for_level(l: int) -> int:
+	var base := 80 + l * 60
+	if l < 10:
+		return base
+	return int(base + 22.0 * pow(float(l - 9), 2.2))
+
+
+## Required level of a piece of equipment (explicit "lvl" or derived from its power, 1–10 for the old items).
+static func item_level(it: Dictionary) -> int:
+	if it.has("lvl"):
+		return int(it.lvl)
+	return clampi(int(it.power) / 5 + 1, 1, 10)
+
+
+## Secondary stats: one by slot and rarity + the item's own bonus.
+static func item_stats(it: Dictionary) -> Dictionary:
+	var out := {}
+	if str(it.slot) == "":
+		return out
+	var main: String = SLOT_STAT[it.slot]
+	var v: int = SLOT_STAT_VAL[clampi(int(it.rarity), 0, 3)]
+	if v > 0:
+		out[main] = v
+	var extra: Dictionary = it.get("stats", {})
+	for k in extra:
+		out[k] = int(out.get(k, 0)) + int(extra[k])
+	return out
+
+
+static func stats_text(st: Dictionary) -> String:
+	var p := []
+	for k in STAT_ORDER:
+		if int(st.get(k, 0)) > 0:
+			p.append("%s +%d" % [STAT_NAMES[k], int(st[k])])
+	return " · ".join(p)
