@@ -1,6 +1,7 @@
 extends Node3D
 ## «Песня» — офлайн-версия (студия Aolovo).
-## Двор «Берёзки» + ГК «Песня»: бой под бит, мобы, добыча, квесты, база в гараже, робот Вася, магазин, ежедневные задания, сохранения.
+## Двор «Берёзки» + ГК «Песня» + Стройка Глушилки: бой под бит, мобы, добыча, квесты, база в гараже, робот Вася, магазин,
+## ежедневные задания, сохранения; 0.3 — Тишинки, босс Шумодав, напарница баба Зина и маунт Избушка-Бас.
 
 const BPM := 96.0
 var beat_len := 60.0 / BPM
@@ -15,6 +16,8 @@ var cam: Camera3D
 var we: WorldEnvironment
 var env_world: Environment
 var env_studio: Environment
+var sky_mat: ProceduralSkyMaterial
+var map_env := {}
 var sun: DirectionalLight3D
 var rim: DirectionalLight3D
 var studio_lights: Array = []
@@ -82,6 +85,13 @@ var portal_cd := 0.0
 var robot_vis: Dictionary = {}
 var robot_walk := 0.0
 var slot_nodes := {}
+var mob_shots: Array = []     # silence bubbles of the Tishinka drones
+var companion: Dictionary = {}  # Baba Zina following the player on the construction site
+var mount_vis: Dictionary = {}  # Izbushka-Bass model while riding
+var mounted := false
+var silence_t := 0.0          # «Тишина»: skills are muted, an on-beat hit breaks it
+var silence_msg_t := 0.0
+var group_t := 0.0            # «Песня группы» buff from Zina
 
 const SLOT_SHORT := {"grill": "Мангал", "garden": "Огород", "gym": "Качалка", "stage": "Сцена", "studio": "Студия", "solar": "Панели"}
 const NPC_INFO := {
@@ -96,6 +106,9 @@ var quest := 0          # 0 none, 1 kill 6, 2 feather, 3 Pakhan, 4 return, 5 don
 var quest_kills := 0
 var feather_kills := 0
 var quest2 := 0         # 0 none, 1 find Petrovich, 2 send robot, 3 collect, 4 build grill, 5 return, 6 done
+var quest3 := 0         # «Флешка Кощея»: 0 none, 1 get the voucher from Petrovich, 2 go to the site, 3 drones, 4 Shumodav, 5 return to Zina, 6 done
+var q3_kills := 0
+var mount_owned := false
 var inventory: Array = []
 var equipped := {}
 var res := {"brick": 0, "cement": 0, "planks": 0, "wires": 0}
@@ -168,6 +181,7 @@ func _setup_env() -> void:
 	psm.sun_angle_max = 20.0
 	psm.sun_curve = 0.1
 	sky.sky_material = psm
+	sky_mat = psm
 	env_world.sky = sky
 	env_world.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	env_world.ambient_light_color = Color("8a9ac8")
@@ -427,13 +441,18 @@ func skill_info() -> Array:
 
 
 func continue_game() -> void:
+	var old_ver := int(_read_save().get("ver", GameData.SAVE_VERSION))
 	if not load_game():
 		hud.toast("Сохранение не читается — начнём заново", Hud.CREAM)
 		open_select()
 		return
 	_rebuild_stage_hero()
 	await get_tree().process_frame
-	start_game(false)
+	await start_game(false)
+	if old_ver < 3:
+		hud.toast("Обновление 0.3: стройка Глушилки, Шумодав и Избушка-Бас!", Hud.GOLD)
+		if quest2 >= 6:
+			hud.toast("Баба Зина во дворе ждёт тебя с новым делом", Hud.CREAM)
 
 
 func start_game(new_game := true) -> void:
@@ -481,6 +500,10 @@ func _reset_progress() -> void:
 	quest_kills = 0
 	feather_kills = 0
 	quest2 = 0
+	quest3 = 0
+	q3_kills = 0
+	mount_owned = false
+	mounted = false
 	res = {"brick": 0, "cement": 0, "planks": 0, "wires": 0}
 	food = 1
 	buildings = {"grill": 0, "garden": 0, "gym": 0, "stage": 0, "studio": 0, "solar": 0}
@@ -501,7 +524,8 @@ func _save_dict() -> Dictionary:
 	for s in equipped:
 		eq[s] = inventory.find(equipped[s])
 	return {"ver": GameData.SAVE_VERSION, "race": race, "cls": cls, "level": level, "xp": xp, "coins": coins, "inv": inv, "eq": eq,
-		"quest": quest, "quest_kills": quest_kills, "feather_kills": feather_kills, "quest2": quest2, "res": res, "food": food,
+		"quest": quest, "quest_kills": quest_kills, "feather_kills": feather_kills, "quest2": quest2, "quest3": quest3, "q3_kills": q3_kills,
+		"mount": mount_owned, "res": res, "food": food,
 		"buildings": buildings, "b_since": b_since, "robot": robot_task, "daily": daily, "map": map_id,
 		"settings": {"music": music_on, "quality": quality, "beat_offset": beat_offset}, "saved_at": now()}
 
@@ -558,9 +582,13 @@ func load_game() -> bool:
 	quest_kills = int(d.get("quest_kills", 0))
 	feather_kills = int(d.get("feather_kills", 0))
 	quest2 = int(d.get("quest2", 0))
+	quest3 = int(d.get("quest3", 0))
+	q3_kills = int(d.get("q3_kills", 0))
+	mount_owned = bool(d.get("mount", false))
+	mounted = false
 	food = int(d.get("food", 0))
 	map_id = str(d.get("map", "yard"))
-	if map_id not in ["yard", "garages"]:
+	if map_id not in ["yard", "garages", "stroyka"]:
 		map_id = "yard"
 	for k in res:
 		res[k] = int(d.get("res", {}).get(k, 0))
@@ -593,7 +621,7 @@ func load_game() -> bool:
 # ================================================================== maps
 func _travel(to: String, spawn: String) -> void:
 	state = LOADING
-	hud.loading_title.text = "Загружаем %s…" % ("двор «Берёзки»" if to == "yard" else "ГК «Песня»")
+	hud.loading_title.text = "Загружаем %s…" % GameData.MAP_NAMES.get(to, to)
 	_show_only(hud.loading_panel)
 	await get_tree().process_frame
 	await get_tree().process_frame
@@ -613,7 +641,13 @@ func _enter_map(id: String, spawn: String) -> void:
 	sun.visible = true
 	rim.visible = true
 	set_quality(quality)
-	world = World.build_yard(self) if id == "yard" else Base.build_garages(self)
+	_apply_map_env(id)
+	match id:
+		"yard": world = World.build_yard(self)
+		"stroyka": world = Stroyka.build(self)
+		_: world = Base.build_garages(self)
+	if id == "garages" and quest3 >= 2:
+		_add_site_portal()
 	hero = Chars.hero(race, cls)
 	world.root.add_child(hero.root)
 	Kit.bake_tree(hero.root)
@@ -635,6 +669,16 @@ func _enter_map(id: String, spawn: String) -> void:
 		_spawn_mob(e[0], e[1], e[2])
 	if id == "yard" and quest == 3:
 		_spawn_mob("pakhan", Vector3(0, 0, -24), 7)
+	if id == "stroyka":
+		if quest3 == 2:
+			quest3 = 3
+			hud.toast("Задание обновлено: заглуши 8 Тишинок", Hud.GOLD)
+		if quest3 >= 4:
+			_spawn_mob("shumodav", Stroyka.BOSS_HOME, 10)
+		if quest3 >= 2:
+			_spawn_companion()
+	if mounted:
+		_create_mount_vis()
 	if id == "garages":
 		for sid in world.anchors:
 			_refresh_slot(sid)
@@ -665,6 +709,10 @@ func _spawn_mob(kind: String, at: Vector3, lvl: int) -> Dictionary:
 		"pigeon": model = Chars.pigeon(true, false)
 		"pakhan": model = Chars.pigeon(true, true)
 		"scooter": model = Chars.scooter()
+		"drone": model = Chars.drone()
+		"shumodav":
+			var gm := Chars.golem()
+			model = {"root": gm.root, "body": gm.head, "head": gm.head, "wings": gm.arms}
 		_: model = Chars.vacuum()
 	world.root.add_child(model.root)
 	Kit.bake_tree(model.root)
@@ -678,6 +726,7 @@ func _spawn_mob(kind: String, at: Vector3, lvl: int) -> Dictionary:
 		"st": "idle", "t": randf() * 3.0, "atk_cd": 1.0, "stun": 0.0, "alive": true, "respawn": 0.0,
 		"wander": at, "flap": 0.0, "hit": 0.0, "special": 4.0, "tele": null, "tele_t": 0.0, "summoned": false, "dead_t": 0.0,
 		"charge_t": 0.0, "charge_dir": Vector3.ZERO, "pull_cd": 3.0, "temp": false,
+		"boss": d.get("boss", false), "whisper_t": 0.0, "phase": 0, "strafe": 1.0 if randf() < 0.5 else -1.0,
 	}
 	m.hp = m.hp_max
 	model.root.position = at
@@ -701,6 +750,12 @@ func _clear_world() -> void:
 			f.node.queue_free()
 	fx.clear()
 	npcs.clear()
+	for b in mob_shots:
+		if is_instance_valid(b.node):
+			b.node.queue_free()
+	mob_shots.clear()
+	companion = {}
+	mount_vis = {}
 	robot_vis = {}
 	slot_nodes = {}
 	if world.has("root"):
@@ -761,8 +816,16 @@ func quest_lines() -> Array:
 				out = ["Свой гараж", "Дождись Васю: %s" % _mmss(left) if left > 0 else "Забери покупки у Васи", "Таймер идёт, даже если игра закрыта"]
 			4: out = ["Свой гараж", "Построй мангал у бокса №40", "Нужно: 6 досок, 4 кирпича, 60 монет"]
 			5: out = ["Свой гараж", "Вернись к Петровичу"]
+	elif quest3 < 6:
+		match quest3:
+			0: out = ["Флешка Кощея", "Поговори с бабой Зиной во дворе", "У неё срочное дело"]
+			1: out = ["Флешка Кощея", "Получи путёвку на подвиг у Петровича", "ГК «Песня», правление"]
+			2: out = ["Флешка Кощея", "Иди на стройку Глушилки", "Западные ворота ГК «Песня»"]
+			3: out = ["Флешка Кощея", "Заглуши Тишинок: %d / %d" % [q3_kills, GameData.Q3_DRONES], "Попадай в бит — ритм сильнее тишины"]
+			4: out = ["Флешка Кощея", "Победи Шумодава", "Красный круг — отбегай, «ШШШ» — рывок!"]
+			5: out = ["Флешка Кощея", "Вернись к бабе Зине во двор"]
 	else:
-		out = ["Свободная игра", "Улучшай базу, отправляй Васю", "Скоро: подземелье «Стройка»"]
+		out = ["Свободная игра", "Катайся на Избушке, улучшай базу", "Скоро: серверная Кощея"]
 	var done := _daily_ready_count()
 	var finished: int = daily.claimed.size()
 	if quest >= 1:
@@ -773,12 +836,12 @@ func quest_lines() -> Array:
 func npc_marker(id: String) -> String:
 	match id:
 		"zina":
-			if quest == 0 or (quest == 5 and quest2 == 0):
+			if quest == 0 or (quest == 5 and quest2 == 0) or (quest2 >= 6 and quest3 == 0):
 				return "!"
-			if quest == 4:
+			if quest == 4 or quest3 == 5:
 				return "?"
 		"petrovich":
-			if quest2 == 1 or (quest2 == 0 and quest >= 5):
+			if quest2 == 1 or (quest2 == 0 and quest >= 5) or quest3 == 1:
 				return "!"
 			if quest2 == 5:
 				return "?"
@@ -858,6 +921,22 @@ func _on_kill(m: Dictionary) -> void:
 	elif m.kind == "pakhan":
 		quest = 4
 		hud.big("ПАХАН ПОВЕРЖЕН!", "Вернись к бабе Зине", 4.0)
+		save_game()
+	elif m.kind == "drone" and quest3 == 3 and not m.temp:
+		q3_kills += 1
+		if q3_kills >= GameData.Q3_DRONES:
+			quest3 = 4
+			hud.big("ШУМОДАВ ПРОСНУЛСЯ!", "Он на площадке у Глушилки. Красный круг — отбегай!", 4.0)
+			play_sfx("laser", 0.6)
+			_spawn_mob("shumodav", Stroyka.BOSS_HOME, 10)
+			save_game()
+	elif m.kind == "shumodav":
+		if quest3 == 4:
+			quest3 = 5
+			hud.big("ШУМОДАВ ВСПОМНИЛ, ЧТО БЫЛ СЦЕНОЙ!", "Вернись к бабе Зине во двор", 5.0)
+		else:
+			hud.big("ШУМОДАВ ОТДЫХАЕТ", "Завтра снова на смену. Добыча твоя!", 3.5)
+		hud.float_text(m.pos + Vector3(0, m.height + 1.0, 0), "Я… БЫЛ… СЦЕНОЙ…", Color("ffd0a0"), 30, 30)
 		save_game()
 
 
@@ -940,6 +1019,9 @@ func _talk_zina() -> void:
 		4:
 			hud.show_dialog("Баба Зина", "Батюшки! Сам Пахан! Держи пирожок и монеты. Весь двор теперь за тебя!", [["Спасибо, баб Зин! (+300 монет)", func(): _finish_quest(); close.call()]])
 		_:
+			if quest2 >= 6 and quest3 != 6:
+				_talk_zina_q3()
+				return
 			if quest2 == 0:
 				hud.show_dialog("Баба Зина", "Милок, тебя председатель гаражей искал, Петрович! Говорит, бокс пустует, а ты парень видный. Иди через арку «ГК Песня» — вон, справа у гаражей.", [
 					["Бегу к Петровичу!", func():
@@ -950,6 +1032,9 @@ func _talk_zina() -> void:
 						close.call()]])
 			else:
 				var lines := ["Заходи ещё, милок! Голуби тебя теперь за версту обходят.", "Ты, говорят, гараж обустраиваешь? Мангал заведи — с шаурмой веселее.", "Люба опять шаурму в ларёк завезла. Хрустящая!"]
+				if quest3 >= 6:
+					lines = ["Как тебе моя Избушка? Бас любит — тишину нет. Береги её, милок.", "Кощей свою флешку на последнем этаже Глушилки прячет. Но это уже другая сказка — скоро!",
+						"Шумодав-то, говорят, по ночам песни под нос мычит. Сцена — она и в бетоне сцена.", "Женщине столько лет, на сколько она пляшет!"]
 				hud.show_dialog("Баба Зина", lines[randi() % lines.size()], [["До встречи!", close]])
 
 
@@ -976,19 +1061,29 @@ func _talk_petrovich() -> void:
 		4:
 			hud.show_dialog("Петрович", "Материалы есть — ставь мангал! Подходи к синей разметке «СТРОЙКА» у своего бокса.", [["Ставлю!", close]])
 		5:
-			hud.show_dialog("Петрович", "Дымок пошёл — значит, гараж живой! Держи премию от правления. И слушай… На стройке за гаражами Шумодав завёлся. Скоро туда бригаду соберём.", [
+			hud.show_dialog("Петрович", "Дымок пошёл — значит, гараж живой! Держи премию от правления. И слушай… На стройке за гаражами Шумодав завёлся. Зинаида Ивановна про это больше знает — зайди к ней.", [
 				["Спасибо! (+200 монет, кирпич, провода)", func():
 					quest2 = 6
 					coins += 200
 					res.brick += 10
 					res.wires += 8
 					gain_xp(250)
-					hud.big("ГАРАЖ ОБЖИТ!", "Скоро: подземелье «Стройка» и босс Шумодав", 4.5)
+					hud.big("ГАРАЖ ОБЖИТ!", "Баба Зина ждёт тебя во дворе — у неё дело про Кощея", 4.5)
 					play_sfx("bank")
 					save_game()
 					close.call()]])
 		_:
+			if quest3 == 1:
+				hud.show_dialog("Петрович", "Зинаида Ивановна предупреждала. Держи: путёвка на подвиг. Номер один. Форма тринадцать-Б. Без путёвки подвиг не засчитают.", [
+					["Кто не засчитает?", func():
+						hud.show_dialog("Петрович", "Я. *шлёп* Всё, печать стоит. Западные ворота ГК теперь для тебя открыты. Шумодава там не буди без нужды — он по уставу сторож.", [
+							["Беру путёвку!", func():
+								_open_site_gate()
+								close.call()]])]])
+				return
 			var lines := ["Взносы за гараж — шучу, тебе бесплатно. Пока.", "Сцену поставь — по субботам концерты устроим.", "Солнечные панели — вещь! Вася с ними как на крыльях."]
+			if quest3 >= 2:
+				lines += ["Путёвку не потерял? Без неё подвиг не засчитаю.", "Шумодав, между прочим, из бетона старой сцены ДК отлит. Я там в молодости на баяне играл."]
 			hud.show_dialog("Петрович", lines[randi() % lines.size()], [["Ага", close]])
 
 
@@ -1404,6 +1499,15 @@ func _drop_loot(m: Dictionary) -> void:
 	if m.kind == "pakhan":
 		drops = ["pakhan_cap", "mic"]
 		coins += 150
+	elif m.kind == "shumodav":
+		if quest3 == 4 or randf() < 0.25:
+			drops.append("megaphone")
+		if randf() < 0.6:
+			drops.append(["helmet", "vest", "rebar"][randi() % 3])
+		coins += 250
+		res.cement += 8
+		res.brick += 8
+		hud.float_text(m.pos + Vector3(0, m.height * 0.6, 0), "+8 цемента · +8 кирпича", Hud.TEAL, 22, 40)
 	else:
 		coins += randi_range(4, 12) + m.lvl * 2
 		var r := randf()
@@ -1461,6 +1565,8 @@ func _base_dmg() -> float:
 	d *= 1.0 + _bval("studio")
 	if buff_t > 0.0:
 		d *= 1.6
+	if group_t > 0.0:
+		d *= 1.4
 	return d * randf_range(0.9, 1.1)
 
 
@@ -1471,6 +1577,18 @@ func _beat_action(_name: String) -> bool:
 		combo += 1
 		vibe = minf(100.0, vibe + 14.0 * vg)
 		play_sfx("beat", 1.0 + minf(combo, 8) * 0.03, -3.0)
+		if silence_t > 0.0:
+			silence_t = 0.0
+			hud.float_text(pos + Vector3(0, 3.2, 0), "Ритм сильнее тишины!", Kit.TEAL, 24, 50)
+			_ring_fx(pos + Vector3(0, 0.3, 0), Kit.TEAL, 3.0, 0.4)
+		if not companion.is_empty():
+			companion.clap = 0.25
+			if combo % 5 == 0:
+				group_t = 6.0
+				hud.float_text(pos + Vector3(0, 3.6, 0), "ПЕСНЯ ГРУППЫ! Урон ×1.4", Kit.TEAL, 28, 50)
+				_ring_fx(pos + Vector3(0, 0.2, 0), Kit.TEAL, 4.0, 0.5)
+				_ring_fx(companion.pos + Vector3(0, 0.2, 0), Kit.TEAL, 2.5, 0.5)
+				_notes_fx(companion.pos + Vector3(0, 1.8, 0), Kit.TEAL)
 	else:
 		combo = 0
 		vibe = minf(100.0, vibe + 4.0 * vg)
@@ -1482,7 +1600,10 @@ func _beat_action(_name: String) -> bool:
 func press(name: String) -> void:
 	if state != PLAY:
 		return
+	if mounted and name in ["attack", "s1", "s2", "s3", "ult"]:
+		_dismount("")
 	match name:
+		"mount": toggle_mount()
 		"attack": _attack()
 		"s1", "s2", "s3": _skill(name)
 		"ult": _ultimate()
@@ -1527,6 +1648,12 @@ func _attack() -> void:
 
 func _skill(name: String) -> void:
 	if cd[name] > 0.0:
+		return
+	if silence_t > 0.0:
+		if silence_msg_t <= 0.0:
+			hud.toast("Тишина! Навыки молчат — ударь в бит, чтобы её сломать", Color("c8d0e8"))
+			silence_msg_t = 1.5
+		play_sfx("ui", 0.6, -6.0)
 		return
 	var crit := false
 	if cls == "cop":
@@ -1627,7 +1754,7 @@ func damage_mob(m: Dictionary, dmg: float, crit: bool, stun := 0.0) -> void:
 	m.hp -= dmg
 	m.hit = 0.18
 	if stun > 0.0:
-		m.stun = maxf(m.stun, stun * (0.5 if m.kind == "pakhan" else 1.0))
+		m.stun = maxf(m.stun, stun * (0.5 if m.kind == "pakhan" else (0.25 if m.kind == "shumodav" else 1.0)))
 		m.charge_t = 0.0
 	if m.st == "idle":
 		m.st = "chase"
@@ -1667,6 +1794,8 @@ func hurt_player(dmg: float, _from: Vector3) -> void:
 		return
 	hp -= dmg
 	hud.hurt = 1.0
+	if mounted:
+		_dismount("Избушка испугалась и присела!")
 	hud.float_text(pos + Vector3(0, 2.3, 0), "–%d" % int(dmg), Color("ff6060"), 26, 50)
 	play_sfx("stumble", 1.0, -6.0)
 	if not autotest:
@@ -1749,7 +1878,7 @@ func _burst(at: Vector3, cols: Array, n := 12) -> void:
 	fx.append({"node": p, "t": 0.0, "life": 1.2, "kind": "none"})
 
 
-func _telegraph(m: Dictionary) -> void:
+func _telegraph(m: Dictionary, r := 4.2, t := 1.6) -> void:
 	var n := Node3D.new()
 	fx_root.add_child(n)
 	n.position = Vector3(m.pos.x, 0.08, m.pos.z)
@@ -1757,10 +1886,10 @@ func _telegraph(m: Dictionary) -> void:
 	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	mat.albedo_color = Color(1.0, 0.1, 0.15, 0.3)
-	Kit.part(n, Kit.DISC, mat, Vector3(8.4, 1, 8.4))
-	Chars.ring(n, Vector3(0, 0.02, 0), 4.2, Color("ff2a3a"), 0.12, 4.0)
+	Kit.part(n, Kit.DISC, mat, Vector3(r * 2.0, 1, r * 2.0))
+	Chars.ring(n, Vector3(0, 0.02, 0), r, Color("ff2a3a"), 0.12, 4.0)
 	m.tele = n
-	m.tele_t = 1.6
+	m.tele_t = t
 
 
 
@@ -1825,6 +1954,7 @@ func _input(event: InputEvent) -> void:
 			KEY_E: press("talk")
 			KEY_F: press("food")
 			KEY_I: press("bag")
+			KEY_M: press("mount")
 			KEY_ESCAPE: toggle_pause()
 
 
@@ -1912,6 +2042,9 @@ func _process(delta: float) -> void:
 			_update_fx(dt)
 			_update_npcs(dt)
 			_update_robot(dt)
+			_update_companion(dt)
+			_update_mob_shots(dt)
+			_update_beacon()
 			_update_camera(dt)
 			save_t += dt
 			if save_t > 30.0:
@@ -1947,6 +2080,9 @@ func _update_player(dt: float) -> void:
 	buff_t = maxf(0.0, buff_t - dt)
 	attack_anim = maxf(0.0, attack_anim - dt)
 	portal_cd = maxf(0.0, portal_cd - dt)
+	silence_t = maxf(0.0, silence_t - dt)
+	silence_msg_t = maxf(0.0, silence_msg_t - dt)
+	group_t = maxf(0.0, group_t - dt)
 	combo_t -= dt
 	if combo_t <= 0.0:
 		combo = 0
@@ -1982,9 +2118,10 @@ func _update_player(dt: float) -> void:
 		spd = 1.0
 	elif jv.length() > 0.0:
 		var md := _move_dir(jv)
-		var sp := 6.2 * minf(1.0, jv.length() * 1.3)
+		var vmax := GameData.MOUNT_SPEED if mounted else 6.2
+		var sp := vmax * minf(1.0, jv.length() * 1.3)
 		pos += md.normalized() * sp * dt
-		spd = sp / 6.2
+		spd = sp / vmax
 		var want := atan2(md.x, md.z)
 		if attack_anim <= 0.0:
 			facing = lerp_angle(facing, want, minf(1.0, dt * 12.0))
@@ -2032,6 +2169,8 @@ func _animate_hero(dt: float, spd: float) -> void:
 	hero.body.rotation.x = 0.12 * minf(1.0, spd) + (0.3 if dash_t > 0.0 else 0.0)
 	hero.root.position = pos
 	hero.root.rotation.y = facing
+	if mounted and not mount_vis.is_empty():
+		_animate_mount(dt, spd, beat_bob)
 	if invuln > 0.0 and state == PLAY:
 		hero.root.visible = int(time * 20) % 2 == 0 or dash_t > 0.0
 	else:
@@ -2043,9 +2182,10 @@ func _update_camera(dt: float) -> void:
 	if cam_touch_t <= 0.0 and joy_vec.length() > 0.5 and state == PLAY:
 		var want := facing + PI
 		yaw = lerp_angle(yaw, want, minf(1.0, dt * 0.9 * absf(joy_vec.y)))
-	var pivot := pos + Vector3(0, 1.7, 0)
+	var pivot := pos + Vector3(0, 1.7 + (2.2 if mounted else 0.0), 0)
 	var back := Vector3(sin(yaw), 0, cos(yaw))
-	var cp := pivot + back * dist * cos(pitch) + Vector3.UP * dist * sin(pitch)
+	var dd := dist + (2.6 if mounted else 0.0) + (3.0 if map_id == "stroyka" and _boss_near() else 0.0)
+	var cp := pivot + back * dd * cos(pitch) + Vector3.UP * dd * sin(pitch)
 	cp.y = maxf(cp.y, 0.6)
 	cam.global_position = cam.global_position.lerp(cp, minf(1.0, dt * 14.0)) if cam.global_position.distance_to(cp) < 20 else cp
 	cam.fov = 60
@@ -2057,11 +2197,17 @@ func _update_mobs(dt: float) -> void:
 		var node: Node3D = m.node
 		if not m.alive:
 			m.dead_t += dt
+			if m.kind == "shumodav":
+				# he does not fall apart: he kneels and stays, like an old stage
+				node.rotation.x = minf(0.35, m.dead_t * 0.5)
+				node.position.y = -minf(0.9, m.dead_t * 0.6)
+				m.head.rotation.x = minf(0.5, m.dead_t * 0.4)
+				continue
 			node.rotation.z = minf(1.5, m.dead_t * 5.0)
 			node.position.y = -minf(1.0, maxf(0.0, m.dead_t - 1.0)) * 2.0
 			if m.dead_t > 2.0:
 				node.visible = false
-			if m.kind != "pakhan" and not m.temp:
+			if not m.boss and not m.temp:
 				m.respawn -= dt
 				if m.respawn <= 0.0:
 					m.alive = true
@@ -2089,7 +2235,7 @@ func _update_mobs(dt: float) -> void:
 				m.t = randf_range(2.5, 5.0)
 			var wd: Vector3 = m.wander - m.pos
 			if wd.length() > 0.3:
-				spd = 1.2 if m.kind != "scooter" else 2.2
+				spd = 2.2 if m.kind in ["scooter", "drone"] else 1.2
 				m.yaw = lerp_angle(m.yaw, atan2(wd.x, wd.z), minf(1.0, dt * 4))
 				m.pos += wd.normalized() * spd * dt
 			if dp < m.aggro and state == PLAY:
@@ -2127,6 +2273,23 @@ func _mob_chase(m: Dictionary, dt: float, to_p: Vector3, dp: float) -> float:
 	var spd := 0.0
 	var reach: float = m.radius + 0.9
 	match m.kind:
+		"drone":
+			return _drone_chase(m, dt, to_p, dp)
+		"shumodav":
+			m.yaw = lerp_angle(m.yaw, atan2(to_p.x, to_p.z), minf(1.0, dt * 3))
+			_shumodav_special(m, dt)
+			if m.tele != null or m.whisper_t > 0.0:
+				return 0.0
+			if dp > reach + 0.6:
+				spd = m.speed * (1.35 if m.phase >= 2 else 1.0)
+				m.pos += to_p.normalized() * spd * dt
+			elif m.atk_cd <= 0.0:
+				m.atk_cd = m.atk
+				m.flap = 0.6
+				hurt_player(m.dmg * randf_range(0.85, 1.15), m.pos)
+				hud.float_text(pos + Vector3(0, 2.8, 0), "БЕТОН-БАМ!", Color("ffb07a"), 22, 40)
+				play_sfx("smash", 0.7, -4.0)
+			return spd
 		"scooter":
 			if m.charge_t > 0.0:
 				m.charge_t -= dt
@@ -2181,6 +2344,20 @@ func _animate_mob(m: Dictionary, dt: float, spd: float) -> void:
 	var node: Node3D = m.node
 	m.flap = maxf(0.0, m.flap - dt)
 	match m.kind:
+		"drone":
+			for r in m.wheels:
+				r.rotation.y += dt * 40.0
+			m.body.position.y = 1.85 + sin(time * 2.4 + m.home.x) * 0.18 + (0.25 if m.flap > 0.0 else 0.0)
+			m.body.rotation.x = 0.25 * minf(1.0, spd / 3.0)
+			m.head.scale = Vector3.ONE * (1.0 + (0.25 if m.flap > 0.0 else 0.0))
+		"shumodav":
+			var sw := sin(time * 3.0) * 0.3 * minf(1.0, spd)
+			if m.flap > 0.0:
+				sw = -1.6 * sin(m.flap / 0.6 * PI)
+			m.wings[0].rotation.x = sw
+			m.wings[1].rotation.x = -sw if m.flap <= 0.0 else sw
+			m.head.rotation.x = -0.35 if m.whisper_t > 0.0 else sin(time * 1.5) * 0.06
+			m.head.scale = Vector3.ONE * (1.0 + (0.12 if m.whisper_t > 0.0 else 0.0))
 		"scooter":
 			for w in m.wheels:
 				w.rotation.x += dt * spd * 6.0
@@ -2287,6 +2464,339 @@ func _update_fx(dt: float) -> void:
 			fx.erase(f)
 
 
+# ================================================================== 0.3: map moods, quest «Флешка Кощея»
+const MOUNT_SCALE := 0.62
+
+
+func _apply_map_env(id: String) -> void:
+	if map_env.is_empty():
+		map_env = {"top": sky_mat.sky_top_color, "hor": sky_mat.sky_horizon_color, "ghor": sky_mat.ground_horizon_color,
+			"fog": env_world.fog_light_color, "fogd": env_world.fog_density, "amb": env_world.ambient_light_color,
+			"ambe": env_world.ambient_light_energy, "sat": env_world.adjustment_saturation, "sun": sun.light_color,
+			"sune": sun.light_energy, "sunr": sun.rotation_degrees}
+	var e: Dictionary = map_env
+	if id == "stroyka":
+		# evening at Koschei's site: lilac sky, orange haze, a bit less colour — the silence is near
+		sky_mat.sky_top_color = Color("2c3570")
+		sky_mat.sky_horizon_color = Color("ff8a5a")
+		sky_mat.ground_horizon_color = Color("ff8a5a")
+		env_world.fog_light_color = Color("c8908a")
+		env_world.fog_density = 0.010
+		env_world.ambient_light_color = Color("8a84c0")
+		env_world.ambient_light_energy = 0.66
+		env_world.adjustment_saturation = 1.0
+		sun.light_color = Color("ffa478")
+		sun.light_energy = 1.6
+		sun.rotation_degrees = Vector3(-17, 205, 0)
+	else:
+		sky_mat.sky_top_color = e.top
+		sky_mat.sky_horizon_color = e.hor
+		sky_mat.ground_horizon_color = e.ghor
+		env_world.fog_light_color = e.fog
+		env_world.fog_density = e.fogd
+		env_world.ambient_light_color = e.amb
+		env_world.ambient_light_energy = e.ambe
+		env_world.adjustment_saturation = e.sat
+		sun.light_color = e.sun
+		sun.light_energy = e.sune
+		sun.rotation_degrees = e.sunr
+
+
+func _update_beacon() -> void:
+	if world.has("beacon"):
+		var b: Node3D = world.beacon
+		b.visible = (beat_index() / 2) % 2 == 0
+
+
+func _boss_near() -> bool:
+	for m in mobs:
+		if m.boss and m.alive and m.pos.distance_to(pos) < 22.0:
+			return true
+	return false
+
+
+func _talk_zina_q3() -> void:
+	var close := func(): _close_dialog()
+	match quest3:
+		0:
+			hud.show_dialog("Баба Зина", "Милок, беда! За гаражами Кощей башню строит — Глушилку. Хочет всю музыку в городе выключить и продавать по подписке. А стройку сторожит Шумодав: бетонный, вместо рта рупор…", [
+				["Кощей? Тот самый?", func():
+					hud.show_dialog("Баба Зина", "Тот самый, костлявый. Мы с ним пятьсот лет соседями в одной сказке были. Иди к Петровичу за путёвкой — без неё на стройку не пустит. А я с тобой пойду, пирожков возьму.", [
+						["Идём, баб Зин! (задание «Флешка Кощея»)", func():
+							quest3 = 1
+							hud.toast("Новое задание: «Флешка Кощея»", Hud.GOLD)
+							play_sfx("bank")
+							save_game()
+							close.call()]])]])
+		1:
+			hud.show_dialog("Баба Зина", "Петрович в правлении ГК сидит, с печатью в обнимку. Без путёвки он и подвиг не засчитает!", [["Бегу!", close]])
+		2, 3, 4:
+			hud.show_dialog("Баба Зина", "На стройке я рядом буду, милок. Подлечу пирожком, похлопаю в бит. Попадёшь пять раз подряд — споём песню группы, и Шумодаву несдобровать!", [["Понял!", close]])
+		5:
+			hud.show_dialog("Баба Зина", "Шумодав сценой был?! Ох, бедолага… Музыку-то он, выходит, любит. Держи награду, заслужил: моя Избушка-Бас! Бас любит, тишину — нет.", [
+				["Спасибо! (маунт Избушка-Бас, +400 монет)", func():
+					_finish_q3()
+					close.call()]])
+
+
+func _add_site_portal() -> void:
+	world.portals.append({"pos": Vector3(-29.6, 0, 0), "r": 1.3, "to": "stroyka", "spawn": "from_garages", "label": "Стройка Глушилки"})
+	Chars.ring(world.root, Vector3(-29.6, 0.05, 0), 1.2, Color("ff5a4a"), 0.08, 3.0)
+	world.map_rects.append(Rect2(-36, -2, 5, 4))
+
+
+func _open_site_gate() -> void:
+	if quest3 != 1:
+		return
+	quest3 = 2
+	hud.big("ПУТЁВКА НА ПОДВИГ №1", "Западные ворота ГК «Песня» → стройка Глушилки", 4.0)
+	play_sfx("bank")
+	if map_id == "garages" and world.has("root"):
+		_add_site_portal()
+	save_game()
+
+
+func _finish_q3() -> void:
+	quest3 = 6
+	mount_owned = true
+	coins += 400
+	gain_xp(400)
+	hud.big("НОВЫЙ МАУНТ: ИЗБУШКА-БАС!", "Кнопка с домиком справа вверху · почти вдвое быстрее", 5.0)
+	play_sfx("bank")
+	save_game()
+
+
+# ------------------------------------------------------------------ companion: Baba Zina on the site
+func _spawn_companion() -> void:
+	var h := Chars.granny_npc()
+	world.root.add_child(h.root)
+	Kit.bake_tree(h.root)
+	var at := pos + Vector3(1.6, 0, 1.4)
+	h.root.position = at
+	companion = {"root": h.root, "body": h.body, "head": h.head, "arms": h.arms, "legs": h.legs, "pos": at, "yaw": facing,
+		"heal_cd": 4.0, "clap": 0.0, "walk": 0.0}
+
+
+func _update_companion(dt: float) -> void:
+	if companion.is_empty():
+		return
+	var c: Dictionary = companion
+	var fwd := Vector3(sin(facing), 0, cos(facing))
+	var right := Vector3(fwd.z, 0, -fwd.x)
+	var want: Vector3 = pos + fwd * 0.4 + right * 2.3
+	var d: Vector3 = want - c.pos
+	d.y = 0
+	var spd := 0.0
+	if d.length() > 12.0:
+		c.pos = want
+	elif d.length() > 0.4:
+		spd = minf(d.length() * 2.6, 12.5 if mounted else 9.0)
+		c.pos += d.normalized() * spd * dt
+		c.yaw = lerp_angle(c.yaw, atan2(d.x, d.z), minf(1.0, dt * 8.0))
+	else:
+		c.yaw = lerp_angle(c.yaw, facing, minf(1.0, dt * 3.0))
+	c.pos = World.resolve(c.pos, 0.4, world.rects, world.circles, world.bounds)
+	var k := minf(1.0, spd / 5.0)
+	c.walk += dt * 9.0 * k
+	var sw := sin(c.walk) * 0.7 * k
+	c.legs[0].rotation.x = sw
+	c.legs[1].rotation.x = -sw
+	c.clap = maxf(0.0, c.clap - dt)
+	if c.clap > 0.0:
+		c.arms[0].rotation = Vector3(-1.25, 0, -0.45)
+		c.arms[1].rotation = Vector3(-1.25, 0, 0.45)
+	else:
+		c.arms[0].rotation = Vector3(-sw * 0.6, 0, 0)
+		c.arms[1].rotation = Vector3(sw * 0.6, 0, 0)
+	var bob := maxf(0.0, 0.05 - minf(beat_phase(), 1.0 - beat_phase()) * 0.2)
+	c.body.position.y = bob + absf(cos(c.walk)) * 0.05 * k
+	c.root.position = c.pos
+	c.root.rotation.y = c.yaw
+	c.heal_cd -= dt
+	if c.heal_cd <= 0.0 and hp < hp_max * 0.6 and state == PLAY:
+		c.heal_cd = 12.0
+		heal_left += hp_max * 0.18
+		hud.float_text(c.pos + Vector3(0, 2.4, 0), "Пирожок от Зины! +18%", Color("ffd27a"), 22, 40)
+		_notes_fx(pos + Vector3(0, 1.5, 0), Color("ffd27a"))
+		play_sfx("pickup", 1.2)
+
+
+# ------------------------------------------------------------------ mount: Izbushka-Bass
+func toggle_mount() -> void:
+	if not mount_owned or state != PLAY:
+		return
+	if mounted:
+		_dismount("")
+		return
+	for m in mobs:
+		if m.alive and m.st == "chase" and m.pos.distance_to(pos) < 14.0:
+			hud.toast("Избушка боится драки — сначала разберись с врагами", Hud.CREAM)
+			return
+	mounted = true
+	_create_mount_vis()
+	_ring_fx(pos + Vector3(0, 0.2, 0), Kit.TEAL, 3.0, 0.5)
+	_notes_fx(pos + Vector3(0, 3.4, 0), Kit.TEAL)
+	hud.float_text(pos + Vector3(0, 4.6, 0), "БО-О-ОК!", Kit.TEAL, 30, 40)
+	play_sfx("land", 0.6)
+
+
+func _dismount(msg: String) -> void:
+	if not mounted:
+		return
+	mounted = false
+	if not mount_vis.is_empty() and is_instance_valid(mount_vis.root):
+		mount_vis.root.queue_free()
+	mount_vis = {}
+	if msg != "":
+		hud.toast(msg, Hud.CREAM)
+	play_sfx("land", 0.9, -4.0)
+
+
+func _create_mount_vis() -> void:
+	if not world.has("root"):
+		return
+	var iz := Chars.izba()
+	world.root.add_child(iz.root)
+	Kit.bake_tree(iz.root)
+	iz.root.scale = Vector3.ONE * MOUNT_SCALE
+	iz.root.position = pos
+	iz["phase"] = 0.0
+	mount_vis = iz
+
+
+func _animate_mount(dt: float, spd: float, beat_bob: float) -> void:
+	var iz: Dictionary = mount_vis
+	iz.phase += dt * 10.0 * spd
+	var k := minf(1.0, spd)
+	var sw := sin(iz.phase) * 0.55 * k
+	var lift := absf(cos(iz.phase)) * 0.25 * k
+	iz.root.position = pos
+	iz.root.rotation.y = facing
+	for i in range(2):
+		var L: Dictionary = iz.legs[i]
+		var sv := sw if i == 0 else -sw
+		L.hip.rotation.x = sv
+		L.knee.rotation.x = -absf(sv) * 0.9 + 0.12
+		L.ankle.rotation.x = absf(sv) * 0.5
+	var hy := 2.4 + lift + beat_bob * 2.5
+	iz.hut.position.y = hy
+	iz.hut.rotation.z = sin(iz.phase * 0.5) * 0.05 * k
+	# the rider stands on the roof between the subwoofers
+	hero.root.position = pos + Vector3(0, (hy + 2.95) * MOUNT_SCALE, 0)
+	hero.legs[0].rotation.x = 0.15
+	hero.legs[1].rotation.x = -0.15
+	hero.arms[0].rotation.x = -0.4
+	hero.body.position.y = 0.0
+	hero.body.rotation.x = 0.05
+
+
+# ------------------------------------------------------------------ Tishinka drones and their silence bubbles
+func _drone_chase(m: Dictionary, dt: float, to_p: Vector3, dp: float) -> float:
+	var spd := 0.0
+	m.yaw = lerp_angle(m.yaw, atan2(to_p.x, to_p.z), minf(1.0, dt * 6))
+	var dir := to_p.normalized()
+	var side := Vector3(dir.z, 0, -dir.x) * float(m.strafe)
+	var mv := Vector3.ZERO
+	if dp > 8.0:
+		mv = dir
+	elif dp < 4.5:
+		mv = -dir * 0.8
+	mv += side * 0.45
+	m.t -= dt
+	if m.t <= 0.0:
+		m.t = randf_range(1.5, 3.0)
+		m.strafe = -float(m.strafe)
+	if mv.length() > 0.01:
+		spd = m.speed
+		m.pos += mv.normalized() * spd * dt
+	if m.atk_cd <= 0.0 and dp < 11.0:
+		m.atk_cd = m.atk * randf_range(0.85, 1.2)
+		_fire_bubble(m)
+	return spd
+
+
+func _fire_bubble(m: Dictionary) -> void:
+	var n := Chars.bubble()
+	fx_root.add_child(n)
+	var from: Vector3 = m.pos + Vector3(0, 1.85, 0) + Vector3(sin(m.yaw), 0, cos(m.yaw)) * 0.6
+	n.position = from
+	var aim := pos + Vector3(0, 1.1, 0)
+	mob_shots.append({"node": n, "dir": (aim - from).normalized(), "life": 3.2, "dmg": m.dmg})
+	m.flap = 0.3
+	play_sfx("near", 1.8, -10.0)
+
+
+func _update_mob_shots(dt: float) -> void:
+	for b in mob_shots.duplicate():
+		b.life -= dt
+		var n: Node3D = b.node
+		n.position += b.dir * 7.5 * dt
+		n.rotation.y += dt * 2.0
+		var near := Vector2(n.position.x - pos.x, n.position.z - pos.z).length() < 0.85 and n.position.y < 2.4 + (3.0 if mounted else 0.0)
+		if near and invuln <= 0.0:
+			hurt_player(b.dmg * randf_range(0.9, 1.1), n.position)
+			_silence_player(2.5)
+		if near or b.life <= 0.0 or n.position.y < 0.1:
+			_burst(n.position, [Color("d8e0f0"), Color.WHITE], 8)
+			n.queue_free()
+			mob_shots.erase(b)
+
+
+func _silence_player(t: float) -> void:
+	if silence_t <= 0.0:
+		hud.float_text(pos + Vector3(0, 3.0, 0), "ТИШИНА…", Color("c8d0e8"), 26, 40)
+	silence_t = maxf(silence_t, t)
+
+
+# ------------------------------------------------------------------ boss Shumodav
+func _shumodav_special(m: Dictionary, dt: float) -> void:
+	if m.phase == 0 and m.hp < m.hp_max * 0.6:
+		m.phase = 1
+		for o in [Vector3(-3, 0, 3), Vector3(3, 0, -3)]:
+			var s2 := _spawn_mob("drone", m.pos + o, 8)
+			s2.st = "chase"
+			s2.temp = true
+		hud.toast("Шумодав позвал Тишинок!", Color("ff9a9a"))
+	elif m.phase == 1 and m.hp < m.hp_max * 0.3:
+		m.phase = 2
+		hud.big("ШУМОДАВ ЗЛИТСЯ!", "Атаки чаще — держи ритм!", 2.5)
+	if m.whisper_t > 0.0:
+		m.whisper_t -= dt
+		if m.whisper_t <= 0.0:
+			_ring_fx(m.pos + Vector3(0, 0.4, 0), Color("c8d0e8"), 13.0, 0.7)
+			_ring_fx(m.pos + Vector3(0, 1.4, 0), Color("9aa4c0"), 10.0, 0.6)
+			play_sfx("near", 0.4, 0.0)
+			if pos.distance_to(m.pos) < 13.0 and invuln <= 0.0:
+				hurt_player(22.0, m.pos)
+				_silence_player(3.5)
+				hud.toast("ШШШШ! Тишина — ударь в бит, чтобы вернуть навыки", Color("c8d0e8"))
+			elif invuln > 0.0:
+				hud.float_text(pos + Vector3(0, 3.0, 0), "Увернулся!", Kit.TEAL, 24, 40)
+		return
+	if m.tele != null:
+		m.tele_t -= dt
+		m.flap = 0.4
+		if m.tele_t <= 0.0:
+			var c: Node3D = m.tele
+			if Vector2(pos.x - c.position.x, pos.z - c.position.z).length() < 5.6:
+				hurt_player(70.0, m.pos)
+				hud.toast("Громкий рёв! Отбегай из красного круга", Color("ff8080"))
+			_ring_fx(c.position + Vector3(0, 0.2, 0), Color("ff2a3a"), 5.8, 0.4)
+			play_sfx("smash", 0.6, 0.0)
+			c.queue_free()
+			m.tele = null
+		return
+	m.special -= dt
+	if m.special <= 0.0:
+		m.special = 5.0 if m.phase >= 2 else 6.5
+		if randf() < 0.55:
+			_telegraph(m, 5.6, 1.8)
+			hud.toast("Шумодав набирает воздух — уйди из красного круга!", Color("ff9a9a"))
+		else:
+			m.whisper_t = 1.4
+			hud.toast("Шумодав шепчет «ШШШ…» — рывок спасёт!", Color("c8d0e8"))
+
+
 # ================================================================== automated test (CI / local)
 func _bot_fight(frames_max: int, until: Callable) -> int:
 	var frames := 0
@@ -2351,7 +2861,7 @@ func _run_autotest() -> void:
 	_accept_quest()
 	_close_dialog()
 	var f1 := await _bot_fight(150 if quick else (240 if args.has("--skip1") else 3000), func(): return quest >= 4)
-	lg.append("chain1 quest=%d frames=%d" % [quest, f1])
+	_lg(lg, "chain1 quest=%d frames=%d" % [quest, f1])
 	if shots_dir != "":
 		await _snap(shots_dir, "1_yard_fight")
 	if quick:
@@ -2368,7 +2878,7 @@ func _run_autotest() -> void:
 	# shop + dailies
 	coins += 500
 	await _go_interact(Vector3(-9.7, 0, -13.1))
-	lg.append("shop open=%s" % str(state == LIST and list_kind == "shop"))
+	_lg(lg, "shop open=%s" % str(state == LIST and list_kind == "shop"))
 	_buy("food", 30, 1)
 	_buy("planks", 60, 5)
 	_sell_junk()
@@ -2382,21 +2892,21 @@ func _run_autotest() -> void:
 	_claim_daily("pigeon")
 	_claim_daily("scooter")
 	_claim_daily("vacuum")
-	lg.append("dailies claimed=%d" % daily.claimed.size())
+	_lg(lg, "dailies claimed=%d" % daily.claimed.size())
 	close_list()
 	# travel to the garages through the arch
 	pos = Vector3(15.6, 0, -27.6)
 	portal_cd = 0.0
 	while map_id != "garages" or state != PLAY:
 		await get_tree().process_frame
-	lg.append("map=%s npcs=%d" % [map_id, npcs.size()])
+	_lg(lg, "map=%s npcs=%d" % [map_id, npcs.size()])
 	await _go_interact(Vector3(10.2, 0, 4.6))
 	_close_dialog()
 	quest2 = 2
 	_refresh_robot()
 	await _go_interact(Base.ROBOT_HOME)
 	_send_robot("ezhik")
-	lg.append("robot task=%s quest2=%d" % [robot_task.task, quest2])
+	_lg(lg, "robot task=%s quest2=%d" % [robot_task.task, quest2])
 	for k in range(60):
 		await get_tree().process_frame
 	if shots_dir != "":
@@ -2406,7 +2916,7 @@ func _run_autotest() -> void:
 	await _go_interact(Base.ROBOT_HOME)
 	_collect_robot()
 	close_list()
-	lg.append("after robot quest2=%d planks=%d food=%d" % [quest2, res.planks, food])
+	_lg(lg, "after robot quest2=%d planks=%d food=%d" % [quest2, res.planks, food])
 	res.brick += 60
 	res.planks += 60
 	res.cement += 40
@@ -2418,7 +2928,7 @@ func _run_autotest() -> void:
 	_build("stage")
 	_build("stage")
 	close_list()
-	lg.append("buildings=%s quest2=%d hp_max=%d" % [str(buildings), quest2, int(hp_max)])
+	_lg(lg, "buildings=%s quest2=%d hp_max=%d" % [str(buildings), quest2, int(hp_max)])
 	time_shift += 1300.0
 	await get_tree().process_frame
 	await _go_interact(Base.SLOTS.grill)
@@ -2444,7 +2954,7 @@ func _run_autotest() -> void:
 	var c0 := coins
 	coins = 0
 	load_game()
-	lg.append("save roundtrip coins=%d==%d len=%d" % [coins, c0, before])
+	_lg(lg, "save roundtrip coins=%d==%d len=%d" % [coins, c0, before])
 	# back to the yard
 	pos = Vector3(29.6, 0, 0)
 	portal_cd = 0.0
@@ -2455,8 +2965,111 @@ func _run_autotest() -> void:
 		open_bag()
 		await _snap(shots_dir, "5_bag")
 		close_bag()
-	lg.append("final level=%d coins=%d food=%d items=%d" % [level, coins, food, inventory.size()])
+	await _autotest_q3(lg, shots_dir)
+	_lg(lg, "final level=%d coins=%d food=%d items=%d" % [level, coins, food, inventory.size()])
 	_finish_report(lg, t0)
+
+
+func _autotest_q3(lg: Array, shots_dir: String) -> void:
+	quest2 = 6
+	await _go_interact(Vector3(-5.9, 0, -5.0))
+	_lg(lg, "q3 zina dialog=%s marker=%s" % [str(state == DIALOG), "ok"])
+	_close_dialog()
+	quest3 = 1
+	pos = Vector3(15.6, 0, -27.6)
+	portal_cd = 0.0
+	while map_id != "garages" or state != PLAY:
+		await get_tree().process_frame
+	await _go_interact(Vector3(10.2, 0, 4.6))
+	_close_dialog()
+	_open_site_gate()
+	_lg(lg, "q3 gate quest3=%d portals=%d" % [quest3, world.portals.size()])
+	pos = Vector3(-29.6, 0, 0)
+	portal_cd = 0.0
+	while map_id != "stroyka" or state != PLAY:
+		await get_tree().process_frame
+	_lg(lg, "stroyka quest3=%d mobs=%d companion=%s" % [quest3, mobs.size(), str(not companion.is_empty())])
+	for k in range(30):
+		await get_tree().process_frame
+	if shots_dir != "":
+		pos = Vector3(16, 0, 1)
+		facing = -PI / 2
+		yaw = facing + PI
+		await _bot_fight(90, func(): return false)
+		await _snap(shots_dir, "6_stroyka_drones")
+	var f2 := await _bot_fight(4000, func(): return quest3 >= 4)
+	_lg(lg, "drones quest3=%d kills=%d frames=%d silence_seen=%s" % [quest3, q3_kills, f2, str(silence_t >= 0.0)])
+	if quest3 < 4:
+		q3_kills = GameData.Q3_DRONES
+		quest3 = 4
+		_spawn_mob("shumodav", Stroyka.BOSS_HOME, 10)
+	# isolate the boss fight
+	for m in mobs:
+		if m.kind != "shumodav" and m.alive:
+			m.alive = false
+			m.node.visible = false
+			m.respawn = 1.0e9
+	pos = Stroyka.ARENA + Vector3(7, 0, 0)
+	facing = -PI / 2
+	yaw = facing + PI
+	var boss = null
+	for m in mobs:
+		if m.kind == "shumodav":
+			boss = m
+	var fb := await _bot_fight(2500, func(): return boss == null or boss.hp < boss.hp_max * 0.55)
+	if shots_dir != "":
+		await _snap(shots_dir, "7_shumodav")
+	fb += await _bot_fight(4000, func(): return quest3 >= 5)
+	_lg(lg, "boss quest3=%d frames=%d level=%d" % [quest3, fb, level])
+	if quest3 < 5:
+		quest3 = 5
+	for k in range(40):
+		await get_tree().process_frame
+	# back to Zina for the mount
+	pos = Vector3(26.6, 0, 0)
+	portal_cd = 0.0
+	while map_id != "garages" or state != PLAY:
+		await get_tree().process_frame
+	pos = Vector3(29.8, 0, 0)
+	portal_cd = 0.0
+	while map_id != "yard" or state != PLAY:
+		await get_tree().process_frame
+	await _go_interact(Vector3(-5.9, 0, -5.0))
+	_finish_q3()
+	_close_dialog()
+	for m in mobs:
+		if m.alive:
+			m.st = "idle"
+			m.pos = m.home
+	pos = Vector3(0, 0, 12)
+	facing = PI
+	yaw = facing + PI
+	await get_tree().process_frame
+	var p0 := pos
+	toggle_mount()
+	var m0 := mounted
+	joy_vec = Vector2(0, -1)
+	for k in range(20):
+		await get_tree().process_frame
+	joy_vec = Vector2.ZERO
+	_lg(lg, "mount owned=%s mounted=%s/%s speed=%.1f m/s" % [str(mount_owned), str(m0), str(mounted), pos.distance_to(p0) / (20.0 / 30.0)])
+	if shots_dir != "":
+		pos = Vector3(0, 0, 6)
+		facing = PI * 0.85
+		yaw = facing + PI * 0.75
+		for k in range(10):
+			await get_tree().process_frame
+		await _snap(shots_dir, "8_mount")
+	press("attack")
+	_lg(lg, "after attack mounted=%s" % str(mounted))
+	save_game()
+	var d := _read_save()
+	_lg(lg, "save q3=%s mount=%s" % [str(d.get("quest3")), str(d.get("mount"))])
+
+
+func _lg(lg: Array, line: String) -> void:
+	lg.append(line)
+	print("AUTOTEST_STEP ", line)
 
 
 func _finish_report(lg: Array, t0: int) -> void:

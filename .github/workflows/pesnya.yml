@@ -61,7 +61,7 @@ jobs:
           echo "GODOT_ANDROID_KEYSTORE_DEBUG_PATH=$KS" >> $GITHUB_ENV
           echo "GODOT_ANDROID_KEYSTORE_DEBUG_USER=androiddebugkey" >> $GITHUB_ENV
           echo "GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD=android" >> $GITHUB_ENV
-          sed -i "s/^version\/code=.*/version\/code=$((1000 + ${{ github.run_number }}))/; s/^version\/name=.*/version\/name=\"0.2.${{ github.run_number }}\"/" pesnya/export_presets.cfg
+          sed -i "s/^version\/code=.*/version\/code=$((1000 + ${{ github.run_number }}))/; s/^version\/name=.*/version\/name=\"0.3.${{ github.run_number }}\"/" pesnya/export_presets.cfg
           grep version pesnya/export_presets.cfg
 
       - name: Font licenses
@@ -76,7 +76,7 @@ jobs:
       - name: Smoke test (headless run)
         working-directory: pesnya
         run: |
-          timeout 120 godot --headless --path . --fixed-fps 30 -- --autotest 2>&1 | grep -vE "mesh_get_surface|^\s+at:" | tee ../smoke.txt || true
+          timeout 240 godot --headless --path . --fixed-fps 30 -- --autotest 2>&1 | grep -vE "mesh_get_surface|^\s+at:" | tee ../smoke.txt || true
           grep -q AUTOTEST_DONE ../smoke.txt || echo "::warning::autotest did not finish"
           ! grep -q "SCRIPT ERROR" ../smoke.txt || echo "::warning::script errors in smoke test"
 
@@ -99,6 +99,6 @@ jobs:
         with:
           tag_name: pesnya-test-${{ github.run_number }}
           name: "Песня (тест геймплея) — сборка ${{ github.run_number }}"
-          body: "Тест геймплея MMORPG «Песня». Скачай pesnya-test-${{ github.run_number }}.apk и открой на телефоне."
+          body: "Песня 0.3.${{ github.run_number }}: стройка Глушилки, Тишинки, босс Шумодав, баба Зина в напарницах и маунт Избушка-Бас. Скачай pesnya-test-${{ github.run_number }}.apk и открой на телефоне."
           files: pesnya-test-*.apk
           make_latest: true

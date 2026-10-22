@@ -73,6 +73,10 @@ static func build_garages(parent: Node3D) -> Dictionary:
 	Kit.part(st, Kit.BOX, Kit.mat(Color("2a5ac8"), 0.6), Vector3(0.08, 1.0, 4.6), Vector3(-31.3, 2.9, 0))
 	Chars.label(root, "← ГИПЕРМАРКЕТ «ЁЖИК» 2 КМ", 52, Color("ffffff"), Vector3(-31.2, 3.05, 0), Vector3(0, PI / 2, 0), 0.0055, 0)
 	Chars.label(root, "СТРОЙРЫНОК · СВАЛКА", 44, Color("cfe0ff"), Vector3(-31.2, 2.65, 0), Vector3(0, PI / 2, 0), 0.0055, 0)
+	# 0.3: the way to Koschei's construction site
+	Kit.part(st, Kit.BOX, Kit.mat(Color("c8323c"), 0.6), Vector3(0.08, 0.7, 5.4), Vector3(-31.3, 4.0, 0))
+	var ws := Chars.label(root, "СТРОЙКА ГЛУШИЛКИ · ВХОД ПО ПУТЁВКЕ", 46, Color("ffffff"), Vector3(-31.2, 4.02, 0), Vector3(0, PI / 2, 0), 0.0055, 0)
+	ws.name = "WestSign"
 	# the board of the cooperative (Petrovich)
 	Kit.part(st, Kit.BOX, Kit.mat(Color("3a8a5a"), 0.6), Vector3(2.6, 0.6, 0.08), Vector3(10.2, 2.45, 6.5))
 	Chars.label(root, "ПРАВЛЕНИЕ ГК", 60, Color("ffffff"), Vector3(10.2, 2.45, 6.44), Vector3(0, PI, 0), 0.0055, 0)
@@ -112,7 +116,8 @@ static func build_garages(parent: Node3D) -> Dictionary:
 		anchors[id] = a
 	return {"root": root, "rects": rects, "circles": circles, "id": "garages", "name": "ГК «Песня»", "bounds": BOUNDS,
 		"map_rects": [Rect2(-33, -6.2, 66, 12.4)],
-		"spawns": {"from_yard": [Vector3(27.5, 0, 0), -PI / 2], "start": [Vector3(27.5, 0, 0), -PI / 2], "respawn": [Vector3(2, 0, 0), PI]},
+		"spawns": {"from_yard": [Vector3(27.5, 0, 0), -PI / 2], "start": [Vector3(27.5, 0, 0), -PI / 2], "respawn": [Vector3(2, 0, 0), PI],
+			"from_stroyka": [Vector3(-27.4, 0, 0), PI / 2]},
 		"portals": [{"pos": Vector3(29.8, 0, 0), "r": 1.3, "to": "yard", "spawn": "from_garages", "label": "Двор «Берёзки»"}],
 		"npcs": [{"id": "petrovich", "pos": Vector3(10.2, 0, 4.6), "rot": PI}],
 		"mobs": [], "anchors": anchors}

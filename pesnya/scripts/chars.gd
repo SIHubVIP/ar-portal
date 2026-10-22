@@ -859,3 +859,60 @@ static func petrovich_npc() -> Dictionary:
 	Kit.part(board, Kit.BOX, _m(Color("8a5a32"), 0.8), Vector3(0.32, 0.42, 0.03))
 	Kit.part(board, Kit.BOX, _m(Color("f4f4f4"), 0.8), Vector3(0.26, 0.32, 0.035), Vector3(0, -0.02, 0))
 	return h
+
+
+# ------------------------------------------------------------------ 0.3: Тишинка (silence drone)
+static func drone() -> Dictionary:
+	var g := Node3D.new()
+	var body := Node3D.new()
+	body.position = Vector3(0, 1.85, 0)
+	g.add_child(body)
+	var shell := _m(Color("9aa0aa"), 0.35, 0.4)
+	var dark := _m(Color("2a2e38"), 0.4, 0.5)
+	Kit.part(body, Kit.SPH, shell, Vector3(0.95, 0.8, 0.95))
+	Kit.part(body, Kit.CYL, dark, Vector3(1.05, 0.12, 1.05), Vector3(0, -0.05, 0))
+	# one big lens (the "eye")
+	var head := Node3D.new()
+	head.position = Vector3(0, 0.0, 0.38)
+	body.add_child(head)
+	Kit.part(head, Kit.CYL, dark, Vector3(0.52, 0.16, 0.52), Vector3.ZERO, Vector3(PI / 2, 0, 0))
+	Kit.part(head, Kit.SPH, Kit.mat(Color("0c1018"), 0.05, 0.3), Vector3(0.4, 0.4, 0.2), Vector3(0, 0, 0.08))
+	Kit.part(head, Kit.CYL, Kit.neon(Color("ff3a4a"), 3.5), Vector3(0.18, 0.02, 0.18), Vector3(0, 0, 0.17), Vector3(PI / 2, 0, 0))
+	Kit.part(head, Kit.SPH, Kit.neon(Color("ffffff"), 2.0), Vector3.ONE * 0.06, Vector3(0.08, 0.08, 0.17))
+	# antenna with a grey "mute" light
+	Kit.part(body, Kit.CYL, dark, Vector3(0.03, 0.35, 0.03), Vector3(0, 0.5, -0.1))
+	Kit.part(body, Kit.SPH, Kit.neon(Color("c8d0e0"), 2.0), Vector3.ONE * 0.1, Vector3(0, 0.7, -0.1))
+	# four rotor arms
+	var rotors := []
+	for a in [PI / 4, 3 * PI / 4, 5 * PI / 4, 7 * PI / 4]:
+		var dir := Vector3(cos(a), 0, sin(a))
+		Kit.part(body, Kit.BOX, dark, Vector3(0.7, 0.06, 0.08), dir * 0.55 + Vector3(0, 0.12, 0), Vector3(0, -a, 0))
+		var r := Node3D.new()
+		r.position = dir * 0.88 + Vector3(0, 0.2, 0)
+		body.add_child(r)
+		Kit.part(r, Kit.CYL, dark, Vector3(0.08, 0.1, 0.08))
+		Kit.part(r, Kit.BOX, _m(Color("d8dce4"), 0.5), Vector3(0.62, 0.02, 0.08), Vector3(0, 0.06, 0))
+		Kit.part(r, Kit.BOX, _m(Color("d8dce4"), 0.5), Vector3(0.08, 0.02, 0.62), Vector3(0, 0.06, 0))
+		rotors.append(r)
+	# soft shadow blob on the ground
+	var sh := StandardMaterial3D.new()
+	sh.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	sh.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	sh.albedo_color = Color(0, 0, 0, 0.28)
+	Kit.part(g, Kit.DISC, sh, Vector3(1.1, 1, 1.1), Vector3(0, 0.03, 0))
+	return {"root": g, "body": body, "head": head, "wheels": rotors}
+
+
+## Silence bubble shot by a Тишинка
+static func bubble() -> Node3D:
+	var n := Node3D.new()
+	var m := StandardMaterial3D.new()
+	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	m.albedo_color = Color(0.82, 0.86, 0.95, 0.38)
+	m.roughness = 0.05
+	m.metallic = 0.3
+	m.rim_enabled = true
+	m.rim = 1.0
+	Kit.part(n, Kit.SPH, m, Vector3.ONE * 0.62)
+	Kit.part(n, Kit.SPH, Kit.neon(Color("e8eeff"), 1.4), Vector3(0.12, 0.08, 0.06), Vector3(-0.14, 0.15, 0.24))
+	return n

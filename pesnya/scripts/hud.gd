@@ -186,10 +186,10 @@ func _build_menu() -> void:
 	logo.custom_minimum_size = Vector2(220, 60)
 	v.add_child(logo)
 	v.add_child(_label("ПЕСНЯ ♪", 76, true, GOLD))
-	var sub := _label("Офлайн-версия 0.2 · двор «Берёзки» и ГК «Песня»", 22, false, CREAM)
+	var sub := _label("Офлайн-версия 0.3 · новое: стройка Глушилки", 22, false, CREAM)
 	sub.custom_minimum_size = Vector2(520, 0)
 	v.add_child(sub)
-	var d := _label("Бей в бит — урон ×2. Разгони голубей-вымогателей, помоги бабе Зине и победи Голубиного Пахана.", 18, false, Color(0.75, 0.8, 0.88))
+	var d := _label("Бей в бит — урон ×2. Голуби-вымогатели, свой гараж с роботом Васей, а теперь — Тишинки, босс Шумодав и маунт Избушка-Бас.", 18, false, Color(0.75, 0.8, 0.88))
 	d.custom_minimum_size = Vector2(520, 0)
 	v.add_child(d)
 	menu_continue = _btn("ПРОДОЛЖИТЬ", func(): g.continue_game(), 260)
@@ -412,13 +412,14 @@ func btn_pos(name: String) -> Vector2:
 		"food": return Vector2(s.x - 262, s.y - 330)
 		"pause": return Vector2(s.x - 214, 40)
 		"bag": return Vector2(s.x - 214, 104)
+		"mount": return Vector2(s.x - 214, 170)
 	return Vector2(-999, -999)
 
 
 func btn_radius(name: String) -> float:
 	match name:
 		"attack": return 68.0
-		"pause", "bag": return 28.0
+		"pause", "bag", "mount": return 28.0
 		"ult", "talk": return 48.0
 		"food": return 36.0
 	return 44.0
@@ -430,6 +431,8 @@ func button_at(p: Vector2) -> String:
 		names.append("ult")
 	if g.interact_label() != "":
 		names.append("talk")
+	if g.mount_owned:
+		names.append("mount")
 	for n in names:
 		if p.distance_to(btn_pos(n)) < btn_radius(n) + 10:
 			return n
@@ -539,6 +542,11 @@ func _icon(kind: String, c: Vector2, s: float, col: Color) -> void:
 		"pause":
 			draw_rect(Rect2(c + Vector2(-9, -11) * k, Vector2(6, 22) * k), col)
 			draw_rect(Rect2(c + Vector2(3, -11) * k, Vector2(6, 22) * k), col)
+		"hut":
+			draw_colored_polygon(PackedVector2Array([c + Vector2(-13, -2) * k, c + Vector2(0, -15) * k, c + Vector2(13, -2) * k]), col)
+			draw_rect(Rect2(c + Vector2(-10, -2) * k, Vector2(20, 11) * k), col)
+			draw_line(c + Vector2(-5, 9) * k, c + Vector2(-8, 17) * k, col, 3 * k)
+			draw_line(c + Vector2(5, 9) * k, c + Vector2(8, 17) * k, col, 3 * k)
 		"talk":
 			_rrect(Rect2(c + Vector2(-16, -14) * k, Vector2(32, 22) * k), col, 6)
 			draw_colored_polygon(PackedVector2Array([c + Vector2(-8, 8) * k, c + Vector2(0, 8) * k, c + Vector2(-10, 17) * k]), col)
@@ -561,6 +569,9 @@ func _skill_button(name: String, icon: String, label: String) -> void:
 			pts.append(c + Vector2(cos(a), sin(a)) * r)
 		draw_colored_polygon(pts, Color(0, 0, 0, 0.6))
 		_txt(c + Vector2(0, 12), str(int(ceil(cdv))), 30, CREAM, true, HORIZONTAL_ALIGNMENT_CENTER)
+	if g.silence_t > 0.0:
+		draw_circle(c, r, Color(0.55, 0.6, 0.7, 0.55))
+		_txt(c + Vector2(0, 7), "ТИШЬ", 15, Color("eef2ff"), true, HORIZONTAL_ALIGNMENT_CENTER, -1, 3)
 	_txt(c + Vector2(0, r + 18), label, 14, Color(0.9, 0.92, 0.98), false, HORIZONTAL_ALIGNMENT_CENTER, -1, 3)
 
 
@@ -586,9 +597,9 @@ func _draw() -> void:
 			continue
 		var sp := cam.unproject_position(hp3)
 		var is_t: bool = is_same(m, g.target)
-		var col := Color("ff7070") if m.kind == "pakhan" else (Color("ffb0a0") if not is_t else Color("ffe0a0"))
-		_txt(sp + Vector2(0, -18), "%d  %s" % [m.lvl, m.name], 17 if m.kind != "pakhan" else 21, col, true, HORIZONTAL_ALIGNMENT_CENTER, -1, 4)
-		var bw := 110.0 if m.kind != "pakhan" else 180.0
+		var col := Color("ff7070") if m.boss else (Color("ffb0a0") if not is_t else Color("ffe0a0"))
+		_txt(sp + Vector2(0, -18), "%d  %s" % [m.lvl, m.name], 17 if not m.boss else 21, col, true, HORIZONTAL_ALIGNMENT_CENTER, -1, 4)
+		var bw := 110.0 if not m.boss else 180.0
 		_bar(Rect2(sp.x - bw / 2, sp.y - 10, bw, 11), m.hp / m.hp_max, Color("e8424c"))
 		if m.stun > 0.0:
 			_txt(sp + Vector2(0, -42), "ОГЛУШЁН", 15, Color("ffe066"), false, HORIZONTAL_ALIGNMENT_CENTER, -1, 3)
@@ -642,8 +653,18 @@ func _draw() -> void:
 	_txt(Vector2(124, 60), g.combo_label(), 14, Color(0.78, 0.84, 0.92))
 	_bar(Rect2(122, 68, 236, 20), g.hp / g.hp_max, Color("3fc86e"), "%d / %d" % [int(g.hp), int(g.hp_max)])
 	_bar(Rect2(122, 93, 236, 14), g.vibe / 100.0, PURPLE if g.vibe < 100 else GOLD, "Вайб %d" % int(g.vibe) if g.vibe < 100 else "ХИТ ГОТОВ!")
+	var sy := 140.0
 	if g.buff_t > 0.0:
-		_txt(Vector2(24, 140), "Панк-укол: урон ×1.6 · %d c" % int(ceil(g.buff_t)), 15, GREEN, false, HORIZONTAL_ALIGNMENT_LEFT, -1, 3)
+		_txt(Vector2(24, sy), "Панк-укол: урон ×1.6 · %d c" % int(ceil(g.buff_t)), 15, GREEN, false, HORIZONTAL_ALIGNMENT_LEFT, -1, 3)
+		sy += 22
+	if g.group_t > 0.0:
+		_txt(Vector2(24, sy), "Песня группы: урон ×1.4 · %d c" % int(ceil(g.group_t)), 15, TEAL, false, HORIZONTAL_ALIGNMENT_LEFT, -1, 3)
+		sy += 22
+	if g.silence_t > 0.0:
+		_txt(Vector2(24, sy), "ТИШИНА · навыки молчат %d c — ударь в бит!" % int(ceil(g.silence_t)), 15, Color("dfe6ff"), false, HORIZONTAL_ALIGNMENT_LEFT, -1, 3)
+		sy += 22
+	if g.mounted:
+		_txt(Vector2(24, sy), "Верхом на Избушке · атака — спешиться", 15, GOLD, false, HORIZONTAL_ALIGNMENT_LEFT, -1, 3)
 
 	# target frame
 	var t = g.target
@@ -651,9 +672,9 @@ func _draw() -> void:
 		var tw := 420.0
 		var tx := (s.x - tw) / 2
 		_rrect(Rect2(tx, 12, tw, 74), PANEL, 18)
-		draw_circle(Vector2(tx + 38, 49), 26, Color(0.45, 0.12, 0.16) if t.kind == "pakhan" else Color(0.25, 0.25, 0.32))
+		draw_circle(Vector2(tx + 38, 49), 26, Color(0.45, 0.12, 0.16) if t.boss else Color(0.25, 0.25, 0.32))
 		_txt(Vector2(tx + 38, 57), str(t.lvl), 20, CREAM, true, HORIZONTAL_ALIGNMENT_CENTER)
-		_txt(Vector2(tx + 76, 38), t.name, 20, Color("ff9a9a") if t.kind == "pakhan" else CREAM, true)
+		_txt(Vector2(tx + 76, 38), t.name, 20, Color("ff9a9a") if t.boss else CREAM, true)
 		_bar(Rect2(tx + 76, 50, tw - 94, 20), t.hp / t.hp_max, Color("e8424c"), "%d%%" % int(ceil(100.0 * t.hp / t.hp_max)))
 
 	# minimap
@@ -674,7 +695,7 @@ func _draw() -> void:
 		if m.alive:
 			var d2: Vector2 = to_map.call(m.pos)
 			if d2.distance_to(mc) < mr - 5:
-				draw_circle(d2, 6 if m.kind == "pakhan" else 4, Color("ff4a4a"))
+				draw_circle(d2, 6 if m.boss else 4, Color("ff4a4a"))
 	for n in g.npcs:
 		var nz: Vector2 = to_map.call(n.pos)
 		if nz.distance_to(mc) < mr - 5:
@@ -705,6 +726,11 @@ func _draw() -> void:
 		draw_circle(bc, 28, Color(0.06, 0.08, 0.14, 0.85))
 		draw_arc(bc, 28, 0, TAU, 32, Color(1, 1, 1, 0.3), 2)
 		_icon(nm, bc, 28, CREAM)
+	if g.mount_owned:
+		var mc2 := btn_pos("mount")
+		draw_circle(mc2, 28, Color(0.95, 0.75, 0.3, 0.95) if g.mounted else Color(0.06, 0.08, 0.14, 0.85))
+		draw_arc(mc2, 28, 0, TAU, 32, TEAL, 2.5)
+		_icon("hut", mc2, 28, NAVY if g.mounted else CREAM)
 
 	# quest tracker
 	var ql: Array = g.quest_lines()
