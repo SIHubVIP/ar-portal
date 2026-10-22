@@ -6,7 +6,7 @@ extends Node3D
 ## 0.5 — концерт в ГК (ритм-игра), набережная и Калинов мост, колонки-автоплеи, чайки, Змей Горыныч.
 ## 0.6 — 12 новых соседей и их задания, журнал, тихие зоны, уровни до 70, вещи с характеристиками.
 ## 0.7 — парк «Заря» за Калиновым мостом, Колесо Обновлений, вторые задания соседей, ремиксы боссов,
-##       золотые синглы и Сингл Принц, карта Рубина и аэротакси Пилота.
+##       золотые синглы и Сингл Принц, карта Рубина и аэротакси Шустрого Пилота.
 
 const BPM := 96.0
 var beat_len := 60.0 / BPM
@@ -137,7 +137,7 @@ var taxi := false             # 0.7: Pilot's aerotaxi (fast travel from the city
 var remix := {"best": {}, "day": "", "looted": [], "passes": 0, "wins": 0}
 var prince := {"met": false, "next": 2100.0, "left": 0.0, "stock": [], "hit": "", "map": ""}
 var prince_npc: Dictionary = {}
-var metro_until := 0.0        # «Метроном Принца»: wider beat window until this unix time
+var metro_until := 0.0        # «Метроном Сингл Принца»: wider beat window until this unix time
 var wheel_deco: Dictionary = {}   # the ferris wheel when it is not a boss
 var wheel_t := 0.0
 var remix_hidden := {}        # npc id -> npc entry hidden while its remix boss fights
@@ -4964,7 +4964,7 @@ func _update_prince(dt: float) -> void:
 	if not prince_npc.is_empty():
 		prince.left = float(prince.left) - dt
 		if prince.left <= 0.0:
-			_prince_leave("Принц покинул чат. «Сингл — он и есть сингл»")
+			_prince_leave("Сингл Принц покинул чат. «Сингл — он и есть сингл»")
 		return
 	if not prince.met or state != PLAY or not world.has("root"):
 		return
@@ -4983,7 +4983,7 @@ func _talk_prince() -> void:
 		return
 	open_dialog("Сингл Принц", "Пуф! Сингл Принц. Один. Неповторимый. Только сегодня. Видел твой ремикс — это был хит. Держи золотой сингл: первый — бесплатно. Как демо.", [
 		["А что такое синглы?", func():
-			hud.show_dialog("Сингл Принц", "Золотые синглы — валюта для ценителей. Они выпадают, когда побеждаешь боссов в ремиксах: пульт «РЕМИКС» стоит у каждой арены, раз в сутки с каждого босса. А я появляюсь… когда появляюсь. Три минуты — и «Принц покинул чат».", [
+			hud.show_dialog("Сингл Принц", "Золотые синглы — валюта для ценителей. Они выпадают, когда побеждаешь боссов в ремиксах: пульт «РЕМИКС» стоит у каждой арены, раз в сутки с каждого босса. А я появляюсь… когда появляюсь. Три минуты — и «Сингл Принц покинул чат».", [
 				["Покажи релизы! (+1 золотой сингл)", func():
 					prince.met = true
 					singles += 1
@@ -5017,7 +5017,7 @@ func _list_prince() -> void:
 			"enabled": (not owned) and singles >= price, "cb": func(): _prince_buy(item_id), "color": Hud.GOLD if hit else Color("e8d0ff")})
 	var tail := ""
 	if metro_until > now():
-		tail = "\nМетроном Принца работает ещё %s" % _mmss(metro_until - now())
+		tail = "\nМетроном Сингл Принца работает ещё %s" % _mmss(metro_until - now())
 	hud.show_list("СИНГЛ ПРИНЦ · ЛАВКА", "«Я не продаю. Я выпускаю релизы.» · Золотых синглов: %d · исчезнет через %s\nСинглы — с ремиксов боссов: пульт «РЕМИКС» у каждой арены%s" % [singles, _mmss(prince.left), tail], rows)
 
 
@@ -5035,7 +5035,7 @@ func _prince_buy(id: String) -> void:
 			add_item(id)
 		"buff":
 			metro_until = maxf(now(), metro_until) + GameData.METRONOME_SECS
-			hud.toast("Метроном Принца: окно бита шире на 10 минут", Color("d8a8ff"))
+			hud.toast("Метроном Сингл Принца: окно бита шире на 10 минут", Color("d8a8ff"))
 		"pass":
 			remix.passes = int(remix.passes) + 1
 			hud.toast("Пропуск в ремикс: +1 бой с добычей", Color("d8a8ff"))

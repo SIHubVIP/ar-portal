@@ -189,9 +189,10 @@ func _short(q: String) -> String:
 		"talk":
 			return "поговорить: " + npc_name(s.npc)
 		"find":
-			return "найти: " + str(s.label).to_lower()
+			var lb := str(s.label)
+			return "найти: " + lb.left(1).to_lower() + lb.substr(1)   # keep names capitalised: «кепка Джека Скалолаза»
 		"return":
-			return "вернуться к " + npc_name(s.npc)
+			return "вернуться: " + npc_name(s.npc)
 	return s.text
 
 
