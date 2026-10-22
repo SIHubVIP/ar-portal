@@ -53,6 +53,7 @@ var pause_quality: Button
 var pause_offset: Label
 var theme_main: Theme
 var tracker_rect := Rect2()   # 0.6: tap on the quest tracker opens the journal
+var city_map: CityMap          # 0.7: the map of Рубин
 
 const RACES := [["rapper", "Рэпер", true], ["punk", "Панк", true], ["goth", "Гот", false], ["gopnik", "Пацан", false], ["hipster", "Хипстер", false], ["granny", "Бабушка", false], ["it", "Айтишник", false]]
 const CLASSES := [["cop", "Коп", true], ["medic", "Медик", true], ["guard", "Охранник", false], ["hacker", "Хакер", false], ["cook", "Повар", false], ["courier", "Курьер", false], ["dj", "Диджей", false]]
@@ -80,6 +81,9 @@ func setup(game) -> void:
 	_build_dead()
 	_build_loading()
 	_build_list()
+	city_map = CityMap.new()
+	add_child(city_map)
+	city_map.setup(g, self)
 
 
 # ================================================================== theme & helpers
@@ -187,10 +191,10 @@ func _build_menu() -> void:
 	logo.custom_minimum_size = Vector2(220, 60)
 	v.add_child(logo)
 	v.add_child(_label("ПЕСНЯ ♪", 76, true, GOLD))
-	var sub := _label("Офлайн-версия 0.6 · «Новые соседи»: 12 персонажей и их задания", 22, false, CREAM)
+	var sub := _label("Офлайн-версия 0.7 · «Парк «Заря»»: рассвет по подписке", 22, false, CREAM)
 	sub.custom_minimum_size = Vector2(520, 0)
 	v.add_child(sub)
-	var d := _label("Бей в бит — урон ×2. Голуби, гараж, Шумодав, Кощей и Горыныч — а теперь Павлин Футболист, Меткий Змей, Ярик-Фонарик и ещё девять соседей. Журнал заданий, уровни до 70, вещи с характеристиками.", 18, false, Color(0.75, 0.8, 0.88))
+	var d := _label("Бей в бит — урон ×2. Новое: парк «Заря» за Калиновым мостом, Колесо Обновлений, ремиксы боссов, золотые синглы и Сингл Принц, карта Рубина и аэротакси Пилота, шесть новых заданий соседей.", 18, false, Color(0.75, 0.8, 0.88))
 	d.custom_minimum_size = Vector2(520, 0)
 	v.add_child(d)
 	menu_continue = _btn("ПРОДОЛЖИТЬ", func(): g.continue_game(), 260)
@@ -472,20 +476,21 @@ func btn_pos(name: String) -> Vector2:
 		"bag": return Vector2(s.x - 214, 104)
 		"mount": return Vector2(s.x - 214, 170)
 		"journal": return Vector2(s.x - 278, 40)
+		"map": return Vector2(s.x - 278, 104)
 	return Vector2(-999, -999)
 
 
 func btn_radius(name: String) -> float:
 	match name:
 		"attack": return 68.0
-		"pause", "bag", "mount", "journal": return 28.0
+		"pause", "bag", "mount", "journal", "map": return 28.0
 		"ult", "talk": return 48.0
 		"food": return 36.0
 	return 44.0
 
 
 func button_at(p: Vector2) -> String:
-	var names := ["attack", "s1", "s2", "s3", "pause", "bag", "food", "journal"]
+	var names := ["attack", "s1", "s2", "s3", "pause", "bag", "food", "journal", "map"]
 	if g.vibe >= 100.0:
 		names.append("ult")
 	if g.interact_label() != "":
@@ -617,6 +622,13 @@ func _icon(kind: String, c: Vector2, s: float, col: Color) -> void:
 		"talk":
 			_rrect(Rect2(c + Vector2(-16, -14) * k, Vector2(32, 22) * k), col, 6)
 			draw_colored_polygon(PackedVector2Array([c + Vector2(-8, 8) * k, c + Vector2(0, 8) * k, c + Vector2(-10, 17) * k]), col)
+		"map":
+			var pts := PackedVector2Array([c + Vector2(-15, -10) * k, c + Vector2(-5, -14) * k, c + Vector2(5, -10) * k, c + Vector2(15, -14) * k,
+				c + Vector2(15, 10) * k, c + Vector2(5, 14) * k, c + Vector2(-5, 10) * k, c + Vector2(-15, 14) * k])
+			draw_colored_polygon(pts, col)
+			draw_line(c + Vector2(-5, -14) * k, c + Vector2(-5, 10) * k, NAVY, 1.5)
+			draw_line(c + Vector2(5, -10) * k, c + Vector2(5, 14) * k, NAVY, 1.5)
+			draw_circle(c + Vector2(9, -2) * k, 3.0 * k, Color("e83c46"))
 
 
 func _skill_button(name: String, icon: String, label: String) -> void:
@@ -749,13 +761,28 @@ func _draw() -> void:
 		_txt(Vector2(tx + 38, 57), str(t.lvl), 20, CREAM, true, HORIZONTAL_ALIGNMENT_CENTER)
 		_txt(Vector2(tx + 76, 38), t.name, 20, Color("ff9a9a") if t.boss else CREAM, true)
 		_bar(Rect2(tx + 76, 50, tw - 94, 20), t.hp / t.hp_max, Color("e8424c"), "%d%%" % int(ceil(100.0 * t.hp / t.hp_max)))
+		var ty := 90.0
 		if t.kind == "koschei":
 			var dots := ""
-			for i in range(3):
+			var need := 5 if int(t.remix) > 0 else 3
+			for i in range(need):
 				dots += "●" if i < int(t.rap) else "○"
 			var st2: String = ("ПОДПИСКА: урон −92% · рэп-баттл " + dots) if t.shield else ("Подписка отменена: %d с — бей!" % int(ceil(t.shield_t)))
-			_rrect(Rect2(tx, 90, tw, 30), PANEL, 12)
-			_txt(Vector2(s.x / 2, 112), st2, 17, Color("dfe6ff") if t.shield else GOLD, true, HORIZONTAL_ALIGNMENT_CENTER)
+			_rrect(Rect2(tx, ty, tw, 30), PANEL, 12)
+			_txt(Vector2(s.x / 2, ty + 22), st2, 17, Color("dfe6ff") if t.shield else GOLD, true, HORIZONTAL_ALIGNMENT_CENTER)
+			ty += 34
+		elif t.kind == "wheel":
+			var dots2 := ""
+			for i in range(4):
+				dots2 += "●" if i < int(t.rap) else "○"
+			var st3: String = ("УСТАНОВКА ОБНОВЛЕНИЯ · отмена в бит " + dots2) if t.shield else ("Колесо зависло — бей!" if t.stun > 0.0 else "Жёлтые круги — отбегай · кольца — рывком")
+			_rrect(Rect2(tx, ty, tw, 30), PANEL, 12)
+			_txt(Vector2(s.x / 2, ty + 22), st3, 17, Color("bfe8ff") if t.shield else GOLD, true, HORIZONTAL_ALIGNMENT_CENTER)
+			ty += 34
+		if int(t.remix) > 0:
+			var r: Dictionary = GameData.REMIX[t.remix_id]
+			_rrect(Rect2(tx, ty, tw, 28), Color(0.2, 0.08, 0.3, 0.85), 12)
+			_txt(Vector2(s.x / 2, ty + 20), "РЕМИКС «%s» · %s" % [r.title, GameData.REMIX_DIFF[int(t.remix) - 1][0]], 16, Color("e8d0ff"), true, HORIZONTAL_ALIGNMENT_CENTER)
 
 	# minimap
 	var mc := Vector2(s.x - 92, 92)
@@ -801,11 +828,20 @@ func _draw() -> void:
 	_txt(Vector2(s.x - 448, 44), "A", 15, Color("7a4a14"), true, HORIZONTAL_ALIGNMENT_CENTER)
 	_txt(Vector2(s.x - 428, 46), str(g.coins), 20, CREAM, true)
 	# pause & bag
-	for nm in ["pause", "bag", "journal"]:
+	for nm in ["pause", "bag", "journal", "map"]:
 		var bc := btn_pos(nm)
 		draw_circle(bc, 28, Color(0.06, 0.08, 0.14, 0.85))
 		draw_arc(bc, 28, 0, TAU, 32, Color(1, 1, 1, 0.3), 2)
 		_icon("book" if nm == "journal" else nm, bc, 28, CREAM)
+	# golden singles (0.7)
+	if g.singles > 0 or g.prince.met:
+		_rrect(Rect2(s.x - 470, 64, 150, 34), PANEL, 17)
+		draw_circle(Vector2(s.x - 448, 81), 12, Color("2a1a3a"))
+		draw_arc(Vector2(s.x - 448, 81), 12, 0, TAU, 24, GOLD, 3)
+		draw_circle(Vector2(s.x - 448, 81), 3.5, GOLD)
+		_txt(Vector2(s.x - 428, 88), "%d синг." % g.singles, 17, Color("ffd88a"), true)
+	if g.now() < g.metro_until:
+		_txt(Vector2(s.x - 470, 118), "Метроном: окно бита шире", 13, Color("d8a8ff"), false, HORIZONTAL_ALIGNMENT_LEFT, -1, 3)
 	if g.mount_owned:
 		var mc2 := btn_pos("mount")
 		draw_circle(mc2, 28, Color(0.95, 0.75, 0.3, 0.95) if g.mounted else Color(0.06, 0.08, 0.14, 0.85))

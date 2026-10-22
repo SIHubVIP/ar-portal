@@ -5,6 +5,7 @@ extends RefCounted
 var g  # main game
 var st := {}        # qid -> {"s": step index, "n": counter, "t": timer end (unix time), "done": bool}
 var marks: Array = []   # loot-beam nodes over «find» spots on the current map
+var wave_live := {}     # 0.7: qid -> mobs of the running wave («waves» steps)
 
 
 func _init(game) -> void:
@@ -15,6 +16,7 @@ func _init(game) -> void:
 func reset() -> void:
 	st = {}
 	marks = []
+	wave_live = {}
 
 
 func to_save() -> Dictionary:
@@ -50,8 +52,30 @@ func req_ok(q: String) -> bool:
 	return int(g.get(r[0])) >= int(r[1])
 
 
+func prev_ok(q: String) -> bool:
+	var p: String = SideQ.QUESTS[q].get("prev", "")
+	return p == "" or is_done(p)
+
+
 func available(q: String) -> bool:
-	return not st.has(q) and req_ok(q) and g.level >= int(SideQ.QUESTS[q].lvl)
+	return not st.has(q) and req_ok(q) and prev_ok(q) and g.level >= int(SideQ.QUESTS[q].lvl)
+
+
+## The quest of a neighbour that matters now: the first unfinished one of the chain (or the last, when all are done).
+func cur_quest(id: String) -> String:
+	var ch: Array = SideQ.chain(id)
+	for q in ch:
+		if not is_done(q):
+			return q
+	return ch[ch.size() - 1]
+
+
+func has_talk_for(id: String) -> bool:
+	for q in active_list():
+		var s := step(q)
+		if s.type == "talk" and s.npc == id:
+			return true
+	return false
 
 
 func active_list() -> Array:
@@ -122,6 +146,8 @@ func step_text(q: String) -> String:
 		"timer":
 			var left: float = float(st[q].t) - g.now()
 			return s.text % g._mmss(left) if left > 0.0 else "Готово! Загляни к хозяину"
+		"waves":
+			return s.text % [mini(int(st[q].n) + 1, int(s.n)), int(s.n)]
 		"give_items":
 			return "%s (%s)" % [s.text, _items_line(s)]
 		"give_res":
@@ -158,6 +184,8 @@ func _short(q: String) -> String:
 			return "%s: %d/%d" % [_res_name(s), mini(_res_have(s), int(s.n)), int(s.n)]
 		"combo":
 			return "комбо ×%d" % int(s.n)
+		"waves":
+			return "оборона: волна %d/%d" % [mini(int(st[q].n) + 1, int(s.n)), int(s.n)]
 		"talk":
 			return "поговорить: " + npc_name(s.npc)
 		"find":
@@ -186,7 +214,7 @@ func marker(id: String) -> String:
 		if s.type == "talk" and s.npc == id:
 			return "?"
 	if SideQ.NPCS.has(id):
-		var q: String = SideQ.NPCS[id].quest
+		var q: String = cur_quest(id)
 		if available(q):
 			return "!"
 		if is_active(q):
@@ -219,7 +247,7 @@ func journal_rows() -> Array:
 		var where: String = GameData.MAP_NAMES.get(SideQ.NPCS[qd2.npc].map, "")
 		if available(q):
 			rows.append({"text": "Доступно: «%s»" % qd2.title, "sub": "%s ждёт тебя: %s · жёлтый «!» над головой" % [npc_name(qd2.npc), where], "color": Hud.CREAM})
-		elif req_ok(q):
+		elif req_ok(q) and prev_ok(q):
 			rows.append({"text": "Скоро: «%s» (нужен уровень %d)" % [qd2.title, int(qd2.lvl)], "sub": "%s · %s · опыт дают мобы и задания" % [npc_name(qd2.npc), where], "color": Color(0.7, 0.75, 0.82)})
 		else:
 			later += 1
@@ -260,6 +288,8 @@ func complete(q: String) -> void:
 	var qd: Dictionary = SideQ.QUESTS[q]
 	var rw: Dictionary = qd.reward
 	st[q].done = true
+	if rw.has("unlock"):
+		g.unlock(str(rw.unlock))
 	g.coins += int(rw.get("coins", 0))
 	g.food += int(rw.get("food", 0))
 	if rw.has("item"):
@@ -302,6 +332,54 @@ func update(_dt: float) -> void:
 		var s := step(q)
 		if s.type == "timer" and g.now() >= float(st[q].t):
 			_advance(q)
+		elif s.type == "waves":
+			_update_waves(q, s)
+
+
+## 0.7 «waves»: when the hero comes to the spot, a wave of temporary mobs attacks; a cleared wave counts.
+func _update_waves(q: String, s: Dictionary) -> void:
+	if g.map_id != s.map or not g.is_playing():
+		wave_live.erase(q)
+		return
+	var live: Array = wave_live.get(q, [])
+	if live.size() > 0:
+		for m in live:
+			if m.alive:
+				return
+		wave_live.erase(q)
+		st[q].n = int(st[q].n) + 1
+		if int(st[q].n) >= int(s.n):
+			g.hud.big("УЧЕНИЯ: ВСЕ ВОЛНЫ ОТБИТЫ!", "«%s»" % SideQ.QUESTS[q].title, 2.5)
+			_advance(q)
+		else:
+			g.hud.big("ВОЛНА %d/%d ОТБИТА!" % [int(st[q].n), int(s.n)], "Следующая — через пару секунд", 2.0)
+			refresh_marks()
+			g.save_game()
+		return
+	var p: Vector3 = s.pos
+	if Vector2(g.pos.x - p.x, g.pos.z - p.z).length() > 12.0:
+		return
+	var out := []
+	for k in range(int(s.per)):
+		var a := TAU * k / float(s.per) + int(st[q].n) * 0.7
+		var m: Dictionary = g._spawn_mob(str(s.mob), p + Vector3(cos(a) * 7.0, 0, sin(a) * 7.0), int(s.lvl) + int(st[q].n) / 2)
+		m.temp = true
+		m.st = "chase"
+		m.name = str(s.get("name", m.name))
+		out.append(m)
+	wave_live[q] = out
+	refresh_marks()
+	g.hud.big("ВОЛНА %d/%d!" % [int(st[q].n) + 1, int(s.n)], "%s атакуют сцену!" % str(s.get("name", "Враги")), 2.0)
+	g.play_sfx("laser", 0.7, -4.0)
+
+
+func wave_spots() -> Array:
+	var out := []
+	for q in active_list():
+		var s := step(q)
+		if s.type == "waves" and s.map == g.map_id and not wave_live.has(q):
+			out.append({"q": q, "pos": s.pos})
+	return out
 
 
 # ================================================================== dialogs
@@ -316,14 +394,14 @@ func talk(id: String) -> bool:
 			return true
 	if not SideQ.NPCS.has(id):
 		return false
-	var q2: String = SideQ.NPCS[id].quest
+	var q2: String = cur_quest(id)
 	var qd: Dictionary = SideQ.QUESTS[q2]
 	var nm: String = SideQ.NPCS[id].name
 	if is_done(q2):
 		var a: Array = qd.after
 		g.open_dialog(nm, a[randi() % a.size()], [["До встречи!", close]])
 	elif not st.has(q2):
-		if not req_ok(q2):
+		if not req_ok(q2) or not prev_ok(q2):
 			g.open_dialog(nm, qd.lock, [["Понял", close]])
 		elif g.level < int(qd.lvl):
 			g.open_dialog(nm, "%s\n\n(Задание с %d уровня. У тебя %d — опыт дают мобы и другие задания.)" % [qd.offer, int(qd.lvl), g.level],
@@ -399,10 +477,19 @@ func refresh_marks() -> void:
 		Chars.loot_beam(n, Vector3.ZERO, Hud.GOLD, 5.0)
 		Kit.part(n, Kit.SPH, Kit.neon(Hud.GOLD, 2.4), Vector3.ONE * 0.36, Vector3(0, 0.5, 0))
 		marks.append(n)
+	for w in wave_spots():
+		var n2 := Node3D.new()
+		g.world.root.add_child(n2)
+		n2.position = w.pos
+		Chars.ring(n2, Vector3(0, 0.05, 0), 3.0, Color("ff5d7a"), 0.12, 3.0)
+		Chars.loot_beam(n2, Vector3.ZERO, Color("ff5d7a"), 6.0)
+		marks.append(n2)
 
 
 func world_labels() -> Array:
 	var out := []
 	for f in find_spots():
 		out.append([f.pos + Vector3(0, 2.4, 0), "%s · осмотреть" % f.label, 17, Hud.GOLD])
+	for w in wave_spots():
+		out.append([w.pos + Vector3(0, 3.0, 0), "Учения: подойди — начнётся оборона", 17, Color("ff9ab0")])
 	return out

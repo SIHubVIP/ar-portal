@@ -2,7 +2,7 @@ class_name GameData
 ## All tunable numbers and texts of «Песня» in one place.
 
 const SAVE_PATH := "user://pesnya_save.json"
-const SAVE_VERSION := 6
+const SAVE_VERSION := 7
 
 const ITEMS := {
 	"seeds": {"name": "Семки", "rarity": 0, "slot": "", "power": 0, "desc": "Голубиная валюта. Баба Зина говорит, полезные."},
@@ -69,6 +69,46 @@ const ITEMS := {
 		"desc": "Показывает не на север, а туда, где интересно."},
 	"lantern": {"name": "Свет Ярика", "rarity": 3, "slot": "weapon", "power": 58, "lvl": 14, "stats": {"rhythm": 4, "vibe": 6}, "unique": true,
 		"desc": "Тёплая искра Жар-птицы. Мигает точно в бит."},
+	# 0.7 — парк «Заря»
+	"grass": {"name": "Клок газона", "rarity": 0, "slot": "", "power": 0, "desc": "Подстрижен смайликом. Павлин бы заплакал."},
+	"wrapper": {"name": "Фантик", "rarity": 0, "slot": "", "power": 0, "desc": "Шуршит сам по себе. Пакет-призрак ушёл не до конца."},
+	"spring": {"name": "Пружинка робо-утки", "rarity": 0, "slot": "", "power": 0, "desc": "Делает «кря» упругим."},
+	"pixel": {"name": "Битый пиксель", "rarity": 0, "slot": "", "power": 0, "desc": "Остался от кружочка загрузки. Всё ещё грузится."},
+	"panama": {"name": "Панама садовника", "rarity": 1, "slot": "head", "power": 30, "lvl": 14, "desc": "От солнца, от дождя и от газонокосилок."},
+	"pruner": {"name": "Секатор «Ровный газон»", "rarity": 2, "slot": "weapon", "power": 60, "lvl": 16, "desc": "Стрижёт строго в бит. Павлин одобряет."},
+	"bag_cape": {"name": "Дождевик из пакета", "rarity": 1, "slot": "body", "power": 30, "lvl": 14, "desc": "Шуршит при ходьбе. Зато сухо."},
+	"rustle_hoodie": {"name": "Худи «Шшш»", "rarity": 2, "slot": "body", "power": 46, "lvl": 16, "desc": "Тихое снаружи, громкое внутри."},
+	"quack_whistle": {"name": "Свисток-кряква", "rarity": 1, "slot": "neck", "power": 28, "lvl": 15, "desc": "Свистит, как утка. Утки в шоке."},
+	"flippers": {"name": "Ласты робо-утки", "rarity": 2, "slot": "feet", "power": 44, "lvl": 16, "desc": "Хлоп-хлоп в такт. По асфальту — тоже."},
+	"spinner": {"name": "Спиннер загрузки", "rarity": 1, "slot": "neck", "power": 30, "lvl": 15, "desc": "Крутится вечно. Как обновление."},
+	"visor99": {"name": "Козырёк «99%»", "rarity": 2, "slot": "head", "power": 48, "lvl": 17, "desc": "Показывает, что почти готово. Всегда."},
+	"wheel_mic": {"name": "Микрофон «Спица»", "rarity": 3, "slot": "weapon", "power": 78, "lvl": 18, "desc": "Спица Колеса Обновлений. Звенит в бит, как велосипедный звонок."},
+	"cabin_helmet": {"name": "Шлем «Кабинка»", "rarity": 3, "slot": "head", "power": 62, "lvl": 18, "desc": "С окошками. Обзор — как с самого верха колеса."},
+	"dawn_bomber": {"name": "Бомбер «Заря»", "rarity": 3, "slot": "body", "power": 66, "lvl": 18, "desc": "Розовый, как рассвет без подписки."},
+	# 0.7 — награды соседей (уникальные)
+	"boomerang": {"name": "Мяч-бумеранг", "rarity": 2, "slot": "weapon", "power": 64, "lvl": 16, "stats": {"vibe": 5}, "unique": true,
+		"desc": "Пнёшь — вернётся. Как слава Павлина."},
+	"spray_gloves": {"name": "Перчатки-брызгалки", "rarity": 2, "slot": "weapon", "power": 62, "lvl": 15, "stats": {"rhythm": 4}, "unique": true,
+		"desc": "Брызгают точно в такт. Чисто и ритмично."},
+	"pilot_scarf": {"name": "Шарф Пилота", "rarity": 2, "slot": "neck", "power": 46, "lvl": 17, "stats": {"speed": 5}, "unique": true,
+		"desc": "Тот самый, что улетел. Вернулся сам — он верный."},
+	"grapple": {"name": "Верёвка-кошка", "rarity": 2, "slot": "neck", "power": 48, "lvl": 18, "stats": {"speed": 6}, "unique": true,
+		"desc": "С ней Джек повесил флаг на самую верхнюю кабинку. Страховка прилагается."},
+	"rhythm_medal": {"name": "Медаль «За ритм»", "rarity": 2, "slot": "neck", "power": 46, "lvl": 17, "stats": {"rhythm": 5, "hp": 3}, "unique": true,
+		"desc": "Вручена Товарищем Клюквой. Неофициально, но от души."},
+	"ring_lamp": {"name": "Кольцевая лампа", "rarity": 2, "slot": "neck", "power": 44, "lvl": 16, "stats": {"vibe": 6}, "unique": true,
+		"desc": "Со стрима Малого. Светит так, что Горыныч улыбнулся. Трижды."},
+	# 0.7 — лавка Сингл Принца (за золотые синглы)
+	"prince_jacket": {"name": "Пиджак Принца", "rarity": 3, "slot": "body", "power": 64, "lvl": 16, "stats": {"vibe": 6, "luck": 4}, "unique": true,
+		"desc": "Фиолетовый бархат, золотые погоны. «Это не скидка — это ремикс цены»."},
+	"single_shades": {"name": "Очки «Сингл»", "rarity": 3, "slot": "head", "power": 58, "lvl": 15, "stats": {"rhythm": 6}, "unique": true,
+		"desc": "Тёмные в любое время суток. Бит сквозь них видно лучше."},
+	"plunger": {"name": "Вантуз Вентилёва", "rarity": 3, "slot": "weapon", "power": 76, "lvl": 17, "stats": {"luck": 4}, "unique": true,
+		"desc": "Удар в бит оглушает врага на 0,8 с. «Чпок — и тишина»."},
+	"crown_tilt": {"name": "Корона набок", "rarity": 3, "slot": "head", "power": 66, "lvl": 18, "stats": {"luck": 8}, "unique": true,
+		"desc": "Маленькая, золотая, всегда чуть набекрень. Как у Принца."},
+	"earbud": {"name": "Один наушник", "rarity": 3, "slot": "neck", "power": 54, "lvl": 16, "stats": {"rhythm": 4, "vibe": 4}, "unique": true,
+		"desc": "Второй — у Принца. Сингл же."},
 }
 
 const SELL_PRICE := [5, 20, 60, 0]
@@ -105,6 +145,21 @@ const MOBS := {
 		"speed": 2.4, "aggro": 16.0, "leash": 40.0, "atk": 2.2, "loot": [], "res": [], "boss": true},
 	"shumodav": {"name": "Шумодав", "hp": [6500.0, 0.0], "dmg": [34.0, 0.0], "xp": [700, 0], "scale": 0.62, "height": 7.6, "radius": 2.6,
 		"speed": 2.6, "aggro": 14.0, "leash": 30.0, "atk": 2.2, "loot": [], "res": [], "boss": true},
+	# 0.7 — парк «Заря»
+	"mower": {"name": "Газонокосилка-бунтарь", "hp": [150.0, 36.0], "dmg": [10.0, 3.3], "xp": [52, 14], "scale": 1.0, "height": 1.8, "radius": 0.8,
+		"speed": 3.2, "aggro": 9.0, "leash": 18.0, "atk": 2.6,
+		"loot": [[0.04, "pruner"], [0.18, "panama"], [0.6, "grass"]], "res": [[0.5, "planks", 2, 3], [0.3, "wires", 1, 2]]},
+	"bag": {"name": "Пакет-призрак", "hp": [100.0, 28.0], "dmg": [9.0, 3.1], "xp": [48, 14], "scale": 1.0, "height": 2.4, "radius": 0.6,
+		"speed": 4.4, "aggro": 9.5, "leash": 18.0, "atk": 1.9,
+		"loot": [[0.04, "rustle_hoodie"], [0.18, "bag_cape"], [0.6, "wrapper"]], "res": [[0.4, "planks", 1, 3]]},
+	"duck": {"name": "Робо-утка", "hp": [130.0, 32.0], "dmg": [10.0, 3.4], "xp": [54, 15], "scale": 1.0, "height": 1.9, "radius": 0.7,
+		"speed": 2.8, "aggro": 11.0, "leash": 17.0, "atk": 2.8,
+		"loot": [[0.04, "flippers"], [0.18, "quack_whistle"], [0.6, "spring"]], "res": [[0.5, "wires", 2, 3]]},
+	"loader": {"name": "Кружочек загрузки", "hp": [90.0, 26.0], "dmg": [12.0, 3.6], "xp": [56, 15], "scale": 1.0, "height": 2.0, "radius": 0.6,
+		"speed": 5.4, "aggro": 10.0, "leash": 18.0, "atk": 1.8,
+		"loot": [[0.04, "visor99"], [0.18, "spinner"], [0.6, "pixel"]], "res": [[0.5, "wires", 1, 3], [0.3, "cement", 1, 2]]},
+	"wheel": {"name": "Колесо Обновлений", "hp": [32000.0, 0.0], "dmg": [36.0, 0.0], "xp": [1400, 0], "scale": 1.0, "height": 10.0, "radius": 2.8,
+		"speed": 0.0, "aggro": 20.0, "leash": 99.0, "atk": 2.4, "loot": [], "res": [], "boss": true},
 }
 
 const RES_NAMES := {"brick": "Кирпич", "cement": "Цемент", "planks": "Доски", "wires": "Провода"}
@@ -160,7 +215,8 @@ const DAILIES := [
 
 # Map names (loading screen, minimap)
 const MAP_NAMES := {"yard": "двор «Берёзки»", "garages": "ГК «Песня»", "stroyka": "стройку Глушилки", "server": "серверную Кощея",
-	"embankment": "набережную и Калинов мост"}
+	"embankment": "набережную и Калинов мост", "park": "парк «Заря»"}
+const MAPS := ["yard", "garages", "stroyka", "server", "embankment", "park"]
 
 # Quest 3 «Флешка Кощея»
 const Q3_DRONES := 8
@@ -225,3 +281,90 @@ static func stats_text(st: Dictionary) -> String:
 		if int(st.get(k, 0)) > 0:
 			p.append("%s +%d" % [STAT_NAMES[k], int(st[k])])
 	return " · ".join(p)
+
+
+# ================================================================== 0.7: boss remixes, golden singles, Сингл Принц, the city map
+## Boss remixes: re-fight a defeated boss at its arena (the «РЕМИКС» console). Loot (golden singles) once a day per boss.
+const REMIX := {
+	"pakhan": {"title": "Голубиный рэп", "map": "yard", "pos": Vector3(0, 0, -24), "lvl": 7, "need": ["quest", 5], "console": Vector3(-8.5, 0, -26.8), "rot": 0.0,
+		"twist": "Зовёт голубей трижды за бой и кидается перьями-сюрикенами", "where": "двор, у гаражей", "items": ["pakhan_cap", "mic"]},
+	"shumodav": {"title": "Бетонный бас", "map": "stroyka", "pos": Vector3(-18.5, 0, 0), "lvl": 10, "need": ["quest3", 6], "console": Vector3(-12.0, 0, 6.5), "rot": PI,
+		"twist": "Шёпот тишины теперь идёт с басовыми волнами — перепрыгивай рывком", "where": "стройка, площадка у Глушилки", "npc": "shumodav",
+		"items": ["megaphone", "vest", "rebar"]},
+	"koschei": {"title": "Бессмертие 1.1", "map": "server", "pos": Vector3(-20, 0, 0), "lvl": 12, "need": ["quest4", 8], "console": Vector3(-6.5, 0, -4.6), "rot": 0.0,
+		"twist": "Две подписки сразу: рэп-баттл до 5 ударов в бит", "where": "серверная, у железного дуба", "items": ["gusli", "headset", "turtleneck"]},
+	"gorynych": {"title": "Три куплета", "map": "embankment", "pos": Vector3(-23, 0, -1.5), "lvl": 12, "need": ["quest5", 7], "console": Vector3(-27.5, 0, 2.8), "rot": PI,
+		"twist": "Рекламные паузы без перерыва — все три головы поют до конца", "where": "набережная, у Калинова моста", "npc": "gorynych",
+		"items": ["phones", "jacket"]},
+	"wheel": {"title": "Бесконечная загрузка", "map": "park", "pos": Vector3(22, 0, 13), "lvl": 18, "need": ["quest6", 6], "console": Vector3(14.6, 0, 18.4), "rot": PI * 0.75,
+		"twist": "Кружочки загрузки без конца и кольцо жёлтых кругов", "where": "парк «Заря», у колеса", "items": ["wheel_mic", "cabin_helmet", "dawn_bomber"]},
+}
+const REMIX_ORDER := ["pakhan", "shumodav", "koschei", "gorynych", "wheel"]
+## [name, hp ×, damage ×, level +, golden singles]
+const REMIX_DIFF := [["Демо", 1.0, 1.0, 0, 1], ["Сингл", 1.45, 1.2, 1, 2], ["Альбом", 2.0, 1.45, 2, 3], ["Платина", 2.8, 1.75, 3, 5]]
+const REMIX_HP := {"pakhan": 0.7, "shumodav": 0.9, "koschei": 1.0, "gorynych": 1.1, "wheel": 1.15}
+
+## Сингл Принц appears for 3 minutes; random visits every 30–40 minutes of play (after the first meeting)
+const PRINCE_TIME := 180.0
+const PRINCE_EVERY := [1800.0, 2400.0]
+const PRINCE_SHOP := {
+	"metronome": {"name": "Метроном Принца", "price": 4, "kind": "buff", "desc": "10 минут окно бита шире на 30 мс. «Это не чит — это ремикс времени»."},
+	"pass": {"name": "Пропуск в ремикс", "price": 2, "kind": "pass", "desc": "+1 бой с добычей, если сегодня с этого босса ты её уже забрал."},
+	"royal_food": {"name": "Шаурма «Королевская» ×3", "price": 1, "kind": "food", "desc": "Лечит как обычная, но ешь её как принц."},
+	"prince_jacket": {"price": 12, "kind": "item"},
+	"single_shades": {"price": 10, "kind": "item"},
+	"plunger": {"price": 16, "kind": "item"},
+	"crown_tilt": {"price": 15, "kind": "item"},
+	"earbud": {"price": 9, "kind": "item"},
+}
+const METRONOME_SECS := 600.0
+const METRONOME_WIN := 0.03
+
+## Aerotaxi of Pilot «Ложка» (side quest «Воздушный патруль»)
+const TAXI_COST := 25
+
+## The city map of Рубин (screen coordinates 0..1 inside the map area)
+const CITY_DISTRICTS := [
+	["Над городом и за порталом", Rect2(0.01, 0.0, 0.98, 0.11)],
+	["Новостройки", Rect2(0.01, 0.14, 0.25, 0.37)],
+	["Центр «Берёзки»", Rect2(0.28, 0.14, 0.34, 0.37)],
+	["Промзона", Rect2(0.64, 0.14, 0.35, 0.37)],
+	["Окраина «Частный сектор»", Rect2(0.01, 0.54, 0.25, 0.28)],
+	["Река", Rect2(0.28, 0.54, 0.71, 0.28)],
+	["За городом и под землёй", Rect2(0.01, 0.85, 0.98, 0.14)],
+]
+const CITY_PLACES := [
+	{"id": "yard", "name": "Двор «Берёзки»", "p": Vector2(0.40, 0.36), "map": "yard"},
+	{"id": "garages", "name": "ГК «Песня»", "p": Vector2(0.53, 0.23), "map": "garages"},
+	{"id": "stroyka", "name": "Стройка Глушилки", "p": Vector2(0.73, 0.25), "map": "stroyka", "up": true},
+	{"id": "server", "name": "Серверная Кощея", "p": Vector2(0.73, 0.43), "map": "server"},
+	{"id": "embankment", "name": "Набережная", "p": Vector2(0.42, 0.62), "map": "embankment", "up": true},
+	{"id": "park", "name": "Парк «Заря»", "p": Vector2(0.42, 0.76), "map": "park"},
+	{"id": "cheb", "name": "Чебуречная", "p": Vector2(0.33, 0.22), "ver": "0.8", "about": "Недоеденный пельмень и санузел-загадка"},
+	{"id": "laundry", "name": "Прачечная", "p": Vector2(0.49, 0.46), "ver": "0.8", "about": "Сериал «Отжим» снимают прямо у стиралок"},
+	{"id": "tower", "name": "Телебашня", "p": Vector2(0.59, 0.37), "ver": "1.0", "about": "Финал Части 2: здесь споёт Жар-птица"},
+	{"id": "dump", "name": "Помойка", "p": Vector2(0.87, 0.22), "ver": "0.9", "about": "Дед Утиль и Кеша продают идеи построек"},
+	{"id": "market", "name": "Рынок электроники", "p": Vector2(0.89, 0.34), "ver": "0.10", "about": "Подпольный склад светочастиц"},
+	{"id": "taxi", "name": "Таксопарк", "p": Vector2(0.88, 0.46), "ver": "1.1", "about": "Внедорожник «Носорог» у вокзала"},
+	{"id": "parkour", "name": "Паркур Парк", "p": Vector2(0.07, 0.24), "ver": "0.11", "about": "Ищем профи, чтобы расписать детсад"},
+	{"id": "kinder", "name": "Детсад «Бабочка»", "p": Vector2(0.18, 0.35), "ver": "0.11", "about": "Плюшевый мишка Потапыч и детская Олимпиада"},
+	{"id": "police", "name": "Полиция", "p": Vector2(0.08, 0.46), "ver": "1.4", "about": "Иностранец-халявщик Мистер Завтра"},
+	{"id": "airsales", "name": "«Золотой воздух»", "p": Vector2(0.07, 0.62), "ver": "1.2", "about": "Золотые банки с воздухом прошлого"},
+	{"id": "major", "name": "Участок Мажора", "p": Vector2(0.19, 0.69), "ver": "1.3", "about": "«Здоровая медицина» Мажора-Альфонса"},
+	{"id": "sanat", "name": "Санаторий", "p": Vector2(0.08, 0.77), "ver": "1.5", "about": "Поддельные часы «Секундомер-Люкс»"},
+	{"id": "politics", "name": "Парк Политиков", "p": Vector2(0.72, 0.72), "ver": "1.7", "about": "Парковка машины времени и полёт в космос"},
+	{"id": "airfield", "name": "Аэродром «Турник»", "p": Vector2(0.12, 0.92), "ver": "1.6", "about": "Прыжки с парашютом на краю Рубина"},
+	{"id": "metro", "name": "Метро-2", "p": Vector2(0.52, 0.92), "ver": "1.1", "about": "Станция в каждом районе"},
+	{"id": "cloud", "name": "Облако №9", "p": Vector2(0.30, 0.055), "ver": "0.8", "about": "Дом Бога Здорово"},
+	{"id": "orbit", "name": "Орбита", "p": Vector2(0.62, 0.055), "ver": "1.8", "about": "«Вечные часы» Кощея"},
+	{"id": "portal", "name": "Тридевятое царство", "p": Vector2(0.88, 0.055), "ver": "1.9", "about": "Лукоморье и Кощеево царство"},
+]
+const CITY_LINKS := [["yard", "garages"], ["garages", "stroyka"], ["stroyka", "server"], ["yard", "embankment"], ["embankment", "park"]]
+const CITY_INFO := {
+	"yard": ["Голуби, самокаты, пылесосы · ур. 2–6", "Баба Зина, Люба, дядя Миша, Павлин, Лис", "Здесь всё начинается"],
+	"garages": ["Твой бокс №40, постройки и Вася · концерт", "Петрович, Пилот, Кент, Джек", "Двор → арка «ГК Песня» у гаражей"],
+	"stroyka": ["Тишинки и самокаты · ур. 6–8", "Товарищ Клюква, Щебень, Шумодав", "ГК → западные ворота (путёвка Петровича)"],
+	"server": ["Робо-зайцы · ур. 9–10", "Мистер Малой", "Стройка → лифт-Шумодав на крышу Глушилки"],
+	"embankment": ["Колонки-автоплеи и чайки · ур. 9–10", "Меткий Змей, Мельник, Зари, Ярик, Горыныч", "Двор → южная калитка"],
+	"park": ["Газонокосилки, пакеты, робо-утки, кружочки · ур. 14–18", "Охранник Подписочкин · Колесо Обновлений", "Набережная → Калинов мост"],
+}

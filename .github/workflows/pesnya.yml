@@ -61,7 +61,7 @@ jobs:
           echo "GODOT_ANDROID_KEYSTORE_DEBUG_PATH=$KS" >> $GITHUB_ENV
           echo "GODOT_ANDROID_KEYSTORE_DEBUG_USER=androiddebugkey" >> $GITHUB_ENV
           echo "GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD=android" >> $GITHUB_ENV
-          sed -i "s/^version\/code=.*/version\/code=$((1000 + ${{ github.run_number }}))/; s/^version\/name=.*/version\/name=\"0.6.${{ github.run_number }}\"/" pesnya/export_presets.cfg
+          sed -i "s/^version\/code=.*/version\/code=$((1000 + ${{ github.run_number }}))/; s/^version\/name=.*/version\/name=\"0.7.${{ github.run_number }}\"/" pesnya/export_presets.cfg
           grep version pesnya/export_presets.cfg
 
       - name: Font licenses
@@ -99,6 +99,6 @@ jobs:
         with:
           tag_name: pesnya-test-${{ github.run_number }}
           name: "Песня (тест геймплея) — сборка ${{ github.run_number }}"
-          body: "Песня 0.6.${{ github.run_number }} «Новые соседи»: 12 персонажей и их задания, журнал заданий, тихие зоны у жителей, респаун мобов 45 с, уровни до 70, вещи с уровнями и характеристиками. Скачай pesnya-test-${{ github.run_number }}.apk и открой на телефоне."
+          body: "Песня 0.7.${{ github.run_number }} «Парк «Заря»»: парк за Калиновым мостом и босс Колесо Обновлений, 6 новых заданий соседей, ремиксы боссов с 4 сложностями, золотые синглы и лавка Сингл Принца, карта Рубина и аэротакси Пилота. Скачай pesnya-test-${{ github.run_number }}.apk и открой на телефоне."
           files: pesnya-test-*.apk
           make_latest: true
