@@ -2,7 +2,7 @@ class_name GameData
 ## All tunable numbers and texts of «Песня» in one place.
 
 const SAVE_PATH := "user://pesnya_save.json"
-const SAVE_VERSION := 7
+const SAVE_VERSION := 8
 
 const ITEMS := {
 	"seeds": {"name": "Семки", "rarity": 0, "slot": "", "power": 0, "desc": "Голубиная валюта. Баба Зина говорит, полезные."},
@@ -109,6 +109,52 @@ const ITEMS := {
 		"desc": "Маленькая, золотая, всегда чуть набекрень. Как у Сингл Принца."},
 	"earbud": {"name": "Один наушник", "rarity": 3, "slot": "neck", "power": 54, "lvl": 16, "stats": {"rhythm": 4, "vibe": 4}, "unique": true,
 		"desc": "Второй — у Сингл Принца. Сингл же."},
+	# 0.8 — Чебуречная «Сочная»
+	"whisker": {"name": "Усик таракана", "rarity": 0, "slot": "", "power": 0, "desc": "Ловит сплетни и запах чебуреков."},
+	"fly_wing": {"name": "Крылышко мухи", "rarity": 0, "slot": "", "power": 0, "desc": "Жужжит, даже когда муха улетела."},
+	"crust": {"name": "Корочка чебурека", "rarity": 0, "slot": "", "power": 0, "desc": "Хрустит в бит. Почти съедобная."},
+	"suction": {"name": "Присоска", "rarity": 0, "slot": "", "power": 0, "desc": "Присасывается ко всему, кроме удачи."},
+	"dumpling": {"name": "Пельмешек", "rarity": 0, "slot": "", "power": 0, "desc": "Маленький, тёплый, обиженный. Не ешь — он разговаривает."},
+	"ninja_band": {"name": "Повязка ниндзя", "rarity": 1, "slot": "head", "power": 32, "lvl": 15, "desc": "Таракан носил её с честью. Усы в комплект не входят."},
+	"nunchaku": {"name": "Нунчаки из сосисок", "rarity": 2, "slot": "weapon", "power": 66, "lvl": 17, "desc": "Бьют в бит и пахнут обедом."},
+	"bill": {"name": "Счёт за чебуреки", "rarity": 1, "slot": "neck", "power": 30, "lvl": 15, "desc": "Муха-коллектор выставила. Платить не обязательно."},
+	"facet_shades": {"name": "Очки «Фасетка»", "rarity": 2, "slot": "head", "power": 50, "lvl": 17, "desc": "Видно всё и сразу. Особенно бит."},
+	"oily_apron": {"name": "Фартук в масле", "rarity": 1, "slot": "body", "power": 32, "lvl": 15, "desc": "Брызги горячего сока ему не страшны."},
+	"skewer": {"name": "Шампур-рапира", "rarity": 2, "slot": "weapon", "power": 68, "lvl": 18, "desc": "Колет точно в такт. Дзынь — шашлык!"},
+	"plumber_boots": {"name": "Сапоги сантехника", "rarity": 1, "slot": "feet", "power": 30, "lvl": 16, "desc": "Не промокают даже в санузле, который не работает с 2009 года."},
+	"hose_sax": {"name": "Шланг-саксофон", "rarity": 2, "slot": "weapon", "power": 68, "lvl": 18, "desc": "Из санузла. Звучит как джаз и немного как трубы."},
+	"rolling_pin": {"name": "Скалка Вечности", "rarity": 3, "slot": "weapon", "power": 84, "lvl": 18, "desc": "Раскатывает тесто и врагов. Тесто — бесконечно, враги — нет."},
+	"chef_hat": {"name": "Колпак «Сочный»", "rarity": 3, "slot": "head", "power": 66, "lvl": 18, "desc": "Высокий, как стопка чебуреков. Тётя Сочня одобряет."},
+	"dough_apron": {"name": "Фартук «Тесто Вечности»", "rarity": 3, "slot": "body", "power": 70, "lvl": 18, "desc": "Мука не пачкает, тесто не липнет. Вечный."},
+	# 0.8 — Прачечная «Ромашка»
+	"lone_sock": {"name": "Одинокий носок", "rarity": 0, "slot": "", "power": 0, "desc": "Пары нет. Зато есть характер."},
+	"button": {"name": "Пуговица из барабана", "rarity": 0, "slot": "", "power": 0, "desc": "Стиралка не отдавала её годами."},
+	"scale_bit": {"name": "Накипь утюга", "rarity": 0, "slot": "", "power": 0, "desc": "Белая, твёрдая и обиженная."},
+	"foam_drop": {"name": "Капля пены", "rarity": 0, "slot": "", "power": 0, "desc": "Пахнет ромашкой. Скользкая."},
+	"striped_socks": {"name": "Носки в полоску", "rarity": 1, "slot": "feet", "power": 32, "lvl": 16, "desc": "Нашли пару! Носки счастливы — и ты быстрее."},
+	"sock_scarf": {"name": "Шарф из носков", "rarity": 2, "slot": "neck", "power": 50, "lvl": 18, "desc": "Сто одиноких носков наконец вместе."},
+	"drum_hat": {"name": "Шапка-барабан", "rarity": 1, "slot": "head", "power": 34, "lvl": 17, "desc": "Крутится, если сильно задуматься."},
+	"spin_robe": {"name": "Халат «Отжим»", "rarity": 2, "slot": "body", "power": 54, "lvl": 18, "desc": "Махровый, после центрифуги. Мягкий до головокружения."},
+	"iron_vest": {"name": "Жилет «Отглажено»", "rarity": 1, "slot": "body", "power": 34, "lvl": 17, "desc": "Стрелки на нём острее твоих рифм."},
+	"iron_knuckle": {"name": "Утюг-кастет", "rarity": 2, "slot": "weapon", "power": 70, "lvl": 19, "desc": "Гладит врагов с паром. Режим «лён»."},
+	"bubble_neck": {"name": "Пузырь-кулон", "rarity": 1, "slot": "neck", "power": 32, "lvl": 17, "desc": "Не лопается. Проверено каскадёрами."},
+	"foam_sneakers": {"name": "Кеды на пене", "rarity": 2, "slot": "feet", "power": 52, "lvl": 19, "desc": "Скользишь, как по ромашковому полу. Быстро и чисто."},
+	"drumsticks": {"name": "Палочки «Судьба»", "rarity": 3, "slot": "weapon", "power": 90, "lvl": 20, "desc": "Отбивают бит так, что стиралки встают в очередь."},
+	"porthole_helmet": {"name": "Шлем-иллюминатор", "rarity": 3, "slot": "head", "power": 70, "lvl": 20, "desc": "Смотришь на мир, как бельё из барабана: всё крутится, но чисто."},
+	"fluffy_robe": {"name": "Пушистый халат", "rarity": 3, "slot": "body", "power": 74, "lvl": 20, "desc": "После «деликатной стирки». Мягкий и непобедимый."},
+	# 0.8 — награды заданий и спецматериалы (уникальные)
+	"wrench": {"name": "Разводной ключ «Сантехник»", "rarity": 2, "slot": "weapon", "power": 66, "lvl": 15, "stats": {"luck": 5}, "unique": true,
+		"desc": "Вентилёв чинил им санузел неделю. Теперь он чинит врагов."},
+	"warehouse_key": {"name": "Ключ от склада №0", "rarity": 3, "slot": "", "power": 0, "unique": true,
+		"desc": "Микрочип из пельменя: «Склад №0. Рынок. Тьма». Откроет подпольный склад на Рынке электроники."},
+	"clapper": {"name": "Хлопушка режиссёра", "rarity": 2, "slot": "weapon", "power": 70, "lvl": 17, "stats": {"rhythm": 5}, "unique": true,
+		"desc": "Хлоп — и дубль! Враги путают, где кадр, а где бит."},
+	"detective_glasses": {"name": "Очки «Детектив»", "rarity": 2, "slot": "head", "power": 52, "lvl": 18, "stats": {"luck": 6}, "unique": true,
+		"desc": "Как у бабы Зины в сериале. Видно, кто не доел."},
+	"dough_mat": {"name": "Тесто вечности", "rarity": 2, "slot": "", "power": 0, "unique": true,
+		"desc": "Спецматериал. Не кончается. Пригодится изобретателям на Помойке."},
+	"drum_mat": {"name": "Барабан стиралки", "rarity": 2, "slot": "", "power": 0, "unique": true,
+		"desc": "Спецматериал. Крутится сам. Пригодится изобретателям на Помойке."},
 }
 
 const SELL_PRICE := [5, 20, 60, 0]
@@ -159,6 +205,38 @@ const MOBS := {
 		"speed": 5.4, "aggro": 10.0, "leash": 18.0, "atk": 1.8,
 		"loot": [[0.04, "visor99"], [0.18, "spinner"], [0.6, "pixel"]], "res": [[0.5, "wires", 1, 3], [0.3, "cement", 1, 2]]},
 	"wheel": {"name": "Колесо Обновлений", "hp": [32000.0, 0.0], "dmg": [36.0, 0.0], "xp": [1400, 0], "scale": 1.0, "height": 10.0, "radius": 2.8,
+		"speed": 0.0, "aggro": 20.0, "leash": 99.0, "atk": 2.4, "loot": [], "res": [], "boss": true},
+	# 0.8 — Чебуречная «Сочная»
+	"roach": {"name": "Таракан-ниндзя", "hp": [110.0, 30.0], "dmg": [10.0, 3.3], "xp": [52, 14], "scale": 1.0, "height": 1.3, "radius": 0.6,
+		"speed": 5.6, "aggro": 9.0, "leash": 17.0, "atk": 1.7,
+		"loot": [[0.04, "nunchaku"], [0.18, "ninja_band"], [0.6, "whisker"]], "res": [[0.4, "planks", 1, 2]]},
+	"fly": {"name": "Муха-коллектор", "hp": [80.0, 24.0], "dmg": [9.0, 3.0], "xp": [50, 14], "scale": 1.0, "height": 2.6, "radius": 0.5,
+		"speed": 4.8, "aggro": 10.0, "leash": 18.0, "atk": 1.3,
+		"loot": [[0.04, "facet_shades"], [0.18, "bill"], [0.6, "fly_wing"]], "res": [[0.4, "wires", 1, 2]]},
+	"cheb": {"name": "Чебурек-брызгун", "hp": [170.0, 40.0], "dmg": [11.0, 3.5], "xp": [58, 15], "scale": 1.0, "height": 1.6, "radius": 0.8,
+		"speed": 2.4, "aggro": 9.0, "leash": 16.0, "atk": 3.0,
+		"loot": [[0.04, "skewer"], [0.18, "oily_apron"], [0.6, "crust"]], "res": [[0.5, "planks", 2, 3]]},
+	"plunger_mob": {"name": "Вантуз-прыгун", "hp": [120.0, 32.0], "dmg": [11.0, 3.4], "xp": [56, 15], "scale": 1.0, "height": 1.6, "radius": 0.55,
+		"speed": 3.8, "aggro": 9.0, "leash": 16.0, "atk": 2.4,
+		"loot": [[0.04, "hose_sax"], [0.18, "plumber_boots"], [0.6, "suction"]], "res": [[0.5, "wires", 1, 3]]},
+	"pelmeshek": {"name": "Пельмешек", "hp": [40.0, 12.0], "dmg": [6.0, 2.0], "xp": [12, 3], "scale": 1.0, "height": 0.9, "radius": 0.45,
+		"speed": 4.4, "aggro": 16.0, "leash": 40.0, "atk": 1.4, "loot": [[0.5, "dumpling"]], "res": []},
+	"dough": {"name": "Тесто Вечности", "hp": [26000.0, 0.0], "dmg": [34.0, 0.0], "xp": [1300, 0], "scale": 1.0, "height": 4.6, "radius": 2.3,
+		"speed": 1.6, "aggro": 18.0, "leash": 40.0, "atk": 2.3, "loot": [], "res": [], "boss": true},
+	# 0.8 — Прачечная «Ромашка»
+	"sock": {"name": "Носок-одиночка", "hp": [100.0, 28.0], "dmg": [10.0, 3.3], "xp": [54, 15], "scale": 1.0, "height": 1.7, "radius": 0.5,
+		"speed": 4.6, "aggro": 9.5, "leash": 17.0, "atk": 1.7,
+		"loot": [[0.04, "sock_scarf"], [0.18, "striped_socks"], [0.6, "lone_sock"]], "res": [[0.4, "planks", 1, 2]]},
+	"washer": {"name": "Стиралка-центрифуга", "hp": [220.0, 46.0], "dmg": [12.0, 3.6], "xp": [64, 16], "scale": 1.0, "height": 2.0, "radius": 0.95,
+		"speed": 2.0, "aggro": 8.0, "leash": 14.0, "atk": 2.8,
+		"loot": [[0.04, "spin_robe"], [0.18, "drum_hat"], [0.6, "button"]], "res": [[0.5, "wires", 2, 3], [0.3, "cement", 1, 2]]},
+	"iron": {"name": "Утюг-гладиатор", "hp": [150.0, 36.0], "dmg": [13.0, 3.8], "xp": [62, 16], "scale": 1.0, "height": 1.5, "radius": 0.7,
+		"speed": 3.2, "aggro": 9.0, "leash": 18.0, "atk": 2.6,
+		"loot": [[0.04, "iron_knuckle"], [0.18, "iron_vest"], [0.6, "scale_bit"]], "res": [[0.5, "brick", 2, 3]]},
+	"bubble": {"name": "Пена-пузырь", "hp": [70.0, 22.0], "dmg": [8.0, 2.8], "xp": [46, 13], "scale": 1.0, "height": 2.2, "radius": 0.6,
+		"speed": 3.0, "aggro": 9.0, "leash": 16.0, "atk": 2.0,
+		"loot": [[0.04, "foam_sneakers"], [0.18, "bubble_neck"], [0.6, "foam_drop"]], "res": [[0.3, "cement", 1, 2]]},
+	"drum": {"name": "Барабан Судьбы", "hp": [30000.0, 0.0], "dmg": [36.0, 0.0], "xp": [1500, 0], "scale": 1.0, "height": 6.4, "radius": 2.7,
 		"speed": 0.0, "aggro": 20.0, "leash": 99.0, "atk": 2.4, "loot": [], "res": [], "boss": true},
 }
 
@@ -215,8 +293,8 @@ const DAILIES := [
 
 # Map names (loading screen, minimap)
 const MAP_NAMES := {"yard": "двор «Берёзки»", "garages": "ГК «Песня»", "stroyka": "стройку Глушилки", "server": "серверную Кощея",
-	"embankment": "набережную и Калинов мост", "park": "парк «Заря»"}
-const MAPS := ["yard", "garages", "stroyka", "server", "embankment", "park"]
+	"embankment": "набережную и Калинов мост", "park": "парк «Заря»", "cheburek": "Чебуречную «Сочная»", "laundry": "Прачечную «Ромашка»"}
+const MAPS := ["yard", "garages", "stroyka", "server", "embankment", "park", "cheburek", "laundry"]
 
 # Quest 3 «Флешка Кощея»
 const Q3_DRONES := 8
@@ -298,11 +376,15 @@ const REMIX := {
 		"items": ["phones", "jacket"]},
 	"wheel": {"title": "Бесконечная загрузка", "map": "park", "pos": Vector3(22, 0, 13), "lvl": 18, "need": ["quest6", 6], "console": Vector3(14.6, 0, 18.4), "rot": PI * 0.75,
 		"twist": "Кружочки загрузки без конца и кольцо жёлтых кругов", "where": "парк «Заря», у колеса", "items": ["wheel_mic", "cabin_helmet", "dawn_bomber"]},
+	"dough": {"title": "Тесто 2.0", "map": "cheburek", "pos": Vector3(-22, 0, -12), "lvl": 18, "need": ["quest7", 3], "console": Vector3(-16.6, 0, -3.0), "rot": PI / 2,
+		"twist": "Делится вдвое чаще, а лепёшки из теста падают рядами", "where": "Чебуречная, двор за кухней", "items": ["rolling_pin", "chef_hat", "dough_apron"]},
+	"drum": {"title": "Отжим 1400", "map": "laundry", "pos": Vector3(0, 0, -15), "lvl": 20, "need": ["quest7", 5], "console": Vector3(8.8, 0, -8.0), "rot": -PI / 2,
+		"twist": "Центрифуга крутит быстрее, носки летят в два ряда", "where": "Прачечная, зал премьеры", "items": ["drumsticks", "porthole_helmet", "fluffy_robe"]},
 }
-const REMIX_ORDER := ["pakhan", "shumodav", "koschei", "gorynych", "wheel"]
+const REMIX_ORDER := ["pakhan", "shumodav", "koschei", "gorynych", "wheel", "dough", "drum"]
 ## [name, hp ×, damage ×, level +, golden singles]
 const REMIX_DIFF := [["Демо", 1.0, 1.0, 0, 1], ["Сингл", 1.45, 1.2, 1, 2], ["Альбом", 2.0, 1.45, 2, 3], ["Платина", 2.8, 1.75, 3, 5]]
-const REMIX_HP := {"pakhan": 0.7, "shumodav": 0.9, "koschei": 1.0, "gorynych": 1.1, "wheel": 1.15}
+const REMIX_HP := {"pakhan": 0.7, "shumodav": 0.9, "koschei": 1.0, "gorynych": 1.1, "wheel": 1.15, "dough": 1.1, "drum": 1.2}
 
 ## Сингл Принц appears for 3 minutes; random visits every 30–40 minutes of play (after the first meeting)
 const PRINCE_TIME := 180.0
@@ -320,8 +402,21 @@ const PRINCE_SHOP := {
 const METRONOME_SECS := 600.0
 const METRONOME_WIN := 0.03
 
-## Aerotaxi of Pilot «Ложка» (side quest «Воздушный патруль»)
-const TAXI_COST := 25
+## Aerotaxi of Шустрый Пилот «Ложка» (side quest «Воздушный патруль»): 0.8 — from 170 coins, the farther the dearer
+const TAXI_BASE := 170
+const TAXI_STEP := 10
+
+
+static func taxi_price(from_map: String, to_map: String) -> int:
+	var a := Vector2.ZERO
+	var b := Vector2.ZERO
+	for pl in CITY_PLACES:
+		if pl.get("map", "") == from_map:
+			a = pl.p
+		if pl.get("map", "") == to_map:
+			b = pl.p
+	var d := a.distance_to(b)
+	return TAXI_BASE + TAXI_STEP * int(round(maxf(0.0, d - 0.12) * 45.0))
 
 ## The city map of Рубин (screen coordinates 0..1 inside the map area)
 const CITY_DISTRICTS := [
@@ -340,8 +435,8 @@ const CITY_PLACES := [
 	{"id": "server", "name": "Серверная Кощея", "p": Vector2(0.73, 0.43), "map": "server"},
 	{"id": "embankment", "name": "Набережная", "p": Vector2(0.42, 0.62), "map": "embankment", "up": true},
 	{"id": "park", "name": "Парк «Заря»", "p": Vector2(0.42, 0.76), "map": "park"},
-	{"id": "cheb", "name": "Чебуречная", "p": Vector2(0.33, 0.22), "ver": "0.8", "about": "Недоеденный пельмень и санузел-загадка"},
-	{"id": "laundry", "name": "Прачечная", "p": Vector2(0.49, 0.46), "ver": "0.8", "about": "Сериал «Отжим» снимают прямо у стиралок"},
+	{"id": "cheb", "name": "Чебуречная", "p": Vector2(0.31, 0.24), "map": "cheburek"},
+	{"id": "laundry", "name": "Прачечная", "p": Vector2(0.53, 0.44), "map": "laundry"},
 	{"id": "tower", "name": "Телебашня", "p": Vector2(0.59, 0.37), "ver": "1.0", "about": "Финал Части 2: здесь споёт Жар-птица"},
 	{"id": "dump", "name": "Помойка", "p": Vector2(0.87, 0.22), "ver": "0.9", "about": "Дед Утиль и Кеша продают идеи построек"},
 	{"id": "market", "name": "Рынок электроники", "p": Vector2(0.89, 0.34), "ver": "0.10", "about": "Подпольный склад светочастиц"},
@@ -355,11 +450,12 @@ const CITY_PLACES := [
 	{"id": "politics", "name": "Парк Политиков", "p": Vector2(0.72, 0.72), "ver": "1.7", "about": "Парковка машины времени и полёт в космос"},
 	{"id": "airfield", "name": "Аэродром «Турник»", "p": Vector2(0.12, 0.92), "ver": "1.6", "about": "Прыжки с парашютом на краю Рубина"},
 	{"id": "metro", "name": "Метро-2", "p": Vector2(0.52, 0.92), "ver": "1.1", "about": "Станция в каждом районе"},
-	{"id": "cloud", "name": "Облако №9", "p": Vector2(0.30, 0.055), "ver": "0.8", "about": "Дом Бога Здорово"},
+	{"id": "cloud", "name": "Облако №9", "p": Vector2(0.30, 0.055), "ver": "1.8", "about": "Дом Бога Здорово — он уже спускается к людям"},
 	{"id": "orbit", "name": "Орбита", "p": Vector2(0.62, 0.055), "ver": "1.8", "about": "«Вечные часы» Кощея"},
 	{"id": "portal", "name": "Тридевятое царство", "p": Vector2(0.88, 0.055), "ver": "1.9", "about": "Лукоморье и Кощеево царство"},
 ]
-const CITY_LINKS := [["yard", "garages"], ["garages", "stroyka"], ["stroyka", "server"], ["yard", "embankment"], ["embankment", "park"]]
+const CITY_LINKS := [["yard", "garages"], ["garages", "stroyka"], ["stroyka", "server"], ["yard", "embankment"], ["embankment", "park"],
+	["yard", "cheb"], ["yard", "laundry"]]
 const CITY_INFO := {
 	"yard": ["Голуби, самокаты, пылесосы · ур. 2–6", "Баба Зина, Люба, Дядя Миша, Павлин Футболист, Невысокий Лис", "Здесь всё начинается"],
 	"garages": ["Твой бокс №40, постройки и Вася · концерт", "Петрович, Шустрый Пилот, Кент Организатор, Джек Скалолаз", "Двор → арка «ГК Песня» у гаражей"],
@@ -367,4 +463,52 @@ const CITY_INFO := {
 	"server": ["Робо-зайцы · ур. 9–10", "Мистер Малой", "Стройка → лифт-Шумодав на крышу Глушилки"],
 	"embankment": ["Колонки-автоплеи и чайки · ур. 9–10", "Меткий Змей, Молодой Мельник, Мыслитель Зари, Ярик-Фонарик, Змей Горыныч", "Двор → южная калитка"],
 	"park": ["Газонокосилки, пакеты, робо-утки, кружочки · ур. 14–18", "Охранник Подписочкин · Колесо Обновлений", "Набережная → Калинов мост"],
+	"cheburek": ["Тараканы-ниндзя, мухи, чебуреки, вантузы · ур. 14–18", "Тётя Сочня, Пельмень Недоеденный, сантехник Вентилёв", "Двор → западная калитка (трамвай)"],
+	"laundry": ["Носки, стиралки, утюги, пена · ур. 16–20", "Тамара Ресепшн, режиссёр Дубль Дублевич", "Двор → восточная калитка"],
 }
+
+
+# ================================================================== 0.8 «Мыльная опера»
+## Music: loops at the same tempo; they change by themselves (each map has its theme, then the playlist goes on)
+const TRACKS := [["music_run", "Двор качает"], ["music_funk", "Гаражный фанк"], ["music_river", "Набережная"], ["music_disco", "Чебурек-диско"],
+	["music_soap", "Мыльная опера"], ["music_dawn", "Рассвет"]]
+const MAP_TRACK := {"yard": "music_run", "garages": "music_funk", "stroyka": "music_funk", "server": "music_dawn", "embankment": "music_river",
+	"park": "music_dawn", "cheburek": "music_disco", "laundry": "music_soap"}
+
+## Благословения Бога Здорово: the first «Здорово!» of the day at a bench gives one of them for the day
+const BLESSINGS := {
+	"cheer": ["Бодрость", "+10% к скорости"],
+	"appetite": ["Аппетит", "шаурма лечит 60% вместо 40%"],
+	"ear": ["Слух", "окно бита шире на 20 мс"],
+	"luck": ["Удача", "+10 к Удаче"],
+	"xp": ["Опыт", "+15% опыта"],
+	"kind": ["Добрый день", "мобы реже нападают первыми"],
+}
+const BLESSING_ORDER := ["cheer", "appetite", "ear", "luck", "xp", "kind"]
+## Дары: Благодать → вечные бонусы. [name, effect, max level, base cost, cost step]
+const GIFTS := {
+	"hp": ["Крепкое здоровье", "+2% здоровья", 5, 20, 15],
+	"luck": ["Везение", "+2 к Удаче", 5, 20, 15],
+	"beat": ["Чуткий слух", "окно бита +10 мс", 3, 30, 20],
+	"qxp": ["Мудрость", "+5% опыта за задания", 4, 25, 15],
+}
+const GIFT_ORDER := ["hp", "luck", "beat", "qxp"]
+const GREET_GOAL := 10       # «Скажи «здорово»»: greet 10 residents a day
+const GREET_MAX := 20        # Благодать for greetings, a day
+const KIT_HEAL := 0.5        # «Отличная аптечка»
+const KIT_CD := 20.0
+
+## Rhythm mini-games of the quests (notes in beats; halves are off-beats)
+const RHYTHM := {
+	"tickle": {"say": "Щекочи пёрышком строго в бит. Не в бит — это уже не щекотка, а приставание.", "title": "ЩЕКОТКА В БИТ", "meter": "Пельменю щекотно", "notes": [0, 1, 2, 3, 4, 4.5, 5, 6, 7, 8, 9, 10, 10.5, 11, 12, 13, 14, 14.5, 15, 16, 17, 18, 18.5, 19, 20, 22],
+		"lines": ["Хи!", "Ха-ха! Не туда!", "Хи-хи-хи!", "Ладно-ладно, открываюсь!"]},
+	"audition": {"say": "Пробы! Встаёшь в кадр и двигаешься в бит. Камера любит ритм. Я тоже. Мотор!", "title": "ПРОБЫ · ДУБЛЬ 1", "meter": "Режиссёр доволен", "notes": [0, 1, 2, 2.5, 3, 4, 5, 6, 6.5, 7, 8, 9, 10, 11, 12, 12.5, 13, 14, 15, 16, 17, 18, 18.5, 19, 20, 21, 22],
+		"lines": ["Мотор!", "Камера! Свет!", "Хорошо… ещё!", "Снято! Почти."]},
+	"stream": {"say": "Эфир! Жми в бит — зрители остаются. Промахнёшься — уходят смотреть котиков.", "title": "ЭФИР «ОТЖИМ»", "meter": "Зрители в эфире", "notes": [0, 0.5, 1, 2, 3, 3.5, 4, 5, 6, 7, 7.5, 8, 9, 10, 10.5, 11, 12, 13, 14, 14.5, 15, 16, 17, 18, 19, 19.5, 20, 21, 22, 23],
+		"lines": ["Всем привет, это «Отжим»!", "Лайк, если пахнет ромашкой!", "Баба Зина в кадре!", "Не переключайтесь!"]},
+}
+
+## Скамейки Здорово (one per place; the server room has none — «там тишина»)
+const BENCHES := {"yard": [Vector3(-6.9, 0, -8.0), PI / 2, true], "garages": [Vector3(25.5, 0, 5.4), PI, false], "stroyka": [Vector3(24.5, 0, 9.0), PI, false],
+	"embankment": [Vector3(22.0, 0, 5.2), 0.0, true], "park": [Vector3(-5.2, 0, -17.0), PI / 2, false], "cheburek": [Vector3(-5.0, 0, 13.4), PI, false],
+	"laundry": [Vector3(-16.0, 0, 8.5), 0.0, false]}

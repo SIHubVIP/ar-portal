@@ -6,6 +6,7 @@ var g  # main game
 var st := {}        # qid -> {"s": step index, "n": counter, "t": timer end (unix time), "done": bool}
 var marks: Array = []   # loot-beam nodes over «find» spots on the current map
 var wave_live := {}     # 0.7: qid -> mobs of the running wave («waves» steps)
+var boss_live := {}     # 0.8: qid -> the boss of a «boss» step on the current map
 
 
 func _init(game) -> void:
@@ -17,6 +18,7 @@ func reset() -> void:
 	st = {}
 	marks = []
 	wave_live = {}
+	boss_live = {}
 
 
 func to_save() -> Dictionary:
@@ -64,6 +66,8 @@ func available(q: String) -> bool:
 ## The quest of a neighbour that matters now: the first unfinished one of the chain (or the last, when all are done).
 func cur_quest(id: String) -> String:
 	var ch: Array = SideQ.chain(id)
+	if ch.is_empty():
+		return ""
 	for q in ch:
 		if not is_done(q):
 			return q
@@ -73,9 +77,21 @@ func cur_quest(id: String) -> String:
 func has_talk_for(id: String) -> bool:
 	for q in active_list():
 		var s := step(q)
-		if s.type == "talk" and s.npc == id:
+		if s.type in ["talk", "rhythm"] and s.npc == id:
 			return true
 	return false
+
+
+## 0.8: a guest speaks about quests only when it has business (otherwise — its lines for that place).
+func has_business(id: String) -> bool:
+	if has_talk_for(id):
+		return true
+	if not SideQ.NPCS.has(id):
+		return false
+	var q: String = cur_quest(id)
+	if q == "":
+		return false
+	return available(q) or is_active(q)
 
 
 func active_list() -> Array:
@@ -193,6 +209,10 @@ func _short(q: String) -> String:
 			return "найти: " + lb.left(1).to_lower() + lb.substr(1)   # keep names capitalised: «кепка Джека Скалолаза»
 		"return":
 			return "вернуться: " + npc_name(s.npc)
+		"rhythm":
+			return "ритм-игра: " + npc_name(s.npc)
+		"boss":
+			return "босс: " + GameData.MOBS[s.boss].name
 	return s.text
 
 
@@ -212,10 +232,12 @@ func _items_short(s: Dictionary) -> String:
 func marker(id: String) -> String:
 	for q in active_list():
 		var s := step(q)
-		if s.type == "talk" and s.npc == id:
+		if s.type in ["talk", "rhythm"] and s.npc == id:
 			return "?"
 	if SideQ.NPCS.has(id):
 		var q: String = cur_quest(id)
+		if q == "":
+			return ""
 		if available(q):
 			return "!"
 		if is_active(q):
@@ -289,14 +311,22 @@ func complete(q: String) -> void:
 	var qd: Dictionary = SideQ.QUESTS[q]
 	var rw: Dictionary = qd.reward
 	st[q].done = true
-	if rw.has("unlock"):
-		g.unlock(str(rw.unlock))
 	g.coins += int(rw.get("coins", 0))
 	g.food += int(rw.get("food", 0))
 	if rw.has("item"):
 		g.add_item(rw.item)
-	g.gain_xp(int(rw.get("xp", 0)))
-	g.hud.big("ЗАДАНИЕ ВЫПОЛНЕНО!", "«%s» · +%d монет · +%d опыта" % [qd.title, int(rw.get("coins", 0)), int(rw.get("xp", 0))], 4.0)
+	for it in rw.get("items", []):
+		g.add_item(it)
+	g.singles += int(rw.get("singles", 0))
+	var qx: int = g.u08.quest_xp(int(rw.get("xp", 0)))
+	g.gain_xp(qx)
+	g.u08.side_quest_done()
+	var extra := ""
+	if int(rw.get("singles", 0)) > 0:
+		extra = " · +%d золотых сингла" % int(rw.singles)
+	g.hud.big("ЗАДАНИЕ ВЫПОЛНЕНО!", "«%s» · +%d монет · +%d опыта%s" % [qd.title, int(rw.get("coins", 0)), qx, extra], 4.0)
+	if rw.has("unlock"):
+		g.unlock(str(rw.unlock))
 	g.play_sfx("bank")
 	refresh_marks()
 	g.save_game()
@@ -335,6 +365,48 @@ func update(_dt: float) -> void:
 			_advance(q)
 		elif s.type == "waves":
 			_update_waves(q, s)
+		elif s.type == "boss":
+			_update_boss(q, s)
+
+
+## 0.8 «boss»: the boss of the step appears when the hero comes to its arena; the kill advances the quest.
+func _update_boss(q: String, s: Dictionary) -> void:
+	if g.map_id != s.map or not g.is_playing():
+		return
+	if boss_live.has(q):
+		var m: Dictionary = boss_live[q]
+		if not m.alive and m.dead_t > 0.0:
+			boss_live.erase(q)
+			_advance(q)
+		return
+	var p: Vector3 = s.pos
+	if Vector2(g.pos.x - p.x, g.pos.z - p.z).length() > 17.0:
+		return
+	for o in g.mobs:
+		if o.alive and o.kind == s.boss and int(o.remix) > 0:
+			return
+	var b: Dictionary = g._spawn_mob(str(s.boss), p, int(s.lvl))
+	b.st = "chase"
+	boss_live[q] = b
+	refresh_marks()
+	var bn: String = GameData.MOBS[s.boss].name
+	g.hud.big(bn.to_upper() + "!", str(s.get("hint", "")), 3.5)
+	g.play_sfx("laser", 0.5)
+
+
+func boss_spots() -> Array:
+	var out := []
+	for q in active_list():
+		var s := step(q)
+		if s.type == "boss" and s.map == g.map_id and not boss_live.has(q):
+			out.append({"q": q, "pos": s.pos, "name": GameData.MOBS[s.boss].name})
+	return out
+
+
+## 0.8 «rhythm»: the rhythm game of a quest is won.
+func rhythm_done(q: String) -> void:
+	if is_active(q) and step(q).type == "rhythm":
+		_advance(q)
 
 
 ## 0.7 «waves»: when the hero comes to the spot, a wave of temporary mobs attacks; a cleared wave counts.
@@ -393,9 +465,18 @@ func talk(id: String) -> bool:
 			var title: String = SideQ.QUESTS[q].title
 			g.open_dialog(npc_name(id), s.say, [["Спасибо! («%s»)" % title, func(): _advance(q); close.call()]])
 			return true
+		if s.type == "rhythm" and s.npc == id:
+			var rg: Dictionary = GameData.RHYTHM[s.game]
+			var game: String = s.game
+			g.open_dialog(npc_name(id), "%s\n\n%s" % [rg.say, s.text], [["Начать!", func(): g.u08.start_quest_rhythm(q, game)], ["Позже", close]])
+			return true
 	if not SideQ.NPCS.has(id):
 		return false
 	var q2: String = cur_quest(id)
+	if q2 == "":
+		var ls: Array = SideQ.NPCS[id].get("lines", ["Здорово!"])
+		g.open_dialog(SideQ.NPCS[id].name, ls[randi() % ls.size()], [["Здорово!", close]])
+		return true
 	var qd: Dictionary = SideQ.QUESTS[q2]
 	var nm: String = SideQ.NPCS[id].name
 	if is_done(q2):
@@ -414,9 +495,7 @@ func talk(id: String) -> bool:
 		var hint: String = ("\nПодсказка: " + s2.hint) if s2.has("hint") else ""
 		match s2.type:
 			"return":
-				var rw: Dictionary = qd.reward
-				var item_name: String = GameData.ITEMS[rw.item].name if rw.has("item") else ""
-				g.open_dialog(nm, qd.done, [["Спасибо! (+%d монет, %s)" % [int(rw.get("coins", 0)), item_name], func(): complete(q2); close.call()]])
+				g.open_dialog(nm, qd.done, [["Спасибо! (%s)" % reward_text(qd.reward), func(): complete(q2); close.call()]])
 			"give_items":
 				if _has_items(s2):
 					g.open_dialog(nm, "%s\n\n%s" % [qd.progress, s2.text], [["Отдать", func():
@@ -440,6 +519,20 @@ func talk(id: String) -> bool:
 			_:
 				g.open_dialog(nm, "%s\n\nСейчас: %s%s" % [qd.progress, step_text(q2), hint], [["Иду!", close]])
 	return true
+
+
+func reward_text(rw: Dictionary) -> String:
+	var p := ["+%d монет" % int(rw.get("coins", 0))]
+	if rw.has("item"):
+		p.append(GameData.ITEMS[rw.item].name)
+	var cnt := {}
+	for it in rw.get("items", []):
+		cnt[it] = int(cnt.get(it, 0)) + 1
+	for it in cnt:
+		p.append("%s ×%d" % [GameData.ITEMS[it].name, int(cnt[it])] if int(cnt[it]) > 1 else GameData.ITEMS[it].name)
+	if int(rw.get("singles", 0)) > 0:
+		p.append("синглы ×%d" % int(rw.singles))
+	return ", ".join(p)
 
 
 # ================================================================== «find» spots
@@ -478,7 +571,7 @@ func refresh_marks() -> void:
 		Chars.loot_beam(n, Vector3.ZERO, Hud.GOLD, 5.0)
 		Kit.part(n, Kit.SPH, Kit.neon(Hud.GOLD, 2.4), Vector3.ONE * 0.36, Vector3(0, 0.5, 0))
 		marks.append(n)
-	for w in wave_spots():
+	for w in wave_spots() + boss_spots():
 		var n2 := Node3D.new()
 		g.world.root.add_child(n2)
 		n2.position = w.pos
@@ -493,4 +586,6 @@ func world_labels() -> Array:
 		out.append([f.pos + Vector3(0, 2.4, 0), "%s · осмотреть" % f.label, 17, Hud.GOLD])
 	for w in wave_spots():
 		out.append([w.pos + Vector3(0, 3.0, 0), "Учения: подойди — начнётся оборона", 17, Color("ff9ab0")])
+	for b in boss_spots():
+		out.append([b.pos + Vector3(0, 3.4, 0), "Босс: %s · подойди, если готов" % b.name, 17, Color("ff9ab0")])
 	return out

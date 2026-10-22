@@ -30,6 +30,7 @@ var dialog_panel: Control
 var bag_panel: Control
 var pause_panel: Control
 var dead_panel: Control
+var dead_text: Label
 var loading_panel: Control
 var list_panel: Control
 var list_title: Label
@@ -191,10 +192,10 @@ func _build_menu() -> void:
 	logo.custom_minimum_size = Vector2(220, 60)
 	v.add_child(logo)
 	v.add_child(_label("ПЕСНЯ ♪", 76, true, GOLD))
-	var sub := _label("Офлайн-версия 0.7 · «Парк «Заря»»: рассвет по подписке", 22, false, CREAM)
+	var sub := _label("Офлайн-версия 0.8 · «Мыльная опера»", 22, false, CREAM)
 	sub.custom_minimum_size = Vector2(520, 0)
 	v.add_child(sub)
-	var d := _label("Бей в бит — урон ×2. Новое: парк «Заря» за Калиновым мостом, Колесо Обновлений, ремиксы боссов, золотые синглы и Сингл Принц, карта Рубина и аэротакси Шустрого Пилота, шесть новых заданий соседей.", 18, false, Color(0.75, 0.8, 0.88))
+	var d := _label("Бей в бит — урон ×2. Новое: Чебуречная «Сочная» и Прачечная «Ромашка», Тесто Вечности и Барабан Судьбы, Бог Здорово и его скамейки, скорая «Отлично-03», пять новых мелодий — и соседи по всему сюжету.", 18, false, Color(0.75, 0.8, 0.88))
 	d.custom_minimum_size = Vector2(520, 0)
 	v.add_child(d)
 	menu_continue = _btn("ПРОДОЛЖИТЬ", func(): g.continue_game(), 260)
@@ -446,7 +447,8 @@ func _build_dead() -> void:
 	dead_panel.add_child(r)
 	var v := _center_card(dead_panel, 520)
 	v.add_child(_label("Голуби победили…", 30, true, Color("ff8a8a")))
-	v.add_child(_label("Баба Зина уже несёт валерьянку. Возвращаемся через пару секунд.", 19))
+	dead_text = _label("Баба Зина уже несёт валерьянку. Возвращаемся через пару секунд.", 19)
+	v.add_child(dead_text)
 
 
 func _build_loading() -> void:
@@ -1022,9 +1024,9 @@ func _draw_concert() -> void:
 		return
 	var now: float = g.beat_time()
 	_rrect(Rect2(s.x / 2 - 300, 14, 600, 66), PANEL, 20)
-	_txt(Vector2(s.x / 2, 44), "КОНЦЕРТ В ГК «ПЕСНЯ»", 24, GOLD, true, HORIZONTAL_ALIGNMENT_CENTER)
+	_txt(Vector2(s.x / 2, 44), str(c.get("title", "КОНЦЕРТ В ГК «ПЕСНЯ»")), 24, GOLD, true, HORIZONTAL_ALIGNMENT_CENTER)
 	_txt(Vector2(s.x / 2, 70), "Очки %d · Комбо ×%d · Идеально %d · В бит %d · Мимо %d" % [c.score, c.combo, c.perfect, c.good, c.miss], 16, CREAM, false, HORIZONTAL_ALIGNMENT_CENTER)
-	_bar(Rect2(s.x / 2 - 220, 90, 440, 16), c.hype / 100.0, PURPLE if c.hype < 70.0 else GOLD, "Зал качает: %d%%" % int(c.hype))
+	_bar(Rect2(s.x / 2 - 220, 90, 440, 16), c.hype / 100.0, PURPLE if c.hype < 70.0 else GOLD, "%s: %d%%" % [str(c.get("meter", "Зал качает")), int(c.hype)])
 	if c.lyric != "":
 		_txt(Vector2(s.x / 2, 150), c.lyric, 26, CREAM, true, HORIZONTAL_ALIGNMENT_CENTER, -1, 5)
 	var ly := s.y - 118.0
@@ -1051,7 +1053,7 @@ func _draw_concert() -> void:
 			_txt(Vector2(s.x / 2, s.y * 0.44), str(left) if left > 0 else "ПОЕХАЛИ!", 84, GOLD, true, HORIZONTAL_ALIGNMENT_CENTER, -1, 8)
 	if c.fb_t > 0.0:
 		_txt(Vector2(hx, ly - 72), c.fb, 30, Color(c.fb_col, minf(1.0, c.fb_t * 2.0)), true, HORIZONTAL_ALIGNMENT_CENTER, -1, 6)
-	_txt(Vector2(s.x / 2, s.y - 20), "Жми в любом месте экрана, когда нота в золотом круге · розовые — между долями", 15, CREAM, false, HORIZONTAL_ALIGNMENT_CENTER, -1, 3)
+	_txt(Vector2(s.x / 2, s.y - 20), str(c.get("hint", "Жми в любом месте экрана, когда нота в золотом круге · розовые — между долями")), 15, CREAM, false, HORIZONTAL_ALIGNMENT_CENTER, -1, 3)
 	for i in range(toasts.size()):
 		var tt: Dictionary = toasts[i]
 		_txt(Vector2(s.x / 2, 200 + i * 30), tt.text, 19, Color(tt.col, clampf(3.2 - tt.t, 0, 1)), true, HORIZONTAL_ALIGNMENT_CENTER, -1, 4)

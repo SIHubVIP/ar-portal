@@ -6,7 +6,7 @@ static func _m(c: Color, rough := 0.6, metal := 0.0) -> StandardMaterial3D:
 
 
 ## Height of the name plate above each model.
-const PLATE_H := {"pavlin": 3.4, "lis": 2.0, "jack": 2.1, "maloy": 2.0, "chef": 3.1, "zari": 3.0, "yarik": 2.6, "shcheben": 2.4}
+const PLATE_H := {"pavlin": 2.6, "lis": 2.0, "jack": 2.1, "maloy": 2.0, "chef": 3.1, "zari": 3.0, "yarik": 2.6, "shcheben": 2.4, "pelmen": 2.1, "sochnya": 2.4, "dublevich": 2.4}
 
 
 static func build(id: String) -> Dictionary:
@@ -24,47 +24,50 @@ static func build(id: String) -> Dictionary:
 		"melnik": return melnik()
 		"zari": return zari()
 		"yarik": return yarik()
+		"sochnya": return Mobs08.sochnya()
+		"pelmen": return Mobs08.pelmen()
+		"ventilev": return Mobs08.ventilev()
+		"tamara": return Mobs08.tamara()
+		"dublevich": return Mobs08.dublevich()
+		"chel": return Mobs08.chel()
+		"osob": return Mobs08.osob()
 	return Chars.petrovich_npc()
 
 
-# Павлин Футболист: a peacock in a football shirt, with a ball and a huge tail fan
+# Павлин Футболист (0.8: a humanoid, like Невысокий Лис): a peacock-headed footballer in the yard team's kit,
+# a crest with glowing tips, a tail fan on his back and the ball always at his foot
 static func pavlin() -> Dictionary:
-	var g := Node3D.new()
-	var body := Node3D.new()
-	g.add_child(body)
-	var blue := _m(Color("1f5ab8"), 0.35, 0.3)
-	Kit.part(body, Kit.SPH, _m(Color("f4f4f4"), 0.7), Vector3(0.95, 1.05, 0.9), Vector3(0, 1.0, 0))
-	Kit.part(body, Kit.BOX, _m(Color("2a8a4a"), 0.7), Vector3(0.96, 0.18, 0.92), Vector3(0, 1.0, 0))
-	Chars.label(body, "10", 60, Color("2a8a4a"), Vector3(0, 1.15, -0.47), Vector3(0, PI, 0), 0.006, 0)
-	Kit.part(body, Kit.CYL, blue, Vector3(0.28, 0.8, 0.28), Vector3(0, 1.75, 0.15), Vector3(0.2, 0, 0))
-	var head := Node3D.new()
-	head.position = Vector3(0, 2.2, 0.25)
-	body.add_child(head)
-	Kit.part(head, Kit.SPH, blue, Vector3(0.42, 0.42, 0.46))
-	Kit.part(head, Kit.CONE, _m(Color("e8c84a"), 0.4), Vector3(0.1, 0.24, 0.1), Vector3(0, -0.02, 0.28), Vector3(PI / 2, 0, 0))
+	var blue := Color("1f5ab8")
+	var h := Chars.human({"top": Color("2a8a4a"), "pants": Color("f4f4f4"), "shoes": Color("1a1a1a"), "hair": "none", "skin": blue,
+		"scale": Vector3(0.9, 0.9, 0.9), "smirk": 0.3, "width": 0.96, "stripe": true})
+	var bm := _m(blue, 0.35, 0.3)
+	# white shirt band and the number 10
+	Kit.part(h.body, Kit.CYL, _m(Color("f4f4f4"), 0.7), Vector3(0.78, 0.1, 0.52), Vector3(0, 1.18, 0))
+	Chars.label(h.body, "10", 70, Color("f4f4f4"), Vector3(0, 0.9, 0.29), Vector3.ZERO, 0.0055, 0)
+	# peacock face: a beak, a white eye patch and the crest of three feathers
+	Kit.part(h.head, Kit.CONE, _m(Color("e8c84a"), 0.4), Vector3(0.14, 0.3, 0.14), Vector3(0, -0.06, 0.42), Vector3(PI / 2, 0, 0))
 	for s in [-1, 1]:
-		Kit.part(head, Kit.SPH, _m(Color("ffffff"), 0.3), Vector3.ONE * 0.12, Vector3(0.12 * s, 0.06, 0.16))
-		Kit.part(head, Kit.SPH, _m(Color("101010"), 0.2), Vector3.ONE * 0.06, Vector3(0.13 * s, 0.06, 0.21))
+		Kit.part(h.head, Kit.SPH, _m(Color("f4f4f4"), 0.6), Vector3(0.2, 0.12, 0.06), Vector3(0.14 * s, 0.08, 0.3))
 	for k in range(3):
-		Kit.part(head, Kit.CYL, _m(Color("1a3a6a"), 0.5), Vector3(0.02, 0.26, 0.02), Vector3((k - 1) * 0.06, 0.32, -0.02), Vector3(0, 0, (k - 1) * 0.3))
-		Kit.part(head, Kit.SPH, Kit.neon(Color("4ad8ff"), 1.4), Vector3.ONE * 0.07, Vector3((k - 1) * 0.1, 0.46, -0.02))
-	# the tail fan with «eyes»
+		Kit.part(h.head, Kit.CYL, _m(Color("1a3a6a"), 0.5), Vector3(0.025, 0.34, 0.025), Vector3((k - 1) * 0.08, 0.46, -0.04), Vector3(0, 0, (k - 1) * 0.3))
+		Kit.part(h.head, Kit.SPH, Kit.neon(Color("4ad8ff"), 1.4), Vector3.ONE * 0.09, Vector3((k - 1) * 0.13, 0.64, -0.04))
+	Kit.part(h.head, Kit.SPH, bm, Vector3(0.5, 0.3, 0.4), Vector3(0, -0.28, 0.02))
+	# the tail fan with «eyes» on his back
 	var cols := [Color("2a9a5a"), Color("3aaa6a"), Color("1f8a8a")]
-	for k in range(11):
-		var a := -1.25 + k * 0.25
+	for k in range(9):
+		var a := -1.0 + k * 0.25
 		var f := Node3D.new()
-		f.position = Vector3(0, 1.0, -0.4)
-		f.rotation = Vector3(-0.35, 0, a)
-		body.add_child(f)
-		Kit.part(f, Kit.BOX, _m(cols[k % 3], 0.5), Vector3(0.22, 1.7, 0.04), Vector3(0, 0.95, 0))
-		Kit.part(f, Kit.SPH, Kit.neon(Color("ffd23a"), 1.2), Vector3(0.18, 0.2, 0.05), Vector3(0, 1.65, -0.01))
-		Kit.part(f, Kit.SPH, Kit.neon(Color("2a5aff"), 1.6), Vector3(0.09, 0.1, 0.06), Vector3(0, 1.65, -0.02))
-	for s in [-1, 1]:
-		Kit.part(body, Kit.CYL, _m(Color("d8a04a"), 0.5), Vector3(0.07, 0.55, 0.07), Vector3(0.18 * s, 0.27, 0))
-		Kit.part(body, Kit.BOX, _m(Color("1a1a1a"), 0.5), Vector3(0.16, 0.1, 0.3), Vector3(0.18 * s, 0.05, 0.08))
-	Kit.part(g, Kit.SPH, _m(Color("ffffff"), 0.4), Vector3.ONE * 0.42, Vector3(0.45, 0.21, 0.55))
-	Kit.part(g, Kit.SPH, _m(Color("1a1a1a"), 0.4), Vector3.ONE * 0.18, Vector3(0.45, 0.39, 0.6))
-	return {"root": g, "body": body, "head": head}
+		f.position = Vector3(0, 0.75, -0.32)
+		f.rotation = Vector3(-0.55, 0, a)
+		h.body.add_child(f)
+		Kit.part(f, Kit.BOX, _m(cols[k % 3], 0.5), Vector3(0.18, 1.2, 0.03), Vector3(0, 0.66, 0))
+		Kit.part(f, Kit.SPH, Kit.neon(Color("ffd23a"), 1.2), Vector3(0.15, 0.17, 0.04), Vector3(0, 1.18, -0.01))
+		Kit.part(f, Kit.SPH, Kit.neon(Color("2a5aff"), 1.6), Vector3(0.07, 0.08, 0.05), Vector3(0, 1.18, -0.02))
+	# captain's armband and the ball at his foot
+	Kit.part(h.arms[0], Kit.CYL, _m(Color("ffd23a"), 0.5), Vector3(0.3, 0.1, 0.3), Vector3(0, -0.15, 0))
+	Kit.part(h.root, Kit.SPH, _m(Color("ffffff"), 0.4), Vector3.ONE * 0.42, Vector3(0.45, 0.21, 0.55))
+	Kit.part(h.root, Kit.SPH, _m(Color("1a1a1a"), 0.4), Vector3.ONE * 0.18, Vector3(0.45, 0.39, 0.6))
+	return h
 
 
 # Невысокий Лис: a short fox in a clean apron, yellow gloves and a spray bottle

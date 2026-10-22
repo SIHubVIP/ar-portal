@@ -77,8 +77,9 @@ func _layout() -> void:
 		fly_btn.text = "АЭРОТАКСИ ЗАКРЫТО"
 		fly_btn.disabled = true
 	else:
-		fly_btn.text = "ЛЕТЕТЬ · %d МОНЕТ" % GameData.TAXI_COST
-		fly_btn.disabled = g.coins < GameData.TAXI_COST
+		var price := GameData.taxi_price(g.map_id, m)
+		fly_btn.text = "ЛЕТЕТЬ · %d МОНЕТ" % price
+		fly_btn.disabled = g.coins < price
 
 
 func _gui_input(e: InputEvent) -> void:

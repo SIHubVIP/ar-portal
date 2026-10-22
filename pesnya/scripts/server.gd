@@ -38,19 +38,28 @@ static func build(parent: Node3D) -> Dictionary:
 	var foam := Kit.tile_material(Color("b9bdc6"), Color("9ea3ad"))
 	var carpet := Kit.mat(Color("8e929c"), 1.0)
 	Kit.part(st, Kit.BOX, carpet, Vector3(30, 0.2, 6.4), Vector3(20, -0.1, 0))
-	for z in [-3.4, 3.4]:
-		Kit.part(st, Kit.BOX, foam, Vector3(30, 5.2, 0.6), Vector3(20, 2.6, z))
-		# soft cushions on the walls
-		for k in range(12):
-			Kit.part(st, Kit.SPH, Kit.mat(Color("d6d9de"), 0.95), Vector3(1.8, 1.4, 0.3), Vector3(9 + k * 2.2, 2.0 + (k % 2) * 1.4, z * 0.9))
-	rects.append(Rect2(DOOR_X, -16, 30, 13))
-	rects.append(Rect2(DOOR_X, 3, 30, 13))
+	# 0.8: the walls start exactly at the hall wall (no stub to walk into), cushions keep clear of the posters
 	var posters := [["ТИШИНА — ЭТО ПРОДУКТ", 12.0, -1], ["ГОВОРИ ШЁПОТОМ", 18.0, 1], ["999 ₽ В МЕСЯЦ. ВЕЧНО.", 24.0, -1],
-		["ПАРОЛЬ: ТИШИНА123", 28.0, 1], ["СПАСИБО ЗА ТИШИНУ", 9.5, 1]]
+		["ПАРОЛЬ: ТИШИНА123", 28.0, 1], ["СПАСИБО ЗА ТИШИНУ", 10.0, 1]]
+	for z in [-3.4, 3.4]:
+		Kit.part(st, Kit.BOX, foam, Vector3(29, 5.2, 0.6), Vector3(20.5, 2.6, z))
+		# soft cushions on the walls, flat against them, never in front of a poster
+		for k in range(12):
+			var cx := 9.0 + k * 2.2
+			var cy := 1.5 + (k % 2) * 1.2
+			var blocked := false
+			for pz in posters:
+				if signf(z) == float(pz[2]) and absf(cx - float(pz[1])) < 2.9 and cy > 1.9:
+					blocked = true
+			if blocked:
+				cy = 1.3
+			Kit.part(st, Kit.SPH, Kit.mat(Color("d6d9de"), 0.95), Vector3(1.8, 1.2, 0.22), Vector3(cx, cy, z * 0.9))
+	rects.append(Rect2(DOOR_X, -16, 30, 13.2))
+	rects.append(Rect2(DOOR_X, 2.8, 30, 13.2))
 	for pz in posters:
-		var zz: float = 3.05 * pz[2]
-		Kit.part(st, Kit.BOX, Kit.mat(Color("f4f4f4"), 0.8), Vector3(3.6, 1.0, 0.05), Vector3(pz[1], 3.4, zz))
-		Chars.label(root, pz[0], 60, Color("3a3e48"), Vector3(pz[1], 3.4, zz - 0.04 * pz[2]), Vector3(0, 0 if pz[2] < 0 else PI, 0), 0.0065, 0)
+		var zz: float = 2.86 * pz[2]
+		Kit.part(st, Kit.BOX, Kit.mat(Color("f4f4f4"), 0.8), Vector3(3.6, 1.0, 0.05), Vector3(pz[1], 3.5, zz))
+		Chars.label(root, pz[0], 60, Color("3a3e48"), Vector3(pz[1], 3.5, zz - 0.04 * pz[2]), Vector3(0, 0 if pz[2] < 0 else PI, 0), 0.0065, 0)
 	# lift at the east end
 	Kit.part(st, Kit.BOX, Kit.mat(Color("a8b0bc"), 0.25, 0.9), Vector3(0.3, 4.0, 3.2), Vector3(34.0, 2.0, 0))
 	Kit.part(st, Kit.BOX, Kit.mat(Color("6a7280"), 0.3, 0.8), Vector3(0.32, 4.0, 0.08), Vector3(34.0, 2.0, 0))

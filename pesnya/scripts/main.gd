@@ -142,6 +142,18 @@ var wheel_deco: Dictionary = {}   # the ferris wheel when it is not a boss
 var wheel_t := 0.0
 var remix_hidden := {}        # npc id -> npc entry hidden while its remix boss fights
 var stone_marks: Array = []
+var quest7 := 0               # 0.8 «Мыльная опера»: see U08.main_lines
+var kits := 0                 # 0.8: «Отличные аптечки» of the medics (auto-use at HP < 25%)
+var kit_cd := 0.0
+var grace := 0                # 0.8: Благодать of Бог Здорово
+var gifts := {"hp": 0, "luck": 0, "beat": 0, "qxp": 0}
+var blessing := {"day": "", "kind": ""}
+var medics := false           # 0.8: respawn at the ambulance «Отлично-03»
+var fusion := false           # 0.8: recipe «Чебурек-фьюжн» — shawarma speeds up
+var fusion_t := 0.0
+var slow_t := 0.0             # 0.8: plunger slow
+var wind_day := ""            # 0.8: «Второе дыхание» (once a day)
+var u08: U08
 var concert_nodes: Array = []
 var waves: Array = []         # expanding noise rings (speakers, Gorynych)
 var traps: Array = []         # delayed red circles on the ground
@@ -162,6 +174,11 @@ var list_arg := ""
 var music: AudioStreamPlayer
 var run_stream: AudioStream
 var menu_stream: AudioStream
+# 0.8: the music changes by itself — a playlist of loops at the same tempo; the beat clock never jumps back between them
+var tracks: Array = []          # [{"id", "name", "stream", "len"}]
+var track_i := 0
+var track_recent: Array = []
+var _mclock_base := 0.0
 var sfx := {}
 var sfx_players: Array = []
 var music_on := true
@@ -176,6 +193,7 @@ func _ready() -> void:
 	randomize()
 	Engine.max_fps = 60
 	side = SideRun.new(self)
+	u08 = U08.new(self)
 	autotest = OS.get_cmdline_user_args().has("--autotest")
 	if autotest:
 		save_path = "user://pesnya_autotest.json"
@@ -286,15 +304,19 @@ func set_quality(q: int) -> void:
 
 # ================================================================== audio
 func _setup_audio() -> void:
-	run_stream = load("res://audio/music_run.ogg")
 	menu_stream = load("res://audio/music_menu.ogg")
-	if run_stream is AudioStreamOggVorbis:
-		run_stream.loop = true
 	if menu_stream is AudioStreamOggVorbis:
 		menu_stream.loop = true
+	for t in GameData.TRACKS:
+		var st: AudioStream = load("res://audio/%s.ogg" % t[0])
+		if st is AudioStreamOggVorbis:
+			st.loop = false
+		tracks.append({"id": t[0], "name": t[1], "stream": st, "len": st.get_length() if st != null else 60.0})
+	run_stream = tracks[0].stream
 	music = AudioStreamPlayer.new()
 	music.volume_db = -4.0
 	add_child(music)
+	music.finished.connect(_on_track_finished)
 	for n in ["jump", "pickup", "drop", "bank", "beat", "laser", "bolt", "stumble", "dash", "smash", "land", "near", "over", "ui"]:
 		sfx[n] = load("res://audio/sfx_%s.ogg" % n)
 	for i in range(10):
@@ -317,9 +339,64 @@ func _play_music(s: AudioStream) -> void:
 func set_music(on: bool) -> void:
 	music_on = on
 	if on:
-		_play_music(run_stream if in_world() else menu_stream)
+		if in_world():
+			_play_world_music()
+		else:
+			_play_music(menu_stream)
 	else:
 		music.stop()
+
+
+func _is_track(s) -> bool:
+	for t in tracks:
+		if t.stream == s:
+			return true
+	return false
+
+
+## In the world: keep the current track if one is already playing (travel does not restart the song).
+func _play_world_music() -> void:
+	if not music_on:
+		music.stop()
+		return
+	if music.playing and _is_track(music.stream):
+		return
+	_start_track(_pick_track(), false)
+
+
+func _pick_track() -> int:
+	var theme: String = GameData.MAP_TRACK.get(map_id, "")
+	for i in range(tracks.size()):
+		if tracks[i].id == theme and not (i in track_recent):
+			return i
+	var pool := []
+	for i in range(tracks.size()):
+		if not (i in track_recent) and i != track_i:
+			pool.append(i)
+	if pool.is_empty():
+		pool = range(tracks.size())
+	return pool[randi() % pool.size()]
+
+
+func _start_track(i: int, announce: bool) -> void:
+	track_i = i
+	track_recent.append(i)
+	while track_recent.size() > 3:
+		track_recent.pop_front()
+	run_stream = tracks[i].stream
+	music.stream = run_stream
+	music.play()
+	if announce and state == PLAY and not autotest:
+		hud.toast("Сейчас играет: «%s»" % tracks[i].name, Color("d8a8ff"))
+
+
+## A track ended: the beat clock goes on from the whole number of beats it lasted, the next song starts on the downbeat.
+func _on_track_finished() -> void:
+	if not _is_track(music.stream) or not music_on or not in_world():
+		return
+	var n_beats: float = round(float(tracks[track_i].len) / beat_len)
+	_mclock_base += n_beats * beat_len
+	_start_track(_pick_track(), true)
 
 
 func play_sfx(n: String, pitch_scale := 1.0, vol := 0.0) -> void:
@@ -350,7 +427,7 @@ func _watch_music_clock(dt: float) -> void:
 
 func beat_time() -> float:
 	if music.playing and music.stream == run_stream and not autotest and _mpos_stall < 0.4:
-		return music.get_playback_position() + AudioServer.get_time_since_last_mix() - AudioServer.get_output_latency() - beat_offset
+		return _mclock_base + music.get_playback_position() + AudioServer.get_time_since_last_mix() - AudioServer.get_output_latency() - beat_offset
 	return time - beat_offset
 
 
@@ -368,7 +445,7 @@ func on_beat() -> bool:
 
 
 func beat_win_now() -> float:
-	return beat_win + (GameData.METRONOME_WIN if now() < metro_until else 0.0)
+	return beat_win + u08.beat_bonus() + (GameData.METRONOME_WIN if now() < metro_until else 0.0)
 
 
 func is_playing() -> bool:
@@ -525,6 +602,13 @@ func continue_game() -> void:
 		if quest5 >= 7:
 			hud.toast("Мыслитель Зари на набережной нашёл карту парка «Заря»", Hud.CREAM)
 		hud.toast("Карта Рубина — новая кнопка вверху справа", Hud.CREAM)
+	if old_ver < 8 and old_ver >= 7:
+		hud.toast("Обновление 0.8 «Мыльная опера»: Чебуречная, Прачечная, Бог Здорово и 5 новых мелодий!", Hud.GOLD)
+		if quest6 >= 7:
+			hud.toast("Мыслитель Зари на набережной знает, как выкупить парк", Hud.CREAM)
+		hud.toast("Аэротакси теперь от 170 монет — чем дальше, тем дороже", Hud.CREAM)
+	elif old_ver < 7:
+		hud.toast("0.8: соседи переехали в сюжет — ищи их по всему району", Hud.CREAM)
 
 
 func start_game(new_game := true) -> void:
@@ -594,6 +678,9 @@ func _reset_progress() -> void:
 	robot_task = {"task": "", "start": 0.0, "end": 0.0, "told": false}
 	daily = {"date": "", "pigeon": 0, "scooter": 0, "vacuum": 0, "claimed": []}
 	side.reset()
+	u08.reset()
+	fusion_t = 0.0
+	slow_t = 0.0
 	map_id = "yard"
 	_recalc_power()
 	_recalc_stats()
@@ -613,7 +700,7 @@ func _save_dict() -> Dictionary:
 		"quest6": quest6, "q6_stones": q6_stones, "singles": singles, "taxi": taxi, "remix": remix, "metro_until": metro_until,
 		"prince": {"met": prince.met, "next": prince.next},
 		"mount": mount_owned, "res": res, "food": food,
-		"buildings": buildings, "b_since": b_since, "robot": robot_task, "daily": daily, "map": map_id, "side": side.to_save(),
+		"buildings": buildings, "b_since": b_since, "robot": robot_task, "daily": daily, "map": map_id, "side": side.to_save(), "u08": u08.to_save(),
 		"settings": {"music": music_on, "quality": quality, "beat_offset": beat_offset}, "saved_at": now()}
 
 
@@ -709,8 +796,12 @@ func load_game() -> bool:
 	robot_task = {"task": str(rt.get("task", "")), "start": float(rt.get("start", 0.0)), "end": float(rt.get("end", 0.0)), "told": bool(rt.get("told", false))}
 	var dl: Dictionary = d.get("daily", {})
 	daily = {"date": str(dl.get("date", "")), "pigeon": int(dl.get("pigeon", 0)), "scooter": int(dl.get("scooter", 0)), "vacuum": int(dl.get("vacuum", 0)), "claimed": dl.get("claimed", []),
-		"concert": bool(dl.get("concert", false))}
+		"concert": bool(dl.get("concert", false)), "greet": dl.get("greet", [])}
 	side.load_from(d.get("side", {}))
+	var u8 = d.get("u08", {})
+	u08.load_from(u8 if u8 is Dictionary else {})
+	fusion_t = 0.0
+	slow_t = 0.0
 	inventory.clear()
 	equipped.clear()
 	for id in d.get("inv", []):
@@ -759,6 +850,8 @@ func _enter_map(id: String, spawn: String) -> void:
 		"server": world = ServerRoom.build(self)
 		"embankment": world = Embankment.build(self)
 		"park": world = Park.build(self, quest6 >= 6)
+		"cheburek": world = Cheb.build(self)
+		"laundry": world = Laundry.build(self)
 		_: world = Base.build_garages(self)
 	if id == "garages" and quest3 >= 2:
 		_add_site_portal()
@@ -785,10 +878,12 @@ func _enter_map(id: String, spawn: String) -> void:
 		cd[k] = 0.0
 	for n in world.npcs:
 		_spawn_npc(n.id, n.pos, n.rot)
+	side.boss_live = {}
 	for sid in SideQ.NPCS:
 		var sn: Dictionary = SideQ.NPCS[sid]
-		if sn.map == id:
-			_spawn_npc(sid, sn.pos, sn.rot)
+		if sn.map == id and u08.npc_shown(sid):
+			var place: Array = u08.npc_place(sid)
+			_spawn_npc(sid, place[0], place[1])
 	for e in world.mobs:
 		_spawn_mob(e[0], e[1], e[2])
 	if id == "yard" and quest == 3:
@@ -829,6 +924,7 @@ func _enter_map(id: String, spawn: String) -> void:
 		_spawn_companion()
 	if id == "park":
 		_enter_park()
+	u08.on_enter_map(id)
 	_add_remix_consoles()
 	if mounted:
 		_create_mount_vis()
@@ -836,7 +932,7 @@ func _enter_map(id: String, spawn: String) -> void:
 		for sid in world.anchors:
 			_refresh_slot(sid)
 		_refresh_robot()
-	_play_music(run_stream)
+	_play_world_music()
 	_check_daily_reset()
 	side.refresh_marks()
 	if id == "embankment" and prince.met and Time.get_datetime_dict_from_system().weekday == 5:
@@ -910,6 +1006,8 @@ func _spawn_mob(kind: String, at: Vector3, lvl: int) -> Dictionary:
 		"duck": model = Mobs07.roboduck()
 		"loader": model = Mobs07.loader()
 		"wheel": model = Park.wheel()
+		"roach", "fly", "cheb", "plunger_mob", "pelmeshek", "sock", "washer", "iron", "bubble", "dough", "drum":
+			model = u08.model(kind, at)
 		_: model = Chars.vacuum()
 	world.root.add_child(model.root)
 	Kit.bake_tree(model.root)
@@ -927,6 +1025,8 @@ func _spawn_mob(kind: String, at: Vector3, lvl: int) -> Dictionary:
 		"extra": model, "alt": 0.0, "loading": 0.0, "heads": 3, "shield": kind == "koschei", "rap": 0, "shield_t": 8.0 if kind == "gorynych" else 0.0, "fly_t": 6.0, "fly_to": null, "chast": false,
 		"remix": 0, "remix_id": "", "spin_a": 0.0, "restored": false,
 	}
+	if kind in U08.MOB_KINDS:
+		u08.setup_mob(m)
 	if kind == "wheel":
 		m.yaw = 0.0
 		m.fly_t = 18.0
@@ -1004,7 +1104,7 @@ func _bval(id: String) -> float:
 
 func _recalc_stats() -> void:
 	var ratio := hp / hp_max if hp_max > 0 else 1.0
-	hp_max = (300.0 + (level - 1) * 45.0 + stat("hp") * 12.0) * (1.2 if race == "punk" else 1.0) * (1.0 + _bval("gym"))
+	hp_max = (300.0 + (level - 1) * 45.0 + stat("hp") * 12.0) * (1.2 if race == "punk" else 1.0) * (1.0 + _bval("gym")) * u08.hp_mult()
 	hp = clampf(hp_max * ratio, 1.0, hp_max)
 
 
@@ -1037,6 +1137,9 @@ func quest_lines() -> Array:
 	var finished: int = daily.claimed.size()
 	if quest >= 1:
 		out.append("Ежедневные дяди Миши: %d/3%s" % [finished, (" · можно забрать: %d" % done) if done > 0 else ""])
+	var gl: String = u08.status_line()
+	if gl != "":
+		out.append(gl)
 	return out
 
 
@@ -1100,7 +1203,7 @@ func main_quest_lines() -> Array:
 			5: out = ["Рассвет по подписке", "Останови Колесо Обновлений!", "Жёлтые круги — отбегай · «Не выключайте» — бей в бит"]
 			6: out = ["Рассвет по подписке", "Вернись к Мыслителю Зари на набережную"]
 	else:
-		out = ["Часть 2 · акт 1 пройден", "Парк «Заря» свободен на 3% · продолжение в 0.8", "Ремиксы боссов — пульты «РЕМИКС» у арен"]
+		out = u08.main_lines()
 	return out
 
 
@@ -1138,6 +1241,8 @@ func remove_items(id: String, n: int) -> void:
 
 
 func stat(k: String) -> int:
+	if k == "luck":
+		return int(stats.get(k, 0)) + u08.luck_bonus()
 	return int(stats.get(k, 0))
 
 
@@ -1198,6 +1303,9 @@ func npc_marker(id: String) -> String:
 			if quest2 == 5:
 				return "?"
 		"zari":
+			var zm: String = u08.zari_marker()
+			if zm != "" and not side.has_talk_for("zari"):
+				return zm
 			if not side.has_talk_for("zari"):
 				if quest6 == 0 and quest5 >= 7 and side.is_done("treasure"):
 					return "!"
@@ -1223,6 +1331,7 @@ func world_labels() -> Array:
 		return out
 	out += side.world_labels()
 	out += _labels07()
+	out += u08.labels()
 	for pt in world.portals:
 		out.append([pt.pos + Vector3(0, 2.2, 0), "→ " + pt.label, 18, Hud.TEAL])
 	if map_id == "garages" and quest2 >= 2:
@@ -1276,6 +1385,7 @@ func _on_kill(m: Dictionary) -> void:
 	if m.kind == "wheel":
 		_wheel_defeated(m)
 		return
+	u08.on_kill(m)
 	side.on_kill(m)
 	if not m.temp and daily.has(m.kind):
 		daily[m.kind] = int(daily[m.kind]) + 1
@@ -1360,6 +1470,7 @@ func _interactables() -> Array:
 		out.append({"label": n.act, "kind": "npc", "id": n.id, "pos": n.pos, "r": n.get("r", 3.2)})
 	out += side.interactables()
 	out += _interactables07()
+	out += u08.interactables()
 	if map_id == "server" and world.has("door"):
 		if quest4 == 2:
 			out.append({"label": "Рэп-код", "kind": "door", "id": "door", "pos": Vector3(ServerRoom.DOOR_X + 1.6, 0, 0), "r": 3.2})
@@ -1405,7 +1516,14 @@ func interact() -> void:
 	play_sfx("ui")
 	match e.kind:
 		"npc":
+			u08.greet(e.id)
+			var ne = _npc_entry(e.id)
+			if ne != null and ne.has("guest") and not side.has_business(e.id):
+				u08.guest_line(ne)
+				return
 			if e.id == "zari" and _zari_main():
+				return
+			if e.id == "zari" and not side.has_talk_for("zari") and u08.zari_talk():
 				return
 			if e.id == "prince":
 				_talk_prince()
@@ -1429,6 +1547,14 @@ func interact() -> void:
 		"chest": _open_chest()
 		"slot": open_list("slot", e.id)
 		"robot": open_list("robot")
+		"bench": u08.bench()
+
+
+func _npc_entry(id: String):
+	for n in npcs:
+		if n.id == id:
+			return n
+	return null
 
 
 func talk() -> void:
@@ -1555,6 +1681,7 @@ func open_list(kind: String, arg := "") -> void:
 		"journal": _list_journal()
 		"remix": _list_remix(arg)
 		"prince": _list_prince()
+		"bench": u08.bench_list()
 
 
 func close_list() -> void:
@@ -1640,7 +1767,7 @@ func _sell_junk() -> void:
 func _check_daily_reset() -> void:
 	var today := Time.get_date_string_from_system()
 	if daily.date != today:
-		daily = {"date": today, "pigeon": 0, "scooter": 0, "vacuum": 0, "claimed": [], "concert": false}
+		daily = {"date": today, "pigeon": 0, "scooter": 0, "vacuum": 0, "claimed": [], "concert": false, "greet": []}
 
 
 func _daily_ready_count() -> int:
@@ -1663,7 +1790,7 @@ func _list_daily() -> void:
 		for r in rw:
 			rtxt += " · %s %d" % [GameData.RES_NAMES[r], rw[r]]
 		rows.append({"text": "%s: %d / %d" % [dd[1], got, dd[2]], "sub": "Награда: " + rtxt,
-			"btn": "Готово ✓" if claimed else "Забрать", "enabled": (not claimed) and got >= dd[2], "cb": func(): _claim_daily(k),
+			"btn": "Готово" if claimed else "Забрать", "enabled": (not claimed) and got >= dd[2], "cb": func(): _claim_daily(k),
 			"color": Hud.GREEN if claimed else Hud.CREAM})
 	hud.show_list("Дядя Миша · ежедневные дела", "«Двор сам себя не подметёт! Голубей гоняй, самокаты лови, пылесосы выключай.» Обновляются в полночь.", rows)
 
@@ -1931,6 +2058,7 @@ func xp_next() -> int:
 
 
 func gain_xp(v: int) -> void:
+	v = int(round(v * u08.xp_mult()))
 	xp += v
 	while xp >= xp_next() and level < GameData.MAX_LEVEL:
 		xp -= xp_next()
@@ -1987,6 +2115,8 @@ func _drop_loot(m: Dictionary) -> void:
 		if randf() < 0.6:
 			drops.append("jacket")
 		coins += 600
+	elif m.kind in ["dough", "drum"]:
+		drops = u08.loot(m)
 	elif m.kind == "safe_hare":
 		drops = ["duck"]
 		coins += 150
@@ -2084,6 +2214,7 @@ func _beat_action(_name: String) -> bool:
 		var wh = _shielded_wheel()
 		if wh != null:
 			_wheel_beat(wh, true)
+		u08.beat(true)
 		if target != null and target.alive and target.kind == "gorynych" and target.loading > 0.0:
 			target.loading = 0.0
 			hud.big("ЗАГРУЗКА ПРЕРВАНА РИТМОМ!", "Бэкап не восстановился", 2.0)
@@ -2110,6 +2241,7 @@ func _beat_action(_name: String) -> bool:
 		var wh2 = _shielded_wheel()
 		if wh2 != null:
 			_wheel_beat(wh2, false)
+		u08.beat(false)
 	combo_t = 3.0
 	idle_t = 0.0
 	return ok
@@ -2144,8 +2276,12 @@ func _eat() -> void:
 		return
 	food -= 1
 	cd.food = cd_max.food
-	heal_left += hp_max * 0.4
-	hud.float_text(pos + Vector3(0, 2.6, 0), "Шаурма! +40%", Color("ffd27a"), 24, 40)
+	var fh: float = u08.food_heal()
+	heal_left += hp_max * fh
+	hud.float_text(pos + Vector3(0, 2.6, 0), "Шаурма! +%d%%" % int(round(fh * 100.0)), Color("ffd27a"), 24, 40)
+	if fusion:
+		fusion_t = 20.0
+		hud.float_text(pos + Vector3(0, 3.2, 0), "Чебурек-фьюжн: разгон!", Color("ffb05a"), 20, 40)
 	play_sfx("pickup", 0.9)
 
 
@@ -2274,6 +2410,10 @@ func _aoe(center: Vector3, r: float, dmg: float, crit: bool, stun: float) -> voi
 func damage_mob(m: Dictionary, dmg: float, crit: bool, stun := 0.0) -> void:
 	if not m.alive:
 		return
+	if m.kind in ["dough", "drum"]:
+		dmg = u08.on_damage(m, dmg, crit)
+		if m.kind == "drum" and m.shield:
+			stun = 0.0
 	if m.kind in ["koschei", "wheel"] and m.shield:
 		dmg *= 0.08
 		stun = 0.0
@@ -2282,7 +2422,7 @@ func damage_mob(m: Dictionary, dmg: float, crit: bool, stun := 0.0) -> void:
 	m.hp -= dmg
 	m.hit = 0.18
 	if stun > 0.0:
-		m.stun = maxf(m.stun, stun * (0.5 if m.kind == "pakhan" else (0.25 if m.kind in ["shumodav", "gorynych", "wheel"] else 1.0)))
+		m.stun = maxf(m.stun, stun * (0.5 if m.kind == "pakhan" else (0.25 if m.kind in ["shumodav", "gorynych", "wheel", "dough", "drum"] else 1.0)))
 		m.charge_t = 0.0
 	if m.st == "idle":
 		m.st = "chase"
@@ -2344,7 +2484,10 @@ func hurt_player(dmg: float, _from: Vector3) -> void:
 
 
 func _die() -> void:
+	if u08.second_wind():
+		return
 	state = DEAD
+	hud.dead_text.text = u08.dead_text()
 	dead_t = 3.0
 	_show_only(hud.dead_panel)
 	play_sfx("over")
@@ -2358,6 +2501,7 @@ func _respawn() -> void:
 	pos = sp[0]
 	facing = sp[1]
 	hp = hp_max * 0.7
+	u08.on_respawn()
 	state = PLAY
 	_show_only(null)
 	target = null
@@ -2599,6 +2743,7 @@ func _process(delta: float) -> void:
 			_update_prince(dt)
 			_update_camera(dt)
 			side.update(dt)
+			u08.update(dt)
 			save_t += dt
 			if save_t > 30.0:
 				save_game()
@@ -2643,6 +2788,8 @@ func _update_player(dt: float) -> void:
 	silence_t = maxf(0.0, silence_t - dt)
 	silence_msg_t = maxf(0.0, silence_msg_t - dt)
 	group_t = maxf(0.0, group_t - dt)
+	slow_t = maxf(0.0, slow_t - dt)
+	fusion_t = maxf(0.0, fusion_t - dt)
 	combo_t -= dt
 	if combo_t <= 0.0:
 		combo = 0
@@ -2678,7 +2825,7 @@ func _update_player(dt: float) -> void:
 		spd = 1.0
 	elif jv.length() > 0.0:
 		var md := _move_dir(jv)
-		var vmax: float = GameData.MOUNT_SPEED if mounted else 6.2 * (1.0 + stat("speed") * 0.012)
+		var vmax: float = (GameData.MOUNT_SPEED if mounted else 6.2 * (1.0 + stat("speed") * 0.012)) * u08.speed_mult()
 		var sp := vmax * minf(1.0, jv.length() * 1.3)
 		pos += md.normalized() * sp * dt
 		spd = sp / vmax
@@ -2780,6 +2927,8 @@ func _update_mobs(dt: float) -> void:
 				m.head.rotation.x = minf(0.5, m.dead_t * 0.4)
 				_remix_after(m)
 				continue
+			if u08.dead_anim(m, dt):
+				continue
 			if m.kind == "wheel":
 				# the wheel slows down and stops; lights go warm
 				m.spin_a += dt * maxf(0.0, 0.5 - m.dead_t * 0.15)
@@ -2820,11 +2969,11 @@ func _update_mobs(dt: float) -> void:
 				m.wander = m.home + Vector3(randf_range(-3.5, 3.5), 0, randf_range(-3.5, 3.5))
 				m.t = randf_range(2.5, 5.0)
 			var wd: Vector3 = m.wander - m.pos
-			if wd.length() > 0.3 and m.kind != "wheel":
+			if wd.length() > 0.3 and m.kind not in ["wheel", "drum"]:
 				spd = 2.2 if m.kind in ["scooter", "drone"] else 1.2
 				m.yaw = lerp_angle(m.yaw, atan2(wd.x, wd.z), minf(1.0, dt * 4))
 				m.pos += wd.normalized() * spd * dt
-			if dp < m.aggro and state == PLAY and (m.boss or not safe):
+			if dp < m.aggro * (1.0 if m.boss else u08.aggro_mult()) and state == PLAY and (m.boss or not safe):
 				m.st = "chase"
 				play_sfx("near", 1.4, -10.0)
 		elif m.st == "chase":
@@ -2876,6 +3025,8 @@ func _mob_chase(m: Dictionary, dt: float, to_p: Vector3, dp: float) -> float:
 			return _wheel_chase(m, dt, to_p, dp)
 		"mower", "bag", "duck", "loader":
 			return _park_chase(m, dt, to_p, dp)
+		"roach", "fly", "cheb", "plunger_mob", "pelmeshek", "sock", "washer", "iron", "bubble", "dough", "drum":
+			return u08.chase(m, dt, to_p, dp)
 		"shumodav":
 			m.yaw = lerp_angle(m.yaw, atan2(to_p.x, to_p.z), minf(1.0, dt * 3))
 			_shumodav_special(m, dt)
@@ -2947,6 +3098,8 @@ func _mob_chase(m: Dictionary, dt: float, to_p: Vector3, dp: float) -> float:
 func _animate_mob(m: Dictionary, dt: float, spd: float) -> void:
 	var node: Node3D = m.node
 	m.flap = maxf(0.0, m.flap - dt)
+	if m.kind in U08.MOB_KINDS:
+		u08.animate(m, dt, spd)
 	match m.kind:
 		"drone":
 			for r in m.wheels:
@@ -3009,6 +3162,8 @@ func _animate_mob(m: Dictionary, dt: float, spd: float) -> void:
 			m.body.scale = Vector3.ONE * (1.0 + (sin(time * 30.0) * 0.03 if m.flap > 0.0 else 0.0))
 		"mower", "bag", "duck", "loader", "wheel":
 			_animate_park_mob(m, dt, spd)
+		"roach", "fly", "cheb", "plunger_mob", "pelmeshek", "sock", "washer", "iron", "bubble", "dough", "drum":
+			pass   # 0.8: animated by U08.animate above
 		_:
 			var flap := 0.0
 			if m.st == "chase" or m.flap > 0.0:
@@ -3170,6 +3325,32 @@ func _apply_map_env(id: String) -> void:
 		sun.light_color = Color("ffb88a")
 		sun.light_energy = 1.7
 		sun.rotation_degrees = Vector3(-16, 160, 0)
+	elif id == "laundry":
+		# «Ромашка»: soft lavender light and soap-bubble pastels — the white tiles must not blind
+		sky_mat.sky_top_color = Color("5a6ab8")
+		sky_mat.sky_horizon_color = Color("d8b8e8")
+		sky_mat.ground_horizon_color = Color("c8a8d8")
+		env_world.fog_light_color = Color("c8b8e0")
+		env_world.fog_density = 0.008
+		env_world.ambient_light_color = Color("a0a8d0")
+		env_world.ambient_light_energy = 0.55
+		env_world.adjustment_saturation = 1.12
+		sun.light_color = Color("ffe0f0")
+		sun.light_energy = 0.95
+		sun.rotation_degrees = Vector3(-38, 150, 0)
+	elif id == "cheburek":
+		# golden hour by the tram stop: warm and appetising
+		sky_mat.sky_top_color = Color("3a5ab0")
+		sky_mat.sky_horizon_color = Color("ffc890")
+		sky_mat.ground_horizon_color = Color("ffc890")
+		env_world.fog_light_color = Color("f0c8a0")
+		env_world.fog_density = 0.007
+		env_world.ambient_light_color = Color("e8c8a8")
+		env_world.ambient_light_energy = 0.8
+		env_world.adjustment_saturation = 1.1
+		sun.light_color = Color("ffd0a0")
+		sun.light_energy = 1.45
+		sun.rotation_degrees = Vector3(-24, 215, 0)
 	elif id == "stroyka":
 		# evening at Koschei's site: lilac sky, orange haze, a bit less colour — the silence is near
 		sky_mat.sky_top_color = Color("2c3570")
@@ -3441,6 +3622,8 @@ func _update_mob_shots(dt: float) -> void:
 			if b.get("kind", "bubble") == "quack":
 				pull_v = Vector3(b.dir.x, 0, b.dir.z).normalized() * 7.0
 				hud.float_text(pos + Vector3(0, 2.9, 0), "КРЯ!", Color("ffe04a"), 24, 40)
+			elif b.get("kind", "bubble") == "sock":
+				u08.shot_hit(b)
 			else:
 				_silence_player(2.5)
 		if near or b.life <= 0.0 or n.position.y < 0.1:
@@ -3887,6 +4070,27 @@ func _build_concert_stage() -> void:
 	world.rects.append(Rect2(STAGE_POS.x - 2.3, STAGE_POS.z - 1.7, 4.4, 3.4))
 
 
+## 0.8: the neighbours come to the concert too — everyone whose place is already open stands in the crowd and dances.
+func _add_neighbour_audience() -> void:
+	var spots := [Vector3(-12.4, 0, -4.6), Vector3(-12.6, 0, -2.6), Vector3(-12.2, 0, -0.6), Vector3(-12.6, 0, 1.4), Vector3(-12.2, 0, 3.4),
+		Vector3(-10.4, 0, -3.6), Vector3(-10.6, 0, -1.6), Vector3(-10.2, 0, 0.4), Vector3(-10.6, 0, 2.4), Vector3(-10.4, 0, 4.4),
+		Vector3(-8.6, 0, -2.6), Vector3(-8.4, 0, 1.4)]
+	var k := 0
+	for id in SideQ.NPCS:
+		if k >= spots.size():
+			break
+		var sn: Dictionary = SideQ.NPCS[id]
+		if not sn.get("neighbour", false) or not map_open(sn.map):
+			continue
+		var h := Npcs.build(id)
+		world.root.add_child(h.root)
+		h.root.position = spots[k]
+		h.root.rotation.y = -PI / 2 + randf_range(-0.25, 0.25)
+		Kit.bake_tree(h.root)
+		concert_nodes.append({"node": h.root, "body": h.body, "arms": h.get("arms", []), "base": spots[k], "ph": randf() * 0.4, "rot": h.root.rotation.y, "neighbour": true})
+		k += 1
+
+
 func _concert_cleanup() -> void:
 	for n in concert_nodes:
 		if is_instance_valid(n.node):
@@ -3924,22 +4128,38 @@ func start_concert() -> void:
 		iz.root.rotation.y = -PI / 2 - 0.5
 		Kit.bake_tree(iz.root)
 		concert_nodes.append({"node": iz.root, "body": iz.hut, "arms": [], "base": iz.root.position, "ph": 0.0, "hut": true})
+	_add_neighbour_audience()
+	start_rhythm({"kind": "concert", "title": "КОНЦЕРТ В ГК «ПЕСНЯ»", "notes": GameData.CONCERT_NOTES, "lines": GameData.CONCERT_LINES,
+		"big": "КОНЦЕРТ!"})
+
+
+## 0.8: the rhythm game of the concert, reused for quest mini-games (tickling the dumpling, film takes, the stream…).
+## cfg: kind, title, notes (beats from the start), lines (lyrics by 8 beats), big, hint, meter, on_end(stars: int) for quest games.
+func start_rhythm(cfg: Dictionary) -> void:
+	if mounted:
+		_dismount("")
 	var bt := beat_time()
 	var start_beat := (int(ceil(bt / beat_len)) / 4 + 2) * 4
 	var t0 := start_beat * beat_len
 	var times := []
 	var judged := []
-	for n in GameData.CONCERT_NOTES:
+	for n in cfg.notes:
 		times.append(t0 + float(n) * beat_len)
 		judged.append(false)
+	var end_t := float(times[times.size() - 1]) + beat_len * 2.0
 	concert = {"start": t0, "notes": times, "judged": judged, "score": 0, "combo": 0, "max_combo": 0, "perfect": 0, "good": 0, "miss": 0,
-		"hype": 20.0, "fb": "", "fb_col": Hud.CREAM, "fb_t": 0.0, "end": float(times[times.size() - 1]) + beat_len * 2.0, "lyric": ""}
+		"hype": 20.0, "fb": "", "fb_col": Hud.CREAM, "fb_t": 0.0, "end": end_t, "lyric": "",
+		"kind": str(cfg.get("kind", "game")), "title": str(cfg.get("title", "")), "lines": cfg.get("lines", []), "meter": str(cfg.get("meter", "Зал качает")),
+		"hint": str(cfg.get("hint", "Жми в любом месте экрана, когда нота в золотом круге · розовые — между долями")),
+		"on_end": cfg.get("on_end", Callable()), "back": pos,
+		# safety net by the wall clock: even if the music clock misbehaves, the game ends on time
+		"wall_end": time + (end_t - bt) + 3.0}
 	state = CONCERT
 	joy_vec = Vector2.ZERO
 	joy_idx = -1
 	cam_idx = -1
 	target = null
-	hud.big("КОНЦЕРТ!", "Жми в любом месте экрана, когда нота в круге", 3.0)
+	hud.big(str(cfg.get("big", cfg.get("title", ""))), "Жми в любом месте экрана, когда нота в круге", 3.0)
 	play_sfx("bank", 1.2)
 
 
@@ -4009,25 +4229,37 @@ func _update_concert(dt: float) -> void:
 			concert.fb_t = 0.5
 	concert.fb_t = maxf(0.0, concert.fb_t - dt)
 	var phrase := int(floor((now - concert.start) / (8.0 * beat_len)))
-	concert.lyric = GameData.CONCERT_LINES[phrase % 4] if phrase >= 0 else ""
-	# the hero on stage, the crowd jumping with the hype
-	pos = STAGE_POS
-	facing = PI / 2
-	attack_anim = maxf(0.0, attack_anim - dt)
-	_animate_hero(dt, 0.0)
-	hero.root.position = STAGE_POS + Vector3(0.3, 0.6, 0)
+	var lines: Array = concert.lines
+	concert.lyric = str(lines[phrase % lines.size()]) if phrase >= 0 and lines.size() > 0 else ""
 	var bob := maxf(0.0, 0.12 - minf(beat_phase(), 1.0 - beat_phase()) * 0.45)
 	var amp: float = 0.6 + concert.hype / 60.0
-	for n in concert_nodes:
-		if not is_instance_valid(n.node):
-			continue
-		n.node.position = n.base + Vector3(0, bob * amp * (1.6 if n.has("hut") else 1.0), 0)
-		for a in n.arms:
-			a.rotation.x = -2.6 if concert.hype > 50.0 and bob > 0.04 else -0.3
-	cam.global_position = cam.global_position.lerp(Vector3(-10.2, 4.3, 4.4), minf(1.0, dt * 3.0))
-	cam.fov = 58
-	cam.look_at(STAGE_POS + Vector3(0.6, 1.6, 0.4), Vector3.UP)
-	if now > float(concert.end):
+	if str(concert.get("kind", "concert")) != "concert":
+		# a quest mini-game: the hero dances where he stands, the camera stays behind him
+		attack_anim = maxf(0.0, attack_anim - dt)
+		_animate_hero(dt, 0.0)
+		hero.body.position.y = bob * amp * 0.8
+		hero.arms[0].rotation.x = -2.4 if bob > 0.05 else -0.4
+		hero.arms[1].rotation.x = -0.4 if bob > 0.05 else -2.4
+		_update_npcs(dt)
+		_update_camera(dt)
+	else:
+		# the hero on stage, the crowd jumping with the hype
+		pos = STAGE_POS
+		facing = PI / 2
+		attack_anim = maxf(0.0, attack_anim - dt)
+		_animate_hero(dt, 0.0)
+		hero.root.position = STAGE_POS + Vector3(0.3, 0.6, 0)
+		for n in concert_nodes:
+			if not is_instance_valid(n.node):
+				continue
+			n.node.position = n.base + Vector3(0, bob * amp * (1.6 if n.has("hut") else 1.0), 0)
+			n.node.rotation.y = n.get("rot", n.node.rotation.y) + sin(time * PI / beat_len + float(n.ph) * 6.0) * 0.18 * minf(1.0, amp - 0.4)
+			for a in n.arms:
+				a.rotation.x = -2.6 if concert.hype > 50.0 and bob > 0.04 else -0.3
+		cam.global_position = cam.global_position.lerp(Vector3(-10.2, 4.3, 4.4), minf(1.0, dt * 3.0))
+		cam.fov = 58
+		cam.look_at(STAGE_POS + Vector3(0.6, 1.6, 0.4), Vector3.UP)
+	if now > float(concert.end) or time > float(concert.wall_end):
 		_finish_concert(false)
 
 
@@ -4038,15 +4270,24 @@ func _finish_concert(cancel: bool) -> void:
 	concert = {}
 	_concert_cleanup()
 	state = PLAY
+	var total: int = c.notes.size()
+	var acc: float = (float(c.perfect) + 0.6 * float(c.good)) / float(total)
+	var stars := 3 if acc >= 0.85 else (2 if acc >= 0.6 else (1 if acc >= 0.3 else 0))
+	if str(c.get("kind", "concert")) != "concert":
+		pos = c.back
+		if cancel:
+			hud.toast("Прервано — можно начать заново", Hud.CREAM)
+			stars = -1
+		var cb: Callable = c.on_end
+		if cb.is_valid():
+			cb.call(stars)
+		return
 	pos = CONCERT_FRONT + Vector3(1.0, 0, 0.8)
 	facing = -PI / 2
 	yaw = facing + PI
 	if cancel:
 		hud.toast("Концерт прерван", Hud.CREAM)
 		return
-	var total: int = c.notes.size()
-	var acc: float = (float(c.perfect) + 0.6 * float(c.good)) / float(total)
-	var stars := 3 if acc >= 0.85 else (2 if acc >= 0.6 else (1 if acc >= 0.3 else 0))
 	var first: bool = not bool(daily.get("concert", false))
 	var gain: int = (40 * stars + int(c.perfect)) * (2 if first and stars > 0 else 1)
 	coins += gain
@@ -5053,7 +5294,9 @@ func _prince_buy(id: String) -> void:
 func unlock(kind: String) -> void:
 	if kind == "taxi":
 		taxi = true
-		hud.toast("Аэротакси «Ложка» открыто: карта Рубина → место → «Лететь»", Hud.GOLD)
+		hud.toast("Аэротакси «Ложка» открыто: карта Рубина → место → «Лететь» · от %d монет" % GameData.TAXI_BASE, Hud.GOLD)
+	else:
+		u08.unlock(kind)
 
 
 func map_open(m: String) -> bool:
@@ -5068,6 +5311,10 @@ func map_open(m: String) -> bool:
 			return quest5 >= 3
 		"park":
 			return quest6 >= 1
+		"cheburek":
+			return u08.map_open_cheb()
+		"laundry":
+			return u08.map_open_laundry()
 	return false
 
 
@@ -5099,14 +5346,15 @@ func map_marker(m: String) -> String:
 func fly_to(m: String) -> void:
 	if not taxi or not map_open(m) or m == map_id:
 		return
-	if coins < GameData.TAXI_COST:
-		hud.toast("На аэротакси нужно %d монет" % GameData.TAXI_COST, Hud.CREAM)
+	var price := GameData.taxi_price(map_id, m)
+	if coins < price:
+		hud.toast("На аэротакси нужно %d монет" % price, Hud.CREAM)
 		return
 	for mb in mobs:
 		if mb.alive and mb.st == "chase" and mb.pos.distance_to(pos) < 20.0:
 			hud.toast("Кукурузник в бою не садится — сначала разберись с врагами", Hud.CREAM)
 			return
-	coins -= GameData.TAXI_COST
+	coins -= price
 	close_list()
 	_dismount("")
 	save_game()
@@ -5198,6 +5446,14 @@ func _run_autotest() -> void:
 		return
 	if args.has("--only07"):
 		await _shots07(shots_dir)
+		_finish_report(lg, t0)
+		return
+	if args.has("--test08"):
+		await _autotest_08(lg, shots_dir)
+		_finish_report(lg, t0)
+		return
+	if args.has("--only08"):
+		await _shots08(shots_dir)
 		_finish_report(lg, t0)
 		return
 	if args.has("--only06"):
@@ -5320,6 +5576,7 @@ func _run_autotest() -> void:
 	await _autotest_q5(lg, shots_dir)
 	await _autotest_side(lg, shots_dir)
 	await _autotest_07(lg, shots_dir)
+	await _autotest_08(lg, shots_dir)
 	_lg(lg, "final level=%d coins=%d food=%d items=%d" % [level, coins, food, inventory.size()])
 	_finish_report(lg, t0)
 
@@ -5679,7 +5936,11 @@ const _AT_PLACES := {"zina": ["yard", Vector3(-5.9, 0, -5.0)], "misha": ["yard",
 
 func _at_place(id: String) -> Array:
 	if SideQ.NPCS.has(id):
-		return [SideQ.NPCS[id].map, SideQ.NPCS[id].pos]
+		if not u08.npc_shown(id):
+			for e in U08.GUESTS:
+				if e[0] == id:
+					return [e[1], e[2]]
+		return [SideQ.NPCS[id].map, u08.npc_place(id)[0]]
 	return _AT_PLACES[id]
 
 
@@ -5807,6 +6068,36 @@ func _at_side_quest(lg: Array, q: String) -> void:
 			"return":
 				await _at_talk(npc)
 				await _at_press(0)
+			"rhythm":
+				var ri := int(side.st[q].s)
+				await _at_talk(s.npc)
+				await _at_press(0)
+				var started: bool = state == CONCERT
+				await _play_concert_bot(1.0)
+				await _frames(3)
+				_lg(lg, "side %s rhythm %s started=%s passed=%s" % [q, s.game, str(started), str(int(side.st[q].s) != ri or not side.is_active(q))])
+			"boss":
+				await _at_goto_map(s.map)
+				var bi := int(side.st[q].s)
+				var bpos: Vector3 = s.pos
+				pos = bpos + Vector3(0, 0, 9.0)
+				await _frames(3)
+				var spawned := _find_mob(s.boss) != null
+				var bg := 0
+				while side.is_active(q) and int(side.st[q].s) == bi and bg < 3000:
+					bg += 1
+					var bm = _find_mob(s.boss)
+					if bm != null and int(bm.remix) == 0:
+						pos = bm.pos + Vector3(0, 0, bm.radius + 2.0)
+						damage_mob(bm, 999999999.0, false)
+					else:
+						pos = bpos + Vector3(0, 0, 9.0)
+					hp = hp_max
+					await get_tree().process_frame
+				_lg(lg, "side %s boss %s spawned=%s frames=%d loot=%d" % [q, s.boss, str(spawned), bg, loots.size()])
+				for l in loots.duplicate():
+					pos = l.pos
+					await _frames(20)
 	if state == DIALOG:
 		_close_dialog()
 	_lg(lg, "side %s «%s» done=%s dialog_ok=%s level=%d" % [q, qd.title, str(side.is_done(q)), str(mk_ok), level])
@@ -5819,6 +6110,8 @@ func _kill_map(kind: String) -> String:
 		"hare": return "server"
 		"gull", "autoplay": return "embankment"
 		"mower", "bag", "duck", "loader": return "park"
+		"roach", "fly", "cheb", "plunger_mob", "pelmeshek": return "cheburek"
+		"sock", "washer", "iron", "bubble": return "laundry"
 	return map_id
 
 
@@ -6295,6 +6588,442 @@ func _shots07(dir: String) -> void:
 	await _frames(2)
 	await _snap(dir, "p14_journal")
 	close_list()
+
+
+## 0.8 «Мыльная опера»: music clock, the story, both new places with their quests and bosses, Бог Здорово, medics, taxi price, save v8.
+func _autotest_08(lg: Array, shots_dir: String) -> void:
+	invuln = 9999.0
+	quest = 5
+	quest2 = 6
+	quest3 = 6
+	quest4 = 8
+	quest5 = 7
+	quest6 = maxi(quest6, 7)
+	mount_owned = true
+	for q in SideQ.ORDER.slice(0, 18):
+		if not side.is_done(q):
+			side.st[q] = {"s": 0, "n": 0, "t": 0.0, "done": true}
+	while level < 16:
+		gain_xp(xp_next() - xp)
+	# music: six tracks of whole beats; a finished track moves the beat clock by its length and the next one starts
+	var lens := []
+	var whole := true
+	for t in tracks:
+		lens.append(snappedf(float(t.len), 0.01))
+		var nb: float = float(t.len) / beat_len
+		if absf(nb - round(nb)) > 0.02:
+			whole = false
+	await _at_goto_map("cheburek")
+	music_on = true
+	_start_track(0, false)
+	var b0 := _mclock_base
+	var ti0 := track_i
+	_on_track_finished()
+	_lg(lg, "music tracks=%d lens=%s whole_beats=%s clock %.2f->%.2f track %d->%d cheb_theme=%s" % [tracks.size(), str(lens), str(whole), b0, _mclock_base, ti0, track_i,
+		tracks[track_i].id])
+	# the rhythm game ends by the wall clock even if the music clock stands still (the concert bug of 0.7)
+	start_rhythm({"kind": "tickle", "title": "TEST", "notes": [0, 1, 2], "lines": ["x"]})
+	concert.end = 1.0e9
+	var rf := 0
+	while state == CONCERT and rf < 600:
+		rf += 1
+		await get_tree().process_frame
+	_lg(lg, "rhythm wall-clock end play=%s frames=%d" % [str(state == PLAY), rf])
+	# the concert in the GK still counts and ends
+	await _at_goto_map("garages")
+	pos = CONCERT_FRONT + Vector3(0.6, 0, 0.4)
+	await _frames(2)
+	interact()
+	var c_on: bool = state == CONCERT
+	var neigh := 0
+	for n in concert_nodes:
+		if n.get("neighbour", false):
+			neigh += 1
+	await _play_concert_bot(1.0)
+	await _frames(5)
+	_lg(lg, "concert started=%s neighbours_in_crowd=%d ended=%s daily=%s" % [str(c_on), neigh, str(state == PLAY), str(daily.get("concert", false))])
+	# «Мыльная опера» starts at Мыслитель Зари
+	var mk_z := npc_marker("zari")
+	await _at_talk("zari")
+	var z_ok: bool = state == DIALOG and hud.dialog_name.text == "Мыслитель Зари"
+	await _at_press(0)
+	await _at_press(0)
+	if state == DIALOG:
+		_close_dialog()
+	_lg(lg, "q7 zari marker=%s dialog=%s quest7=%d cheb_open=%s" % [mk_z, str(z_ok), quest7, str(map_open("cheburek"))])
+	await _at_goto_map("yard")
+	var yp := []
+	for pt in world.portals:
+		yp.append(pt.to)
+	await _at_portal(Vector3(-18.2, 0, 9.0), "cheburek")
+	var guests := 0
+	for n in npcs:
+		if n.has("guest"):
+			guests += 1
+	_lg(lg, "cheburek yard_portals=%s quest7=%d mobs=%d npcs=%d guests=%d bench=%s consoles=%s" % [str(yp), quest7, mobs.size(), npcs.size(), guests,
+		str(not u08.bench_node.is_empty()), str(world.get("consoles", []))])
+	# every new mob runs its AI for a while
+	for mk in ["cheburek"]:
+		for m in mobs:
+			m.st = "chase"
+		pos = Vector3(0, 0, 8.0)
+		var kills0 := 0
+		await _bot_fight(450, func(): return false)
+		for m in mobs:
+			if not m.alive:
+				kills0 += 1
+		_lg(lg, "ai %s alive=%d dead=%d coins=%d slow=%.1f" % [mk, mobs.size() - kills0, kills0, coins, slow_t])
+	# the Чебуречная chain
+	for q in ["who_left", "toilet", "duel", "inside", "dough_q", "ambulance"]:
+		await _at_side_quest(lg, q)
+	_lg(lg, "cheb chain quest7=%d fusion=%s medics=%s kits=%d warehouse_key=%d dough_mat=%d singles=%d laundry_open=%s" % [quest7, str(fusion), str(medics), kits,
+		count_item("warehouse_key"), count_item("dough_mat"), singles, str(map_open("laundry"))])
+	if state == DIALOG:
+		_close_dialog()
+	# fusion: shawarma speeds up
+	food += 1
+	cd.food = 0.0
+	hp = hp_max * 0.5
+	_eat()
+	_lg(lg, "fusion eat fusion_t=%.1f speed_mult=%.2f" % [fusion_t, u08.speed_mult()])
+	# the yard has the ambulance and the medics now
+	await _at_goto_map("yard")
+	var medic_ids := []
+	for n in npcs:
+		if n.id in ["chel", "osob"]:
+			medic_ids.append(n.id)
+	_lg(lg, "yard medics=%s" % str(medic_ids))
+	# the Прачечная
+	await _at_portal(Vector3(18.2, 0, 2.0), "laundry")
+	_lg(lg, "laundry quest7=%d mobs=%d npcs=%d" % [quest7, mobs.size(), npcs.size()])
+	for m in mobs:
+		m.st = "chase"
+	pos = Vector3(-8.0, 0, -5.5)
+	await _bot_fight(600, func(): return false)
+	var dead2 := 0
+	for m in mobs:
+		if not m.alive:
+			dead2 += 1
+	_lg(lg, "ai laundry dead=%d" % dead2)
+	for q in ["ticket", "stunt", "clean_shot", "star", "forget"]:
+		await _at_side_quest(lg, q)
+	_lg(lg, "laundry chain quest7=%d premiere=%d drum_mat=%d clapper=%d detective=%d" % [quest7, u08.premiere.size(), count_item("drum_mat"), count_item("clapper"),
+		count_item("detective_glasses")])
+	# Бог Здорово appears
+	var gw := 0
+	while not (state == DIALOG and hud.dialog_name.text == "Бог Здорово") and gw < 400:
+		gw += 1
+		if state == DIALOG:
+			_close_dialog()
+		await get_tree().process_frame
+	var god_ok: bool = state == DIALOG
+	await _at_press(0)
+	await _at_press(0)
+	if state == DIALOG:
+		_close_dialog()
+	_lg(lg, "god event dialog=%s frames=%d quest7=%d" % [str(god_ok), gw, quest7])
+	# a bench in the yard: rest, blessing, gifts
+	await _at_goto_map("yard")
+	hp = hp_max * 0.3
+	pos = u08.bench_front()
+	await _frames(2)
+	var lab := interact_label()
+	interact()
+	var b_ok: bool = state == LIST and list_kind == "bench"
+	_lg(lg, "bench label=%s list=%s rows=%d hp_full=%s quest7=%d" % [lab, str(b_ok), hud.list_box.get_child_count(), str(hp >= hp_max - 1.0), quest7])
+	u08._bless()
+	var bk: String = blessing.kind
+	grace += 120
+	var g0 := grace
+	open_list("bench")
+	u08._gift("hp")
+	u08._gift("luck")
+	u08._gift("beat")
+	if state == LIST:
+		close_list()
+	_lg(lg, "blessing=%s grace %d->%d gifts=%s luck=%d beat_win=%.3f hp_max=%d" % [bk, g0, grace, str(gifts), stat("luck"), beat_win_now(), int(hp_max)])
+	# greetings: «Скажи «здорово»»
+	daily["greet"] = []
+	var gr0 := grace
+	for id in ["zina", "misha", "lyuba", "pavlin", "lis", "petrovich", "pilot", "kent", "jack", "klyukva", "maloy"]:
+		u08.greet(id)
+	u08.greet("zina")
+	_lg(lg, "greet count=%d grace %d->%d status=%s" % [daily.greet.size(), gr0, grace, u08.status_line()])
+	# the bench of the other places
+	var benches := []
+	for m in ["garages", "stroyka", "embankment", "park", "cheburek", "laundry"]:
+		await _at_goto_map(m)
+		benches.append("%s:%s" % [m, str(not u08.bench_node.is_empty() and u08.bench_node.node.visible)])
+	_lg(lg, "benches %s" % " ".join(benches))
+	# guests of the park after the dawn
+	await _at_goto_map("park")
+	var pg := []
+	for n in npcs:
+		if n.has("guest"):
+			pg.append(n.id)
+	_lg(lg, "park guests=%s" % str(pg))
+	# medics: kits auto-heal, the second wind, respawn at the ambulance
+	await _at_goto_map("yard")
+	invuln = 0.0
+	kits = 2
+	kit_cd = 0.0
+	hp = hp_max * 0.2
+	for k in range(3):
+		await get_tree().process_frame
+	_lg(lg, "kits left=%d heal_left=%d cd=%.1f" % [kits, int(heal_left), kit_cd])
+	wind_day = ""
+	heal_left = 0.0
+	hurt_player(hp_max * 5.0, pos)
+	var wind_ok: bool = state == PLAY and hp > 0.0
+	invuln = 0.0
+	hurt_player(hp_max * 5.0, pos)
+	var dead_ok: bool = state == DEAD
+	var dtxt: String = hud.dead_text.text
+	var dw := 0
+	while state == DEAD and dw < 300:
+		dw += 1
+		await get_tree().process_frame
+	_lg(lg, "second_wind=%s died=%s text_medics=%s respawn=(%.1f,%.1f) hp=%d%%" % [str(wind_ok), str(dead_ok), str(dtxt.contains("Отлично-03")), pos.x, pos.z,
+		int(hp * 100.0 / hp_max)])
+	invuln = 9999.0
+	# the box office at Мыслитель Зари
+	var mk7 := npc_marker("zari")
+	await _at_talk("zari")
+	await _at_press(0)
+	var box_ok: bool = state == DIALOG and hud.dialog_name.text.begins_with("Касса")
+	await _at_press(0)
+	var k_ok: bool = state == DIALOG and hud.dialog_name.text.begins_with("Кощей")
+	await _at_press(0)
+	await _at_press(0)
+	if state == DIALOG:
+		_close_dialog()
+	_lg(lg, "q7 final marker=%s box=%s koschei=%s quest7=%d lines=%s" % [mk7, str(box_ok), str(k_ok), quest7, str(main_quest_lines())])
+	# remixes of the new bosses
+	for b in ["dough", "drum"]:
+		await _at_goto_map(GameData.REMIX[b].map)
+		var open_r := remix_open(b)
+		_start_remix(b, 0)
+		var bm = _find_mob(b)
+		if bm != null:
+			damage_mob(bm, 999999999.0, false)
+		await _frames(120)
+		_lg(lg, "remix %s open=%s spawned=%s best=%d" % [b, str(open_r), str(bm != null), int(remix.best.get(b, -1))])
+		_prince_leave("test")
+	# the drum: «ОТЖИМ» and 4 hits on the beat
+	await _at_goto_map("laundry")
+	var dm := _spawn_mob("drum", Laundry.DRUM_HOME, 20)
+	u08._drum_spin(dm)
+	pos = Laundry.DRUM_HOME + Vector3(0, 0, 6.0)
+	var hp0: float = dm.hp
+	damage_mob(dm, 1000.0, false)
+	var cut: float = hp0 - dm.hp
+	var sh_on: bool = dm.shield
+	for k in range(4):
+		u08.beat(true)
+	_lg(lg, "drum shield=%s dmg_in_spin=%d broken=%s stun=%.1f" % [str(sh_on), int(cut), str(not dm.shield), dm.stun])
+	dm.alive = false
+	dm.node.visible = false
+	# the dough splits off-beat
+	await _at_goto_map("cheburek")
+	var dg := _spawn_mob("dough", Cheb.DOUGH_HOME, 18)
+	var p0 := 0
+	for m in mobs:
+		if m.alive and m.kind == "pelmeshek":
+			p0 += 1
+	for k in range(12):
+		damage_mob(dg, 100.0, false)
+	var p1 := 0
+	for m in mobs:
+		if m.alive and m.kind == "pelmeshek":
+			p1 += 1
+	_lg(lg, "dough split pelmeshki %d->%d" % [p0, p1])
+	dg.alive = false
+	dg.node.visible = false
+	# the aerotaxi price: from 170, more for longer flights
+	_lg(lg, "taxi yard->garages=%d yard->park=%d cheburek->laundry=%d garages->park=%d" % [GameData.taxi_price("yard", "garages"), GameData.taxi_price("yard", "park"),
+		GameData.taxi_price("cheburek", "laundry"), GameData.taxi_price("garages", "park")])
+	# save v8 round trip
+	save_game()
+	var keep := [quest7, grace, str(gifts), blessing.kind, medics, fusion, kits, wind_day != ""]
+	quest7 = 0
+	grace = 0
+	gifts = {"hp": 0, "luck": 0, "beat": 0, "qxp": 0}
+	medics = false
+	fusion = false
+	kits = 0
+	load_game()
+	_lg(lg, "save08 roundtrip %s==%s ver=%d" % [str(keep), str([quest7, grace, str(gifts), blessing.kind, medics, fusion, kits, wind_day != ""]), GameData.SAVE_VERSION])
+	_lg(lg, "side08 done=%d/%d" % [side.done_count(), SideQ.ORDER.size()])
+	invuln = 0.0
+
+
+func _look(p: Vector3, at: Vector3, pt := 0.26, d := 7.6) -> void:
+	pos = World.resolve(p, 0.45, world.rects, world.circles, world.bounds)
+	facing = atan2(at.x - pos.x, at.z - pos.z)
+	yaw = facing + PI
+	pitch = pt
+	dist = d
+
+
+## Screenshots of 0.8 (run with --only08 --shots DIR under xvfb).
+func _shots08(dir: String) -> void:
+	quest = 5
+	quest2 = 6
+	quest3 = 6
+	quest4 = 8
+	quest5 = 7
+	quest6 = 7
+	quest7 = 2
+	mount_owned = true
+	for q in SideQ.ORDER.slice(0, 18):
+		side.st[q] = {"s": 0, "n": 0, "t": 0.0, "done": true}
+	while level < 19:
+		gain_xp(xp_next() - xp)
+	for id in ["rolling_pin", "chef_hat", "dough_apron", "foam_sneakers"]:
+		add_item(id)
+	for it in inventory:
+		if it.id in ["rolling_pin", "chef_hat", "dough_apron", "foam_sneakers"]:
+			equip(it)
+	invuln = 9999.0
+	# the Павлин Футболист humanoid and the server corridor (fixes)
+	await _at_goto_map("yard")
+	var pv: Vector3 = SideQ.NPCS.pavlin.pos
+	_look(pv + Vector3(-2.2, 0, -2.6), pv, 0.18, 5.2)
+	await _frames(30)
+	await _snap(dir, "q01_pavlin")
+	await _at_goto_map("server")
+	_look(Vector3(9.0, 0, 1.6), Vector3(20.0, 0, 2.0), 0.16, 6.0)
+	await _frames(30)
+	await _snap(dir, "q02_server_corridor")
+	_look(Vector3(7.5, 0, -1.4), Vector3(13.0, 0, 2.9), 0.1, 3.2)
+	await _frames(20)
+	await _snap(dir, "q03_server_posters")
+	# the Чебуречная
+	await _at_goto_map("cheburek")
+	_look(Vector3(0, 0, 15.0), Vector3(0, 0, 0), 0.32, 12.0)
+	await _frames(40)
+	await _snap(dir, "q04_cheburek_street")
+	_look(Vector3(-1.0, 0, 6.0), Vector3(0, 0, -5.0), 0.24, 7.0)
+	await _frames(20)
+	await _snap(dir, "q05_cheburek_hall")
+	_look(Vector3(18.0, 0, -3.0), Vector3(22.0, 0, -15.0), 0.3, 8.0)
+	await _frames(20)
+	await _snap(dir, "q06_toilet_maze")
+	for kind in ["roach", "fly", "cheb", "plunger_mob"]:
+		await _shot_mob(dir, kind)
+	var dg := _spawn_mob("dough", Cheb.DOUGH_HOME, 18)
+	_look(Cheb.DOUGH_HOME + Vector3(3.0, 0, 9.0), Cheb.DOUGH_HOME, 0.18, 9.0)
+	target = dg
+	dg.st = "chase"
+	for k in range(60):
+		await get_tree().process_frame
+		hp = hp_max
+	await _snap(dir, "q07_dough_boss")
+	for k in range(10):
+		damage_mob(dg, 50.0, false)
+	await _frames(20)
+	await _snap(dir, "q08_dough_split")
+	dg.alive = false
+	dg.node.visible = false
+	for m in mobs:
+		if m.temp:
+			m.alive = false
+			m.node.visible = false
+	target = null
+	await _shot_mob(dir, "pelmeshek")
+	# the Прачечная with the premiere
+	quest7 = 4
+	side.st["ticket"] = {"s": 0, "n": 0, "t": 0.0, "done": true}
+	side.st["stunt"] = {"s": 0, "n": 0, "t": 0.0, "done": true}
+	side.st["star"] = {"s": 0, "n": 0, "t": 0.0, "done": true}
+	side.st["forget"] = {"s": 1, "n": 0, "t": 0.0, "done": false}
+	await _at_goto_map("laundry")
+	_look(Vector3(0, 0, 15.5), Vector3(0, 0, 4.0), 0.3, 11.0)
+	await _frames(40)
+	await _snap(dir, "q09_laundry_front")
+	_look(Vector3(-14.0, 0, 2.0), Vector3(-14.0, 0, -12.0), 0.3, 8.0)
+	await _frames(20)
+	await _snap(dir, "q10_washer_hall")
+	for kind in ["sock", "washer", "iron", "bubble"]:
+		await _shot_mob(dir, kind)
+	_look(Vector3(0, 0, -1.0), Vector3(0, 0, -15.0), 0.2, 9.5)
+	for k in range(40):
+		await get_tree().process_frame
+		hp = hp_max
+	var dr = _find_mob("drum")
+	target = dr
+	await _frames(20)
+	await _snap(dir, "q11_premiere_drum")
+	if dr != null:
+		u08._drum_spin(dr)
+		await _frames(30)
+		await _snap(dir, "q12_drum_spin")
+		dr.alive = false
+		dr.node.visible = false
+	target = null
+	# Бог Здорово and a bench; the ambulance in the yard
+	side.st["toilet"] = {"s": 0, "n": 0, "t": 0.0, "done": true}
+	quest7 = 6
+	await _at_goto_map("yard")
+	var bp: Vector3 = u08.bench_node.pos
+	_look(bp + Vector3(5.0, 0, 3.5), bp, 0.2, 7.0)
+	await _frames(20)
+	u08.show_god(pos, 30.0)
+	pitch = 0.05
+	await _frames(70)
+	await _snap(dir, "q13_bench_god")
+	pos = u08.bench_front()
+	await _frames(2)
+	interact()
+	await _frames(3)
+	await _snap(dir, "q14_bench_list")
+	close_list()
+	_look(Vector3(-8.0, 0, 7.5), Vector3(-13.0, 0, 6.5), 0.22, 7.0)
+	await _frames(30)
+	await _snap(dir, "q15_ambulance")
+	_look(Vector3(-14.5, 0, 9.5), Vector3(-19.0, 0, 9.0), 0.25, 6.0)
+	await _frames(20)
+	await _snap(dir, "q16_portal_cheburek")
+	_look(Vector3(14.0, 0, 3.5), Vector3(19.0, 0, 2.0), 0.25, 6.0)
+	await _frames(20)
+	await _snap(dir, "q17_portal_laundry")
+	# the concert in the GK with the neighbours in the crowd
+	await _at_goto_map("garages")
+	pos = CONCERT_FRONT + Vector3(0.6, 0, 0.4)
+	await _frames(2)
+	interact()
+	await _frames(150)
+	await _snap(dir, "q18_concert_neighbours")
+	_finish_concert(true)
+	# the city map and the journal
+	taxi = true
+	quest7 = 4
+	open_map()
+	hud.city_map.select("laundry")
+	await _frames(3)
+	await _snap(dir, "q19_city_map")
+	close_list()
+	open_journal()
+	await _frames(2)
+	await _snap(dir, "q20_journal")
+	close_list()
+
+
+func _shot_mob(dir: String, kind: String) -> void:
+	var m = _find_mob(kind)
+	if m == null:
+		return
+	for o in mobs:
+		o.st = "idle"
+	m.stun = 99.0
+	_look(m.pos + Vector3(2.6, 0, -3.2), m.pos, 0.28, 7.6)
+	facing = atan2(m.pos.x - pos.x, m.pos.z - pos.z)
+	yaw = facing + PI + 0.4
+	target = m
+	await _frames(24)
+	await _snap(dir, "q_mob_" + kind)
+	m.stun = 0.0
+	target = null
 
 
 func _lg(lg: Array, line: String) -> void:
