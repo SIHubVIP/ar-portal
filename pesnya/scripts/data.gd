@@ -2,7 +2,7 @@ class_name GameData
 ## All tunable numbers and texts of «Песня» in one place.
 
 const SAVE_PATH := "user://pesnya_save.json"
-const SAVE_VERSION := 4
+const SAVE_VERSION := 5
 
 const ITEMS := {
 	"seeds": {"name": "Семки", "rarity": 0, "slot": "", "power": 0, "desc": "Голубиная валюта. Баба Зина говорит, полезные."},
@@ -36,6 +36,14 @@ const ITEMS := {
 	"turtleneck": {"name": "Водолазка технодиректора", "rarity": 2, "slot": "body", "power": 24, "desc": "Чёрная. Носишь — и хочется всё оптимизировать."},
 	"gusli": {"name": "Гусли Кощея", "rarity": 3, "slot": "weapon", "power": 46, "desc": "Отобрал у соседа 500 лет назад. Теперь они звучат у тебя."},
 	"flash": {"name": "Флешка «ПЕСНЯ_ФИНАЛ»", "rarity": 3, "slot": "neck", "power": 30, "desc": "Перепрошитое бессмертие. Внутри — только музыка."},
+	# 0.5 — набережная и Змей Горыныч
+	"gull_feather": {"name": "Перо чайки", "rarity": 0, "slot": "", "power": 0, "desc": "Пахнет рыбой и наглостью."},
+	"cassette": {"name": "Кассета с джинглом", "rarity": 0, "slot": "", "power": 0, "desc": "Одна и та же песня. Тридцать раз подряд."},
+	"keychain": {"name": "Колонка-брелок", "rarity": 1, "slot": "neck", "power": 14, "desc": "Маленькая, но басит."},
+	"captain": {"name": "Фуражка капитана", "rarity": 2, "slot": "head", "power": 27, "desc": "Чайка носила её с гордостью. Теперь ты."},
+	"phones": {"name": "Наушники Горыныча", "rarity": 3, "slot": "head", "power": 36, "desc": "Тройные. В каждом ухе — своя песня."},
+	"jacket": {"name": "Чешуйчатая косуха", "rarity": 3, "slot": "body", "power": 40, "desc": "Сброшена Горынычем после линьки. Огнеупорная, стильная."},
+	"golden_mic": {"name": "Микрофон «Золотой бит»", "rarity": 3, "slot": "weapon", "power": 54, "desc": "Награда двора. В него попадают даже те, кто не попадает в долю."},
 }
 
 const SELL_PRICE := [5, 20, 60, 0]
@@ -62,6 +70,14 @@ const MOBS := {
 		"speed": 4.6, "aggro": 30.0, "leash": 60.0, "atk": 1.6, "loot": [], "res": [], "boss": true},
 	"koschei": {"name": "Кощей Бессмертный", "hp": [11000.0, 0.0], "dmg": [30.0, 0.0], "xp": [900, 0], "scale": 1.0, "height": 3.0, "radius": 0.8,
 		"speed": 3.0, "aggro": 30.0, "leash": 60.0, "atk": 1.8, "loot": [], "res": [], "boss": true},
+	"gull": {"name": "Чайка-перекупщица", "hp": [110.0, 32.0], "dmg": [10.0, 3.4], "xp": [44, 13], "scale": 0.62, "height": 2.7, "radius": 0.9,
+		"speed": 5.6, "aggro": 8.0, "leash": 16.0, "atk": 1.4,
+		"loot": [[0.04, "captain"], [0.2, "keychain"], [0.6, "gull_feather|cassette"]], "res": [[0.4, "planks", 2, 4]]},
+	"autoplay": {"name": "Колонка-автоплей", "hp": [180.0, 40.0], "dmg": [14.0, 3.0], "xp": [50, 14], "scale": 1.0, "height": 2.4, "radius": 0.8,
+		"speed": 0.0, "aggro": 11.0, "leash": 99.0, "atk": 3.2,
+		"loot": [[0.05, "captain"], [0.22, "keychain"], [0.6, "cassette"]], "res": [[0.6, "wires", 2, 4]]},
+	"gorynych": {"name": "Змей Горыныч", "hp": [16000.0, 0.0], "dmg": [34.0, 0.0], "xp": [1000, 0], "scale": 1.0, "height": 6.4, "radius": 2.4,
+		"speed": 2.4, "aggro": 16.0, "leash": 40.0, "atk": 2.2, "loot": [], "res": [], "boss": true},
 	"shumodav": {"name": "Шумодав", "hp": [6500.0, 0.0], "dmg": [34.0, 0.0], "xp": [700, 0], "scale": 0.62, "height": 7.6, "radius": 2.6,
 		"speed": 2.6, "aggro": 14.0, "leash": 30.0, "atk": 2.2, "loot": [], "res": [], "boss": true},
 }
@@ -118,7 +134,8 @@ const DAILIES := [
 ]
 
 # Map names (loading screen, minimap)
-const MAP_NAMES := {"yard": "двор «Берёзки»", "garages": "ГК «Песня»", "stroyka": "стройку Глушилки", "server": "серверную Кощея"}
+const MAP_NAMES := {"yard": "двор «Берёзки»", "garages": "ГК «Песня»", "stroyka": "стройку Глушилки", "server": "серверную Кощея",
+	"embankment": "набережную и Калинов мост"}
 
 # Quest 3 «Флешка Кощея»
 const Q3_DRONES := 8
@@ -128,3 +145,11 @@ const MOUNT_SPEED := 11.0
 const Q4_HARES := 6
 const RAP_LOCK := 4
 const RAP_LINES := ["Тишина — не продукт,", "бит — не по подписке,", "открывай, железный друг,", "я пришёл без записки!"]
+
+# 0.5: concert in ГК «Песня» and quest 5 «Бэкап Горыныча»
+const Q5_SPEAKERS := 6
+# note pattern in beats from the start (halves are off-beats); 48 beats ≈ 30 s at 96 BPM
+const CONCERT_NOTES := [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 10.5, 11, 12, 13, 14, 15, 16, 16.5, 17, 18, 19, 20, 21, 22, 22.5, 23,
+	24, 25, 26, 27, 28, 28.5, 29, 29.5, 30, 32, 33, 34, 34.5, 35, 36, 37, 38, 38.5, 39, 40, 41, 42, 43, 44, 44.5, 45, 46, 47]
+const CONCERT_LINES := ["Это песня, песня, песня во дворе,", "от балкона до гаража — в одной игре!", "Если стало тихо — не беда, не грусти:",
+	"хлопни раз, хлопни два — и бит запусти!"]

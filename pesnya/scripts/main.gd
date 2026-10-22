@@ -2,13 +2,14 @@ extends Node3D
 ## «Песня» — офлайн-версия (студия Aolovo).
 ## Двор «Берёзки» + ГК «Песня» + Стройка Глушилки: бой под бит, мобы, добыча, квесты, база в гараже, робот Вася, магазин,
 ## ежедневные задания, сохранения; 0.3 — Тишинки, босс Шумодав, напарница баба Зина и маунт Избушка-Бас;
-## 0.4 — серверная Кощея: дверь с рэп-кодом, робо-зайцы, заяц-сейф, рэп-баттл с Кощеем, напарник Вася-3000.
+## 0.4 — серверная Кощея: дверь с рэп-кодом, робо-зайцы, заяц-сейф, рэп-баттл с Кощеем, напарник Вася-3000;
+## 0.5 — концерт в ГК (ритм-игра), набережная и Калинов мост, колонки-автоплеи, чайки, Змей Горыныч.
 
 const BPM := 96.0
 var beat_len := 60.0 / BPM
 var beat_win := 0.13
 
-enum { MENU, SELECT, LOADING, PLAY, DIALOG, BAG, PAUSE, DEAD, LIST }
+enum { MENU, SELECT, LOADING, PLAY, DIALOG, BAG, PAUSE, DEAD, LIST, CONCERT }
 var state := MENU
 var time := 0.0
 
@@ -101,6 +102,7 @@ const NPC_INFO := {
 	"lyuba": ["Люба", "ларёк «Шаурма»", "Ларёк"],
 	"petrovich": ["Петрович", "председатель ГК", "Говорить"],
 	"shumodav": ["Шумодав", "бывшая сцена ДК · лифт", "Лифт"],
+	"gorynych": ["Змей Горыныч", "бывший хранитель бэкапа", "Говорить"],
 }
 
 # ---------------------------------------------------------------- progress (saved)
@@ -116,6 +118,12 @@ var q4_kills := 0
 var lock_active := false
 var lock_hits := 0
 var vasya_mate: Dictionary = {}
+var quest5 := 0         # «Бэкап Горыныча»: 0 none, 1 concert, 2 run to Zina, 3 go to the embankment, 4 speakers, 5 Gorynych, 6 return, 7 done
+var q5_kills := 0
+var concert: Dictionary = {}
+var concert_nodes: Array = []
+var waves: Array = []         # expanding noise rings (speakers, Gorynych)
+var traps: Array = []         # delayed red circles on the ground
 var inventory: Array = []
 var equipped := {}
 var res := {"brick": 0, "cement": 0, "planks": 0, "wires": 0}
@@ -304,8 +312,22 @@ func play_sfx(n: String, pitch_scale := 1.0, vol := 0.0) -> void:
 			return
 
 
+var _mpos_last := -1.0
+var _mpos_stall := 0.0
+
+
+func _watch_music_clock(dt: float) -> void:
+	# if the audio device does not advance the music (no sound device, tests), fall back to the game clock
+	var p := music.get_playback_position() if music.playing else -1.0
+	if music.playing and absf(p - _mpos_last) < 0.00001:
+		_mpos_stall += dt
+	else:
+		_mpos_stall = 0.0
+	_mpos_last = p
+
+
 func beat_time() -> float:
-	if music.playing and music.stream == run_stream:
+	if music.playing and music.stream == run_stream and not autotest and _mpos_stall < 0.4:
 		return music.get_playback_position() + AudioServer.get_time_since_last_mix() - AudioServer.get_output_latency() - beat_offset
 	return time - beat_offset
 
@@ -464,6 +486,10 @@ func continue_game() -> void:
 		hud.toast("Обновление 0.4: серверная Кощея и рэп-баттл!", Hud.GOLD)
 		if quest3 >= 6:
 			hud.toast("Баба Зина знает, где флешка Кощея — загляни к ней", Hud.CREAM)
+	elif old_ver < 5:
+		hud.toast("Обновление 0.5: концерт в ГК и Змей Горыныч!", Hud.GOLD)
+		if quest4 >= 8:
+			hud.toast("Петрович собирает концерт — загляни в правление ГК", Hud.CREAM)
 
 
 func start_game(new_game := true) -> void:
@@ -515,6 +541,8 @@ func _reset_progress() -> void:
 	q3_kills = 0
 	quest4 = 0
 	q4_kills = 0
+	quest5 = 0
+	q5_kills = 0
 	mount_owned = false
 	mounted = false
 	res = {"brick": 0, "cement": 0, "planks": 0, "wires": 0}
@@ -537,7 +565,7 @@ func _save_dict() -> Dictionary:
 	for s in equipped:
 		eq[s] = inventory.find(equipped[s])
 	return {"ver": GameData.SAVE_VERSION, "race": race, "cls": cls, "level": level, "xp": xp, "coins": coins, "inv": inv, "eq": eq,
-		"quest": quest, "quest_kills": quest_kills, "feather_kills": feather_kills, "quest2": quest2, "quest3": quest3, "q3_kills": q3_kills, "quest4": quest4, "q4_kills": q4_kills,
+		"quest": quest, "quest_kills": quest_kills, "feather_kills": feather_kills, "quest2": quest2, "quest3": quest3, "q3_kills": q3_kills, "quest4": quest4, "q4_kills": q4_kills, "quest5": quest5, "q5_kills": q5_kills,
 		"mount": mount_owned, "res": res, "food": food,
 		"buildings": buildings, "b_since": b_since, "robot": robot_task, "daily": daily, "map": map_id,
 		"settings": {"music": music_on, "quality": quality, "beat_offset": beat_offset}, "saved_at": now()}
@@ -599,11 +627,13 @@ func load_game() -> bool:
 	q3_kills = int(d.get("q3_kills", 0))
 	quest4 = int(d.get("quest4", 0))
 	q4_kills = int(d.get("q4_kills", 0))
+	quest5 = int(d.get("quest5", 0))
+	q5_kills = int(d.get("q5_kills", 0))
 	mount_owned = bool(d.get("mount", false))
 	mounted = false
 	food = int(d.get("food", 0))
 	map_id = str(d.get("map", "yard"))
-	if map_id not in ["yard", "garages", "stroyka", "server"]:
+	if map_id not in ["yard", "garages", "stroyka", "server", "embankment"]:
 		map_id = "yard"
 	for k in res:
 		res[k] = int(d.get("res", {}).get(k, 0))
@@ -614,7 +644,8 @@ func load_game() -> bool:
 	var rt: Dictionary = d.get("robot", {})
 	robot_task = {"task": str(rt.get("task", "")), "start": float(rt.get("start", 0.0)), "end": float(rt.get("end", 0.0)), "told": bool(rt.get("told", false))}
 	var dl: Dictionary = d.get("daily", {})
-	daily = {"date": str(dl.get("date", "")), "pigeon": int(dl.get("pigeon", 0)), "scooter": int(dl.get("scooter", 0)), "vacuum": int(dl.get("vacuum", 0)), "claimed": dl.get("claimed", [])}
+	daily = {"date": str(dl.get("date", "")), "pigeon": int(dl.get("pigeon", 0)), "scooter": int(dl.get("scooter", 0)), "vacuum": int(dl.get("vacuum", 0)), "claimed": dl.get("claimed", []),
+		"concert": bool(dl.get("concert", false))}
 	inventory.clear()
 	equipped.clear()
 	for id in d.get("inv", []):
@@ -661,9 +692,14 @@ func _enter_map(id: String, spawn: String) -> void:
 		"yard": world = World.build_yard(self)
 		"stroyka": world = Stroyka.build(self)
 		"server": world = ServerRoom.build(self)
+		"embankment": world = Embankment.build(self)
 		_: world = Base.build_garages(self)
 	if id == "garages" and quest3 >= 2:
 		_add_site_portal()
+	if id == "garages" and quest4 >= 8:
+		_build_concert_stage()
+	if id == "yard" and quest5 >= 3:
+		_add_river_portal()
 	hero = Chars.hero(race, cls)
 	world.root.add_child(hero.root)
 	Kit.bake_tree(hero.root)
@@ -710,6 +746,15 @@ func _enter_map(id: String, spawn: String) -> void:
 			_spawn_koschei(false)
 		_spawn_companion()
 		_spawn_vasya()
+	if id == "embankment":
+		if quest5 == 3:
+			quest5 = 4
+			hud.toast("Задание обновлено: выключи %d колонок-автоплеев" % GameData.Q5_SPEAKERS, Hud.GOLD)
+		if quest5 == 5:
+			_spawn_mob("gorynych", Embankment.BOSS_HOME, 12)
+		elif quest5 >= 6:
+			_spawn_npc("gorynych", Embankment.BOSS_HOME + Vector3(5.0, 0, 1.5), PI * 0.8)
+		_spawn_companion()
 	if mounted:
 		_create_mount_vis()
 	if id == "garages":
@@ -726,6 +771,12 @@ func _spawn_npc(id: String, at: Vector3, rot: float) -> void:
 		"zina": h = Chars.granny_npc()
 		"misha": h = Chars.misha_npc()
 		"lyuba": h = Chars.lyuba_npc()
+		"gorynych":
+			var gg := Chars.gorynych()
+			gg.root.scale = Vector3.ONE * 0.8
+			for nk in gg.necks:
+				nk.rotation.x = -0.15
+			h = {"root": gg.root, "body": gg.root, "head": gg.head}
 		"shumodav":
 			var gm := Chars.golem()
 			gm.root.scale = Vector3.ONE * 0.62
@@ -739,7 +790,7 @@ func _spawn_npc(id: String, at: Vector3, rot: float) -> void:
 	Kit.bake_tree(h.root)
 	var info: Array = NPC_INFO[id]
 	npcs.append({"id": id, "name": info[0], "role": info[1], "act": info[2], "pos": at, "node": h.root, "body": h.body, "head": h.head,
-		"h": 5.4 if id == "shumodav" else 2.2, "r": 4.2 if id == "shumodav" else 3.2})
+		"h": 5.4 if id == "shumodav" else (6.0 if id == "gorynych" else 2.2), "r": 4.2 if id == "shumodav" else (5.0 if id == "gorynych" else 3.2)})
 
 
 func _spawn_mob(kind: String, at: Vector3, lvl: int) -> Dictionary:
@@ -751,6 +802,9 @@ func _spawn_mob(kind: String, at: Vector3, lvl: int) -> Dictionary:
 		"scooter": model = Chars.scooter()
 		"drone": model = Chars.drone()
 		"hare": model = Chars.robohare(false)
+		"gull": model = Chars.pigeon(true, false, true)
+		"autoplay": model = Chars.autoplay()
+		"gorynych": model = Chars.gorynych()
 		"safe_hare": model = Chars.robohare(true)
 		"koschei":
 			var kh := Chars.koschei()
@@ -772,7 +826,7 @@ func _spawn_mob(kind: String, at: Vector3, lvl: int) -> Dictionary:
 		"wander": at, "flap": 0.0, "hit": 0.0, "special": 4.0, "tele": null, "tele_t": 0.0, "summoned": false, "dead_t": 0.0,
 		"charge_t": 0.0, "charge_dir": Vector3.ZERO, "pull_cd": 3.0, "temp": false,
 		"boss": d.get("boss", false), "whisper_t": 0.0, "phase": 0, "strafe": 1.0 if randf() < 0.5 else -1.0,
-		"extra": model, "alt": 0.0, "shield": kind == "koschei", "rap": 0, "shield_t": 0.0, "fly_t": 6.0, "fly_to": null, "chast": false,
+		"extra": model, "alt": 0.0, "loading": 0.0, "heads": 3, "shield": kind == "koschei", "rap": 0, "shield_t": 8.0 if kind == "gorynych" else 0.0, "fly_t": 6.0, "fly_to": null, "chast": false,
 	}
 	m.hp = m.hp_max
 	model.root.position = at
@@ -800,6 +854,16 @@ func _clear_world() -> void:
 		if is_instance_valid(b.node):
 			b.node.queue_free()
 	mob_shots.clear()
+	for w in waves:
+		if is_instance_valid(w.node):
+			w.node.queue_free()
+	waves.clear()
+	for t in traps:
+		if is_instance_valid(t.node):
+			t.node.queue_free()
+	traps.clear()
+	_concert_cleanup()
+	concert = {}
 	companion = {}
 	vasya_mate = {}
 	lock_active = false
@@ -813,8 +877,12 @@ func _clear_world() -> void:
 	current_interact = null
 
 
+func is_concert() -> bool:
+	return state == CONCERT
+
+
 func in_world() -> bool:
-	return state in [PLAY, DIALOG, BAG, PAUSE, DEAD, LIST]
+	return state in [PLAY, DIALOG, BAG, PAUSE, DEAD, LIST, CONCERT]
 
 
 # ================================================================== stats
@@ -882,8 +950,17 @@ func quest_lines() -> Array:
 			5: out = ["Перепрошивка", "Догони Зайца-сейфа!", "Внутри — утка, яйцо и флешка"]
 			6: out = ["Перепрошивка", "Рэп-баттл с Кощеем", "3 удара в бит подряд ломают «подписку»"]
 			7: out = ["Перепрошивка", "Вернись к бабе Зине во двор"]
+	elif quest5 < 7:
+		match quest5:
+			0: out = ["Концерт", "Поговори с Петровичем в ГК", "У правления кооператива"]
+			1: out = ["Концерт", "Выступи на сцене в ГК", "У западных ворот · жми в ноту"]
+			2: out = ["Бэкап Горыныча", "Музыка заикается! Беги к бабе Зине"]
+			3: out = ["Бэкап Горыныча", "Иди на набережную", "Южная калитка двора"]
+			4: out = ["Бэкап Горыныча", "Выключи колонки-автоплеи: %d / %d" % [q5_kills, GameData.Q5_SPEAKERS], "Кольца звука перепрыгивай рывком"]
+			5: out = ["Бэкап Горыныча", "Победи Змея Горыныча", "Три головы — три беды"]
+			6: out = ["Бэкап Горыныча", "Вернись к бабе Зине во двор"]
 	else:
-		out = ["Часть первая пройдена!", "Музыка вернулась в город", "Катайся, качай базу · продолжение следует"]
+		out = ["Часть вторая началась!", "Концерт в ГК — хоть каждый день", "Продолжение следует…"]
 	var done := _daily_ready_count()
 	var finished: int = daily.claimed.size()
 	if quest >= 1:
@@ -896,13 +973,15 @@ func npc_marker(id: String) -> String:
 		"zina":
 			if quest == 0 or (quest == 5 and quest2 == 0) or (quest2 >= 6 and quest3 == 0) or (quest3 >= 6 and quest4 == 0):
 				return "!"
-			if quest == 4 or quest3 == 5 or quest4 == 7:
+			if quest5 == 2:
+				return "!"
+			if quest == 4 or quest3 == 5 or quest4 == 7 or quest5 == 6:
 				return "?"
 		"shumodav":
 			if quest4 == 1:
 				return "!"
 		"petrovich":
-			if quest2 == 1 or (quest2 == 0 and quest >= 5) or quest3 == 1:
+			if quest2 == 1 or (quest2 == 0 and quest >= 5) or quest3 == 1 or (quest4 >= 8 and quest5 == 0):
 				return "!"
 			if quest2 == 5:
 				return "?"
@@ -1007,6 +1086,20 @@ func _on_kill(m: Dictionary) -> void:
 		get_tree().create_timer(2.5).timeout.connect(func():
 			if map_id == "server" and quest4 == 6 and state in [PLAY, DIALOG, LIST, BAG, PAUSE]:
 				_spawn_koschei(true))
+	elif m.kind == "autoplay" and quest5 == 4 and not m.temp:
+		q5_kills += 1
+		if q5_kills >= GameData.Q5_SPEAKERS:
+			quest5 = 5
+			hud.big("ИЗ-ПОД МОСТА ВЫПОЛЗ ЗМЕЙ ГОРЫНЫЧ!", "Три головы: «Реклама», «Автоплей», «Бэкап»", 4.5)
+			play_sfx("laser", 0.45)
+			_spawn_mob("gorynych", Embankment.BOSS_HOME, 12)
+			save_game()
+	elif m.kind == "gorynych":
+		if quest5 == 5:
+			quest5 = 6
+			hud.big("БЭКАП УДАЛЁН!", "Горыныч сдался. Вернись к бабе Зине", 5.0)
+		hud.float_text(m.pos + Vector3(0, 7.0, 0), "Ладно-ладно! Я вообще за музыку — просто Кощей платил подпиской…", Color("c8f0d0"), 24, 30)
+		save_game()
 	elif m.kind == "koschei" and quest4 == 6:
 		quest4 = 7
 		hud.big("КОЩЕЙ ПЕРЕПРОШИТ!", "Он танцует! Вернись к бабе Зине во двор", 5.0)
@@ -1037,6 +1130,8 @@ func _interactables() -> Array:
 			out.append({"label": "Рэп-код", "kind": "door", "id": "door", "pos": Vector3(ServerRoom.DOOR_X + 1.6, 0, 0), "r": 3.2})
 		if quest4 == 4:
 			out.append({"label": "Сундук", "kind": "chest", "id": "chest", "pos": ServerRoom.CHEST, "r": 3.4})
+	if map_id == "garages" and quest4 >= 8:
+		out.append({"label": "Концерт", "kind": "concert", "id": "concert", "pos": CONCERT_FRONT, "r": 3.0})
 	if map_id == "garages" and world.has("anchors"):
 		for id in Base.SLOTS:
 			var lv: int = buildings[id]
@@ -1081,7 +1176,9 @@ func interact() -> void:
 				"lyuba": open_list("shop")
 				"petrovich": _talk_petrovich()
 				"shumodav": _talk_shumodav()
+				"gorynych": _talk_gorynych()
 		"door": _start_rap_lock()
+		"concert": start_concert()
 		"chest": _open_chest()
 		"slot": open_list("slot", e.id)
 		"robot": open_list("robot")
@@ -1115,6 +1212,9 @@ func _talk_zina() -> void:
 			if quest3 >= 6 and quest4 < 8:
 				_talk_zina_q4()
 				return
+			if quest4 >= 8 and quest5 >= 2 and quest5 < 7:
+				_talk_zina_q5()
+				return
 			if quest2 == 0:
 				hud.show_dialog("Баба Зина", "Милок, тебя председатель гаражей искал, Петрович! Говорит, бокс пустует, а ты парень видный. Иди через арку «ГК Песня» — вон, справа у гаражей.", [
 					["Бегу к Петровичу!", func():
@@ -1125,7 +1225,10 @@ func _talk_zina() -> void:
 						close.call()]])
 			else:
 				var lines := ["Заходи ещё, милок! Голуби тебя теперь за версту обходят.", "Ты, говорят, гараж обустраиваешь? Мангал заведи — с шаурмой веселее.", "Люба опять шаурму в ларёк завезла. Хрустящая!"]
-				if quest4 >= 8:
+				if quest5 >= 7:
+					lines = ["Горыныч-то на концерт просился. Три билета ему, говорю, на каждую голову!", "Кощей опять притих. Затишье перед обновлением, не иначе.",
+						"Женщине столько лет, на сколько она пляшет! А на концерте я сто лет сбросила.", "Сходи на концерт в ГК — народ тебя ждёт."]
+				elif quest4 >= 8:
 					lines = ["Музыка вернулась — и голуби подпевают! Слышишь, милок?", "Кощей, говорят, Горынычу звонил. Про какой-то бэкап… Ох, не к добру.",
 						"Женщине столько лет, на сколько она пляшет! А я сегодня ещё не плясала.", "Флешку береги. Там теперь вся наша музыка."]
 				elif quest3 >= 6:
@@ -1169,6 +1272,15 @@ func _talk_petrovich() -> void:
 					save_game()
 					close.call()]])
 		_:
+			if quest4 >= 8 and quest5 == 0:
+				hud.show_dialog("Петрович", "Граждане! Музыка вернулась — по уставу положен концерт! Сцену Шумодав собой предоставил, у западных ворот. Выступишь?", [
+					["Выступлю! (задание «Концерт»)", func():
+						quest5 = 1
+						hud.toast("Новое задание: «Концерт» — сцена у западных ворот ГК", Hud.GOLD)
+						play_sfx("bank")
+						save_game()
+						close.call()]])
+				return
 			if quest3 == 1:
 				hud.show_dialog("Петрович", "Зинаида Ивановна предупреждала. Держи: путёвка на подвиг. Номер один. Форма тринадцать-Б. Без путёвки подвиг не засчитают.", [
 					["Кто не засчитает?", func():
@@ -1263,7 +1375,7 @@ func _sell_junk() -> void:
 func _check_daily_reset() -> void:
 	var today := Time.get_date_string_from_system()
 	if daily.date != today:
-		daily = {"date": today, "pigeon": 0, "scooter": 0, "vacuum": 0, "claimed": []}
+		daily = {"date": today, "pigeon": 0, "scooter": 0, "vacuum": 0, "claimed": [], "concert": false}
 
 
 func _daily_ready_count() -> int:
@@ -1595,6 +1707,11 @@ func _drop_loot(m: Dictionary) -> void:
 	if m.kind == "pakhan":
 		drops = ["pakhan_cap", "mic"]
 		coins += 150
+	elif m.kind == "gorynych":
+		drops = ["phones"]
+		if randf() < 0.6:
+			drops.append("jacket")
+		coins += 600
 	elif m.kind == "safe_hare":
 		drops = ["duck"]
 		coins += 150
@@ -1685,6 +1802,10 @@ func _beat_action(_name: String) -> bool:
 			_rap_lock_hit(true)
 		if target != null and target.alive and target.kind == "koschei":
 			_rap_battle_hit(target, true)
+		if target != null and target.alive and target.kind == "gorynych" and target.loading > 0.0:
+			target.loading = 0.0
+			hud.big("ЗАГРУЗКА ПРЕРВАНА РИТМОМ!", "Бэкап не восстановился", 2.0)
+			_ring_fx(target.pos + Vector3(0, 0.3, 0), Kit.TEAL, 5.0, 0.5)
 		if silence_t > 0.0:
 			silence_t = 0.0
 			hud.float_text(pos + Vector3(0, 3.2, 0), "Ритм сильнее тишины!", Kit.TEAL, 24, 50)
@@ -2021,6 +2142,10 @@ func _move_dir(v: Vector2) -> Vector3:
 func _input(event: InputEvent) -> void:
 	if not in_world():
 		return
+	if state == CONCERT:
+		if (event is InputEventScreenTouch and event.pressed) or (event is InputEventKey and event.pressed and not event.echo and event.keycode in [KEY_SPACE, KEY_J]):
+			concert_tap()
+		return
 	if event is InputEventScreenTouch:
 		var p: Vector2 = event.position
 		if event.pressed:
@@ -2109,6 +2234,7 @@ func _notification(what: int) -> void:
 			BAG: close_bag()
 			LIST: close_list()
 			DIALOG: _close_dialog()
+			CONCERT: _finish_concert(true)
 			SELECT: to_menu()
 			MENU: get_tree().quit()
 	elif what == NOTIFICATION_APPLICATION_PAUSED or what == NOTIFICATION_APPLICATION_FOCUS_OUT or what == NOTIFICATION_WM_CLOSE_REQUEST:
@@ -2147,6 +2273,7 @@ func close_bag() -> void:
 func _process(delta: float) -> void:
 	var dt := minf(delta, 0.05)
 	time += dt
+	_watch_music_clock(dt)
 	match state:
 		MENU, SELECT:
 			if stage_hero.has("body"):
@@ -2163,11 +2290,18 @@ func _process(delta: float) -> void:
 			_update_companion(dt)
 			_update_vasya(dt)
 			_update_mob_shots(dt)
+			_update_waves(dt)
+			_update_traps(dt)
 			_update_beacon()
 			_update_camera(dt)
 			save_t += dt
 			if save_t > 30.0:
 				save_game()
+		CONCERT:
+			_update_concert(dt)
+			_update_fx(dt)
+			_update_npcs(dt)
+			_update_robot(dt)
 		DIALOG, BAG, PAUSE, LIST:
 			_animate_hero(dt, 0.0)
 			_update_fx(dt)
@@ -2303,7 +2437,7 @@ func _update_camera(dt: float) -> void:
 		yaw = lerp_angle(yaw, want, minf(1.0, dt * 0.9 * absf(joy_vec.y)))
 	var pivot := pos + Vector3(0, 1.7 + (2.2 if mounted else 0.0), 0)
 	var back := Vector3(sin(yaw), 0, cos(yaw))
-	var dd := dist + (2.6 if mounted else 0.0) + (3.0 if map_id == "stroyka" and _boss_near() else 0.0)
+	var dd := dist + (2.6 if mounted else 0.0) + _boss_cam_extra()
 	var cp := pivot + back * dd * cos(pitch) + Vector3.UP * dd * sin(pitch)
 	cp.y = maxf(cp.y, 0.6)
 	cam.global_position = cam.global_position.lerp(cp, minf(1.0, dt * 14.0)) if cam.global_position.distance_to(cp) < 20 else cp
@@ -2324,6 +2458,11 @@ func _update_mobs(dt: float) -> void:
 				node.rotation.z = 0.0
 				if m.dead_t > 5.0:
 					node.visible = false
+				continue
+			if m.kind == "gorynych":
+				node.position.y = -minf(0.8, m.dead_t * 0.5)
+				for nk in m.extra.necks:
+					nk.rotation.x = lerpf(nk.rotation.x, 0.5, minf(1.0, dt * 2.0))
 				continue
 			if m.kind == "shumodav":
 				# he does not fall apart: he kneels and stays, like an old stage
@@ -2409,6 +2548,10 @@ func _mob_chase(m: Dictionary, dt: float, to_p: Vector3, dp: float) -> float:
 			return _safe_hare_flee(m, dt, to_p, dp)
 		"koschei":
 			return _koschei_chase(m, dt, to_p, dp)
+		"autoplay":
+			return _autoplay_chase(m, dt, to_p, dp)
+		"gorynych":
+			return _gorynych_chase(m, dt, to_p, dp)
 		"shumodav":
 			m.yaw = lerp_angle(m.yaw, atan2(to_p.x, to_p.z), minf(1.0, dt * 3))
 			_shumodav_special(m, dt)
@@ -2469,6 +2612,9 @@ func _mob_chase(m: Dictionary, dt: float, to_p: Vector3, dp: float) -> float:
 				m.atk_cd = m.atk
 				m.flap = 0.35
 				hurt_player(m.dmg * randf_range(0.85, 1.15), m.pos)
+				if m.kind == "gull" and food > 0 and randf() < 0.25:
+					food -= 1
+					hud.float_text(pos + Vector3(0, 3.2, 0), "Чайка стащила шаурму!", Color("ffd27a"), 22, 40)
 			if m.kind == "pakhan":
 				_boss_special(m, dt)
 	return spd
@@ -2484,6 +2630,22 @@ func _animate_mob(m: Dictionary, dt: float, spd: float) -> void:
 			m.body.position.y = 1.85 + sin(time * 2.4 + m.home.x) * 0.18 + (0.25 if m.flap > 0.0 else 0.0)
 			m.body.rotation.x = 0.25 * minf(1.0, spd / 3.0)
 			m.head.scale = Vector3.ONE * (1.0 + (0.25 if m.flap > 0.0 else 0.0))
+		"autoplay":
+			var pulse := maxf(0.0, 0.12 - minf(beat_phase(), 1.0 - beat_phase()) * 0.5)
+			m.body.scale = Vector3.ONE * (1.0 + pulse + (0.15 if m.flap > 0.0 else 0.0))
+			m.head.scale = Vector3.ONE * (1.0 + pulse * 2.0)
+		"gorynych":
+			var gx: Dictionary = m.extra
+			for i in range(3):
+				var awake: bool = _goryn_head_awake(m, i)
+				var nk: Node3D = gx.necks[i]
+				var want := -0.35 + sin(time * 1.6 + i * 1.3) * 0.12 if awake else 0.45
+				if awake and m.flap > 0.0:
+					want = -0.7
+				nk.rotation.x = lerpf(nk.rotation.x, want, minf(1.0, dt * 4.0))
+			for w in m.wings:
+				w.rotation.z = sin(time * 3.0) * 0.15 * (1.0 if m.wings.find(w) == 0 else -1.0)
+			m.body.position.y = sin(time * 2.0) * 0.06
 		"hare", "safe_hare":
 			var hop := absf(sin(time * 13.0 + m.home.x)) * 0.3 * minf(1.0, spd / 3.0)
 			if m.charge_t > 0.0:
@@ -2673,6 +2835,14 @@ func _update_beacon() -> void:
 	if world.has("beacon"):
 		var b: Node3D = world.beacon
 		b.visible = (beat_index() / 2) % 2 == 0
+
+
+func _boss_cam_extra() -> float:
+	# pull the camera back near the big bosses so their heads stay in view
+	for m in mobs:
+		if m.alive and m.kind in ["shumodav", "gorynych"] and m.pos.distance_to(pos) < 24.0:
+			return 3.0 if m.kind == "shumodav" else 5.5
+	return 0.0
 
 
 func _boss_near() -> bool:
@@ -3312,6 +3482,421 @@ func _update_vasya(dt: float) -> void:
 		v.arms[1].rotation.x = lerpf(v.arms[1].rotation.x, sw * 0.5, minf(1.0, dt * 6.0))
 
 
+# ================================================================== 0.5: concert in ГК «Песня», the embankment, Zmey Gorynych
+const STAGE_POS := Vector3(-19.2, 0, -3.8)
+const CONCERT_FRONT := Vector3(-18.6, 0, -0.6)
+const RATING := ["ПУБЛИКА ЗЕВАЕТ…", "НЕПЛОХО!", "ХОРОШО ЗАШЛО!", "ОВАЦИИ!"]
+
+
+func _build_concert_stage() -> void:
+	var g := Node3D.new()
+	g.name = "ConcertStage"
+	world.root.add_child(g)
+	Kit.part(g, Kit.BOX, Kit.mat(Color("3a2a22"), 0.7), Vector3(4.4, 0.6, 3.4), STAGE_POS + Vector3(-0.1, 0.3, 0))
+	Kit.part(g, Kit.BOX, Kit.neon(Kit.GOLD, 1.6), Vector3(4.4, 0.05, 0.05), STAGE_POS + Vector3(-0.1, 0.6, 1.7))
+	for sz in [-1.4, 1.4]:
+		Kit.part(g, Kit.BOX, Kit.mat(Color("1a1b22"), 0.5), Vector3(0.7, 1.2, 0.7), STAGE_POS + Vector3(-1.6, 1.2, sz))
+		Kit.part(g, Kit.CYL, Kit.neon(Kit.TEAL, 2.6), Vector3(0.44, 0.04, 0.44), STAGE_POS + Vector3(-1.24, 1.3, sz), Vector3(0, 0, PI / 2))
+	var cols := [Kit.GOLD, Color("ff5d7a"), Kit.TEAL, Color("c38bff")]
+	for k in range(14):
+		var t := k / 13.0
+		Kit.part(g, Kit.SPH, Kit.neon(cols[k % 4], 4.0), Vector3.ONE * 0.12, STAGE_POS + Vector3(-0.6, 3.4 - sin(t * PI) * 0.4, -2.0 + t * 4.0))
+	var gm := Chars.golem()
+	g.add_child(gm.root)
+	gm.root.position = STAGE_POS + Vector3(-3.2, -0.3, 0)
+	gm.root.rotation = Vector3(0.15, PI / 2, 0)
+	gm.root.scale = Vector3.ONE * 0.5
+	gm.arms[0].rotation = Vector3(-0.6, 0, -0.5)
+	gm.arms[1].rotation = Vector3(-0.6, 0, 0.5)
+	var l := Chars.label(world.root, "СЦЕНА ГК «ПЕСНЯ»", 80, Color(3.0, 2.4, 1.4), STAGE_POS + Vector3(-0.6, 4.2, 0), Vector3(0, PI / 2, 0), 0.008, 8)
+	l.name = "StageSign"
+	Kit.bake_tree(g)
+	world.rects.append(Rect2(STAGE_POS.x - 2.3, STAGE_POS.z - 1.7, 4.4, 3.4))
+
+
+func _concert_cleanup() -> void:
+	for n in concert_nodes:
+		if is_instance_valid(n.node):
+			n.node.queue_free()
+	concert_nodes.clear()
+
+
+func start_concert() -> void:
+	if state != PLAY or quest4 < 8:
+		return
+	if mounted:
+		_dismount("")
+	_concert_cleanup()
+	var aud := [[Chars.granny_npc(), Vector3(-15.4, 0, -1.6)], [Chars.lyuba_npc(), Vector3(-15.6, 0, -4.2)], [Chars.misha_npc(), Vector3(-14.2, 0, -0.4)],
+		[Chars.petrovich_npc(), Vector3(-14.4, 0, -3.0)]]
+	for a in aud:
+		var h: Dictionary = a[0]
+		world.root.add_child(h.root)
+		h.root.position = a[1]
+		h.root.rotation.y = -PI / 2
+		Kit.bake_tree(h.root)
+		concert_nodes.append({"node": h.root, "body": h.body, "arms": h.arms, "base": a[1], "ph": randf() * 0.4})
+	for x in [-17.0, -14.5, -12.0, -9.5]:
+		var pg := Chars.pigeon(false, false)
+		world.root.add_child(pg.root)
+		pg.root.scale = Vector3.ONE * 0.42
+		pg.root.position = Vector3(x, 2.92, -7.4)
+		Kit.bake_tree(pg.root)
+		concert_nodes.append({"node": pg.root, "body": pg.body, "arms": [], "base": pg.root.position, "ph": randf() * 0.4})
+	if mount_owned:
+		var iz := Chars.izba()
+		world.root.add_child(iz.root)
+		iz.root.scale = Vector3.ONE * 0.5
+		iz.root.position = Vector3(-10.4, 0, 3.0)
+		iz.root.rotation.y = -PI / 2 - 0.5
+		Kit.bake_tree(iz.root)
+		concert_nodes.append({"node": iz.root, "body": iz.hut, "arms": [], "base": iz.root.position, "ph": 0.0, "hut": true})
+	var bt := beat_time()
+	var start_beat := (int(ceil(bt / beat_len)) / 4 + 2) * 4
+	var t0 := start_beat * beat_len
+	var times := []
+	var judged := []
+	for n in GameData.CONCERT_NOTES:
+		times.append(t0 + float(n) * beat_len)
+		judged.append(false)
+	concert = {"start": t0, "notes": times, "judged": judged, "score": 0, "combo": 0, "max_combo": 0, "perfect": 0, "good": 0, "miss": 0,
+		"hype": 20.0, "fb": "", "fb_col": Hud.CREAM, "fb_t": 0.0, "end": float(times[times.size() - 1]) + beat_len * 2.0, "lyric": ""}
+	state = CONCERT
+	joy_vec = Vector2.ZERO
+	joy_idx = -1
+	cam_idx = -1
+	target = null
+	hud.big("КОНЦЕРТ!", "Жми в любом месте экрана, когда нота в круге", 3.0)
+	play_sfx("bank", 1.2)
+
+
+func concert_tap() -> void:
+	if concert.is_empty():
+		return
+	var now := beat_time()
+	var best := -1
+	var bd := 0.35
+	for i in range(concert.notes.size()):
+		if concert.judged[i]:
+			continue
+		var d := absf(now - float(concert.notes[i]))
+		if d < bd:
+			bd = d
+			best = i
+	attack_anim = 0.3
+	if best < 0:
+		concert.combo = 0
+		concert.fb = "Мимо нот"
+		concert.fb_col = Color("c8ccd8")
+		concert.fb_t = 0.6
+		return
+	if bd > 0.2:
+		return
+	concert.judged[best] = true
+	if bd <= 0.075:
+		concert.perfect += 1
+		concert.combo += 1
+		concert.score += 100 + int(concert.combo) * 2
+		concert.hype = minf(100.0, concert.hype + 6.0)
+		concert.fb = "ИДЕАЛЬНО!"
+		concert.fb_col = Hud.GOLD
+		_notes_fx(STAGE_POS + Vector3(0, 2.6, 0), Kit.GOLD)
+		play_sfx("beat", 1.0 + minf(concert.combo, 10) * 0.03, -2.0)
+	elif bd <= 0.15:
+		concert.good += 1
+		concert.combo += 1
+		concert.score += 60
+		concert.hype = minf(100.0, concert.hype + 3.0)
+		concert.fb = "В БИТ!"
+		concert.fb_col = Hud.TEAL
+		play_sfx("beat", 0.95, -4.0)
+	else:
+		concert.miss += 1
+		concert.combo = 0
+		concert.hype = maxf(0.0, concert.hype - 3.0)
+		concert.fb = "РАНО!" if now < float(concert.notes[best]) else "ПОЗДНО!"
+		concert.fb_col = Color("ff8a8a")
+	concert.max_combo = maxi(concert.max_combo, concert.combo)
+	concert.fb_t = 0.6
+
+
+func _update_concert(dt: float) -> void:
+	if concert.is_empty():
+		state = PLAY
+		return
+	var now := beat_time()
+	for i in range(concert.notes.size()):
+		if not concert.judged[i] and now - float(concert.notes[i]) > 0.2:
+			concert.judged[i] = true
+			concert.miss += 1
+			concert.combo = 0
+			concert.hype = maxf(0.0, concert.hype - 4.0)
+			concert.fb = "МИМО"
+			concert.fb_col = Color("ff6a6a")
+			concert.fb_t = 0.5
+	concert.fb_t = maxf(0.0, concert.fb_t - dt)
+	var phrase := int(floor((now - concert.start) / (8.0 * beat_len)))
+	concert.lyric = GameData.CONCERT_LINES[phrase % 4] if phrase >= 0 else ""
+	# the hero on stage, the crowd jumping with the hype
+	pos = STAGE_POS
+	facing = PI / 2
+	attack_anim = maxf(0.0, attack_anim - dt)
+	_animate_hero(dt, 0.0)
+	hero.root.position = STAGE_POS + Vector3(0.3, 0.6, 0)
+	var bob := maxf(0.0, 0.12 - minf(beat_phase(), 1.0 - beat_phase()) * 0.45)
+	var amp: float = 0.6 + concert.hype / 60.0
+	for n in concert_nodes:
+		if not is_instance_valid(n.node):
+			continue
+		n.node.position = n.base + Vector3(0, bob * amp * (1.6 if n.has("hut") else 1.0), 0)
+		for a in n.arms:
+			a.rotation.x = -2.6 if concert.hype > 50.0 and bob > 0.04 else -0.3
+	cam.global_position = cam.global_position.lerp(Vector3(-10.2, 4.3, 4.4), minf(1.0, dt * 3.0))
+	cam.fov = 58
+	cam.look_at(STAGE_POS + Vector3(0.6, 1.6, 0.4), Vector3.UP)
+	if now > float(concert.end):
+		_finish_concert(false)
+
+
+func _finish_concert(cancel: bool) -> void:
+	if concert.is_empty():
+		return
+	var c: Dictionary = concert
+	concert = {}
+	_concert_cleanup()
+	state = PLAY
+	pos = CONCERT_FRONT + Vector3(1.0, 0, 0.8)
+	facing = -PI / 2
+	yaw = facing + PI
+	if cancel:
+		hud.toast("Концерт прерван", Hud.CREAM)
+		return
+	var total: int = c.notes.size()
+	var acc: float = (float(c.perfect) + 0.6 * float(c.good)) / float(total)
+	var stars := 3 if acc >= 0.85 else (2 if acc >= 0.6 else (1 if acc >= 0.3 else 0))
+	var first: bool = not bool(daily.get("concert", false))
+	var gain: int = (40 * stars + int(c.perfect)) * (2 if first and stars > 0 else 1)
+	coins += gain
+	gain_xp(50 * stars)
+	if stars > 0:
+		daily["concert"] = true
+	var dots := ""
+	for i in range(3):
+		dots += "●" if i < stars else "○"
+	hud.big("%s  %s" % [RATING[stars], dots], "Идеально %d · В бит %d · Мимо %d · +%d монет%s" % [c.perfect, c.good, c.miss, gain, " (×2 за первый концерт дня)" if first and stars > 0 else ""], 5.0)
+	play_sfx("bank")
+	if stars == 3:
+		_burst(STAGE_POS + Vector3(2, 3, 0), [Kit.GOLD, Color("ff5d7a"), Kit.TEAL, Color.WHITE], 60)
+	save_game()
+	if quest5 == 1:
+		if stars >= 1:
+			get_tree().create_timer(2.0).timeout.connect(func():
+				if state == PLAY and quest5 == 1:
+					_phone_call())
+		else:
+			hud.toast("Публика не впечатлена — нужна хотя бы одна оценка. Ещё раз!", Hud.CREAM)
+
+
+func _phone_call() -> void:
+	quest5 = 2
+	save_game()
+	music.pitch_scale = 0.55
+	var tw := create_tween()
+	tw.tween_property(music, "pitch_scale", 1.0, 1.8)
+	play_sfx("near", 0.5, 0.0)
+	state = DIALOG
+	var close := func(): _close_dialog()
+	hud.show_dialog("Кощей (по телефону)", "…Горыныч? Это я. Бэкап загрузился? …Отлично. Пусть они там поют. Недолго осталось.", [
+		["Это что сейчас было?!", func():
+			hud.show_dialog("Петрович", "Граждане, музыка заикается! Опять Кощеевы фокусы. Бегом к Зинаиде Ивановне!", [["Бегу к Зине!", close]])]])
+
+
+func _add_river_portal() -> void:
+	world.portals.append({"pos": Vector3(0, 0, 17.4), "r": 1.3, "to": "embankment", "spawn": "from_yard", "label": "Набережная"})
+	Chars.ring(world.root, Vector3(0, 0.05, 17.4), 1.2, Color("4ad8ff"), 0.08, 3.0)
+
+
+func _talk_zina_q5() -> void:
+	var close := func(): _close_dialog()
+	match quest5:
+		2:
+			hud.show_dialog("Баба Зина", "Слышал? Музыка заикается! Это Кощей бэкап у Горыныча спрятал. Горыныч — три головы, а ума на полторы. Живёт под Калиновым мостом, на набережной.", [
+				["Как туда пройти?", func():
+					hud.show_dialog("Баба Зина", "Через южную калитку двора, милок. Только там колонки орут одну песню по кругу — это хуже тишины! Выключай их, а кольца звука рывком перепрыгивай.", [
+						["Иду к мосту! (задание «Бэкап Горыныча»)", func():
+							_accept_q5()
+							close.call()]])]])
+		6:
+			hud.show_dialog("Баба Зина", "Бэкап удалён?! Ну, милок, ты теперь главный по музыке во всём районе. Держи от всего двора — «Золотой бит»!", [
+				["Спасибо, баб Зин! (Микрофон «Золотой бит», +700 монет)", func():
+					_finish_q5()
+					close.call()]])
+		_:
+			hud.show_dialog("Баба Зина", "Горыныч трёхголовый: одна голова рекламу крутит, другая одну песню по кругу, третья бэкап грузит. Третью в бит перебивай — она этого не любит!", [["Понял!", close]])
+
+
+func _accept_q5() -> void:
+	if quest5 != 2:
+		return
+	quest5 = 3
+	hud.toast("Новое задание: «Бэкап Горыныча» — южная калитка двора", Hud.GOLD)
+	play_sfx("bank")
+	if map_id == "yard" and world.has("root"):
+		_add_river_portal()
+	save_game()
+
+
+func _finish_q5() -> void:
+	if quest5 != 6:
+		return
+	quest5 = 7
+	add_item("golden_mic")
+	coins += 700
+	gain_xp(700)
+	hud.big("ВТОРАЯ ЧАСТЬ НАЧАЛАСЬ!", "Бэкап удалён · концерт в ГК — каждый день · продолжение следует…", 6.0)
+	_notes_fx(pos + Vector3(0, 2, 0), Kit.GOLD)
+	play_sfx("bank")
+	save_game()
+
+
+func _talk_gorynych() -> void:
+	state = DIALOG
+	var close := func(): _close_dialog()
+	var lines := ["Три головы — три мнения. Но сейчас все три за музыку!", "Реклама, автоплей, бэкап… Я теперь просто пою. В три голоса!",
+		"Кощей звонил. Я сбросил. Три раза — каждой головой.", "На концерт в ГК приду. Билеты нужны? Три."]
+	hud.show_dialog("Змей Горыныч", lines[randi() % lines.size()], [["Ага", close]])
+
+
+# ------------------------------------------------------------------ speakers on autoplay and Zmey Gorynych
+func _autoplay_chase(m: Dictionary, dt: float, to_p: Vector3, dp: float) -> float:
+	m.yaw = lerp_angle(m.yaw, atan2(to_p.x, to_p.z), minf(1.0, dt * 3))
+	if m.atk_cd <= 0.0 and dp < 12.0:
+		m.atk_cd = m.atk * randf_range(0.9, 1.15)
+		m.flap = 0.3
+		_add_wave(m.pos, 9.0, 6.5, m.dmg, Color("ff5d7a"))
+		hud.float_text(m.pos + Vector3(0, 2.8, 0), ["ТЫЦ-ТЫЦ!", "Хит недели!", "Ещё разок!", "На повторе!"][randi() % 4], Color("ff9ad0"), 18, 40)
+	return 0.0
+
+
+func _goryn_head_awake(m: Dictionary, i: int) -> bool:
+	# heads fall asleep one by one: «Реклама» at 66%, «Бэкап» at 33%, «Автоплей» stays to the end
+	var f: float = m.hp / m.hp_max
+	match i:
+		0: return f > 0.66
+		2: return f > 0.33
+	return true
+
+
+func _gorynych_chase(m: Dictionary, dt: float, to_p: Vector3, dp: float) -> float:
+	var spd := 0.0
+	m.yaw = lerp_angle(m.yaw, atan2(to_p.x, to_p.z), minf(1.0, dt * 2.5))
+	var f: float = m.hp / m.hp_max
+	var heads := 3 if f > 0.66 else (2 if f > 0.33 else 1)
+	if heads < int(m.heads):
+		m.heads = heads
+		m.loading = 0.0
+		if heads == 2:
+			hud.big("ГОЛОВА «РЕКЛАМА» УСНУЛА!", "Zzz… Осталось две", 2.5)
+		else:
+			hud.big("ГОЛОВА «БЭКАП» УСНУЛА!", "Осталась «Автоплей» — самая упрямая", 2.5)
+	if m.loading > 0.0:
+		m.loading -= dt
+		m.flap = 0.2
+		if m.loading <= 0.0:
+			m.hp = minf(m.hp_max, m.hp + m.hp_max * 0.05)
+			hud.float_text(m.pos + Vector3(0, 7.2, 0), "Бэкап восстановлен: +5%", Color("4ad8ff"), 24, 40)
+		return 0.0
+	if _goryn_head_awake(m, 2):
+		m.shield_t -= dt
+		if m.shield_t <= 0.0:
+			m.shield_t = 12.0
+			m.loading = 3.0
+			hud.toast("Голова «Бэкап» грузит копию… ударь в бит, чтобы прервать!", Color("9ad8ff"))
+			return 0.0
+	if _goryn_head_awake(m, 0):
+		m.fly_t -= dt
+		if m.fly_t <= 0.0:
+			m.fly_t = 6.5
+			m.flap = 0.4
+			for k in range(3):
+				var off := Vector3.ZERO if k == 0 else Vector3(randf_range(-3.5, 3.5), 0, randf_range(-3.5, 3.5))
+				_add_trap(pos + off, 2.2, 1.5, 44.0)
+			hud.float_text(pos + Vector3(0, 2.8, 0), "РЕКЛАМНАЯ ПАУЗА!", Color("ffd23a"), 22, 40)
+	m.special -= dt
+	if m.special <= 0.0:
+		m.special = 5.0 if heads > 1 else 3.6
+		m.flap = 0.4
+		_add_wave(m.pos, 15.0, 8.0, 30.0, Color("ff5d7a"))
+		hud.float_text(m.pos + Vector3(0, 7.0, 0), "ТЫЦ-ТЫЦ-ТЫЦ!", Color("ff9ad0"), 26, 40)
+	var reach: float = m.radius + 1.4
+	if dp > 6.0:
+		spd = m.speed
+		m.pos += to_p.normalized() * spd * dt
+	elif dp < reach and m.atk_cd <= 0.0:
+		m.atk_cd = m.atk
+		m.flap = 0.5
+		hurt_player(m.dmg * randf_range(0.85, 1.15), m.pos)
+		hud.float_text(pos + Vector3(0, 2.8, 0), "Хвостом — БАЦ!", Color("9af0a0"), 22, 40)
+	return spd
+
+
+# ------------------------------------------------------------------ noise waves and ground traps
+func _add_wave(center: Vector3, max_r: float, speed: float, dmg: float, col: Color) -> void:
+	var n := Node3D.new()
+	fx_root.add_child(n)
+	n.position = Vector3(center.x, 0.35, center.z)
+	Chars.ring(n, Vector3.ZERO, 1.0, col, 0.045, 2.2)
+	n.scale = Vector3.ONE * 0.3
+	waves.append({"node": n, "c": center, "r": 0.3, "max": max_r, "spd": speed, "dmg": dmg, "hit": false})
+
+
+func _update_waves(dt: float) -> void:
+	for w in waves.duplicate():
+		w.r += w.spd * dt
+		var n: Node3D = w.node
+		n.scale = Vector3.ONE * w.r
+		var d := Vector2(pos.x - w.c.x, pos.z - w.c.z).length()
+		if not w.hit and absf(d - w.r) < 0.7 and state == PLAY:
+			w.hit = true
+			if invuln <= 0.0:
+				hurt_player(w.dmg * randf_range(0.9, 1.1), w.c)
+				var away := Vector3(pos.x - w.c.x, 0, pos.z - w.c.z)
+				if away.length() > 0.01:
+					pull_v = away.normalized() * 9.0
+				hud.float_text(pos + Vector3(0, 2.8, 0), "ТЫЦ-ТЫЦ!", Color("ff9ad0"), 22, 40)
+			else:
+				hud.float_text(pos + Vector3(0, 2.8, 0), "Перепрыгнул!", Kit.TEAL, 22, 40)
+		if w.r >= w.max:
+			n.queue_free()
+			waves.erase(w)
+
+
+func _add_trap(at: Vector3, r: float, t: float, dmg: float) -> void:
+	var n := Node3D.new()
+	fx_root.add_child(n)
+	n.position = Vector3(at.x, 0.09, at.z)
+	var mat := StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.albedo_color = Color(1.0, 0.75, 0.1, 0.3)
+	Kit.part(n, Kit.DISC, mat, Vector3(r * 2.0, 1, r * 2.0))
+	Chars.ring(n, Vector3(0, 0.02, 0), r, Color("ffb02a"), 0.1, 4.0)
+	traps.append({"node": n, "c": at, "r": r, "t": t, "dmg": dmg})
+
+
+func _update_traps(dt: float) -> void:
+	for t in traps.duplicate():
+		t.t -= dt
+		if t.t <= 0.0:
+			if Vector2(pos.x - t.c.x, pos.z - t.c.z).length() < t.r and state == PLAY:
+				hurt_player(t.dmg, t.c)
+				hud.float_text(pos + Vector3(0, 2.8, 0), "Баннером по голове!", Color("ffd23a"), 20, 40)
+			_ring_fx(t.c + Vector3(0, 0.2, 0), Color("ffb02a"), t.r + 0.4, 0.3)
+			_burst(t.c + Vector3(0, 0.6, 0), [Color("ffd23a"), Color.WHITE], 10)
+			t.node.queue_free()
+			traps.erase(t)
+
+
 # ================================================================== automated test (CI / local)
 func _bot_fight(frames_max: int, until: Callable) -> int:
 	var frames := 0
@@ -3372,6 +3957,10 @@ func _run_autotest() -> void:
 	while state != PLAY:
 		await get_tree().process_frame
 	var t0 := Time.get_ticks_msec()
+	if args.has("--only05"):
+		await _shots05(shots_dir)
+		_finish_report(lg, t0)
+		return
 	if args.has("--only04"):
 		await _shots04(shots_dir)
 		_finish_report(lg, t0)
@@ -3487,6 +4076,7 @@ func _run_autotest() -> void:
 		close_bag()
 	await _autotest_q3(lg, shots_dir)
 	await _autotest_q4(lg, shots_dir)
+	await _autotest_q5(lg, shots_dir)
 	_lg(lg, "final level=%d coins=%d food=%d items=%d" % [level, coins, food, inventory.size()])
 	_finish_report(lg, t0)
 
@@ -3738,6 +4328,144 @@ func _shots04(dir: String) -> void:
 	pitch = 0.4
 	await _bot_fight(70, func(): return false)
 	await _snap(dir, "11_koschei")
+
+
+func _play_concert_bot(accuracy: float) -> void:
+	# taps exactly on the notes (with a given share of hits) until the concert ends
+	# the song runs on the music clock (real time), so wait by the wall clock, not by frames
+	var t_end := Time.get_ticks_msec() + 80000
+	while state == CONCERT and Time.get_ticks_msec() < t_end:
+		await get_tree().process_frame
+		if concert.is_empty():
+			break
+		var now := beat_time()
+		for i in range(concert.notes.size()):
+			if not concert.judged[i] and absf(now - float(concert.notes[i])) < 0.04:
+				if randf() < accuracy:
+					concert_tap()
+				break
+
+
+func _autotest_q5(lg: Array, shots_dir: String) -> void:
+	pos = Vector3(15.6, 0, -27.6)
+	portal_cd = 0.0
+	while map_id != "garages" or state != PLAY:
+		await get_tree().process_frame
+	_lg(lg, "q5 petrovich marker=%s stage=%s" % [npc_marker("petrovich"), str(world.root.has_node("ConcertStage"))])
+	await _go_interact(Vector3(10.2, 0, 4.6))
+	_close_dialog()
+	quest5 = 1
+	await _go_interact(CONCERT_FRONT)
+	_lg(lg, "concert started=%s notes=%d" % [str(state == CONCERT), concert.get("notes", []).size()])
+	await _play_concert_bot(0.95)
+	_lg(lg, "concert done state=%d coins=%d quest5=%d" % [state, coins, quest5])
+	var w := 0
+	while quest5 < 2 and w < 200:
+		await get_tree().process_frame
+		w += 1
+	_lg(lg, "phone call quest5=%d dialog=%s" % [quest5, str(state == DIALOG)])
+	_close_dialog()
+	pos = Vector3(29.8, 0, 0)
+	portal_cd = 0.0
+	while map_id != "yard" or state != PLAY:
+		await get_tree().process_frame
+	await _go_interact(Vector3(-5.9, 0, -5.0))
+	_close_dialog()
+	_accept_q5()
+	_lg(lg, "q5 accepted quest5=%d portals=%d" % [quest5, world.portals.size()])
+	pos = Vector3(0, 0, 17.4)
+	portal_cd = 0.0
+	while map_id != "embankment" or state != PLAY:
+		await get_tree().process_frame
+	_lg(lg, "embankment quest5=%d mobs=%d zina=%s" % [quest5, mobs.size(), str(not companion.is_empty())])
+	var f := await _bot_fight(5000, func(): return quest5 >= 5)
+	_lg(lg, "speakers quest5=%d kills=%d frames=%d hp_min_ok=%s" % [quest5, q5_kills, f, str(hp > 0)])
+	if quest5 < 5:
+		q5_kills = GameData.Q5_SPEAKERS
+		quest5 = 5
+		_spawn_mob("gorynych", Embankment.BOSS_HOME, 12)
+	for m in mobs:
+		if m.kind != "gorynych" and m.alive:
+			m.alive = false
+			m.node.visible = false
+			m.respawn = 1.0e9
+	pos = Embankment.BOSS_HOME + Vector3(8, 0, -2)
+	f = await _bot_fight(9000, func(): return quest5 >= 6)
+	var gb = null
+	for m in mobs:
+		if m.kind == "gorynych":
+			gb = m
+	_lg(lg, "gorynych quest5=%d frames=%d heads=%d" % [quest5, f, int(gb.heads) if gb != null else -1])
+	if quest5 < 6:
+		quest5 = 6
+	pos = Vector3(32.2, 0, 0)
+	portal_cd = 0.0
+	while map_id != "yard" or state != PLAY:
+		await get_tree().process_frame
+	await _go_interact(Vector3(-5.9, 0, -5.0))
+	_finish_q5()
+	_close_dialog()
+	var mic := false
+	for it in inventory:
+		if it.id == "golden_mic":
+			mic = true
+	_lg(lg, "q5 done quest5=%d golden_mic=%s" % [quest5, str(mic)])
+
+
+## Quick visual check of the 0.5 content (used with --shots for screenshots)
+func _shots05(dir: String) -> void:
+	quest = 5
+	quest2 = 6
+	quest3 = 6
+	quest4 = 8
+	quest5 = 1
+	level = 10
+	mount_owned = true
+	for id in ["megaphone", "pakhan_cap", "vest"]:
+		add_item(id)
+	_recalc_stats()
+	hp = hp_max
+	await _travel("garages", "start")
+	pos = CONCERT_FRONT + Vector3(1.2, 0, 0.6)
+	await get_tree().process_frame
+	start_concert()
+	var t_end := Time.get_ticks_msec() + 120000
+	while state == CONCERT and Time.get_ticks_msec() < t_end:
+		await get_tree().process_frame
+		var now := beat_time()
+		for i in range(concert.notes.size()):
+			if not concert.judged[i] and absf(now - float(concert.notes[i])) < 0.2:
+				concert_tap()
+				break
+		if now > float(concert.start) + 9.0 * beat_len:
+			# the software renderer in tests is too slow to tap in time — show a typical mid-song state
+			concert.hype = 80.0
+			concert.perfect = 7
+			concert.good = 2
+			concert.miss = 1
+			concert.combo = 6
+			concert.score = 1020
+			await _snap(dir, "12_concert")
+			break
+	_finish_concert(true)
+	quest5 = 4
+	await _travel("embankment", "from_yard")
+	pos = Vector3(16, 0, 1)
+	facing = -PI / 2
+	yaw = facing + PI
+	await _bot_fight(60, func(): return false)
+	await _snap(dir, "13_embankment")
+	for m in mobs:
+		m.alive = false
+		m.node.visible = false
+		m.respawn = 1.0e9
+	quest5 = 5
+	_spawn_mob("gorynych", Embankment.BOSS_HOME, 12)
+	pos = Embankment.BOSS_HOME + Vector3(9, 0, -3)
+	facing = -PI / 2
+	yaw = facing + PI - 0.3
+	await _bot_fight(70, func(): return false)
+	await _snap(dir, "14_gorynych")
 
 
 func _lg(lg: Array, line: String) -> void:

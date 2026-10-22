@@ -186,10 +186,10 @@ func _build_menu() -> void:
 	logo.custom_minimum_size = Vector2(220, 60)
 	v.add_child(logo)
 	v.add_child(_label("ПЕСНЯ ♪", 76, true, GOLD))
-	var sub := _label("Офлайн-версия 0.4 · новое: серверная Кощея", 22, false, CREAM)
+	var sub := _label("Офлайн-версия 0.5 · новое: концерт и Змей Горыныч", 22, false, CREAM)
 	sub.custom_minimum_size = Vector2(520, 0)
 	v.add_child(sub)
-	var d := _label("Бей в бит — урон ×2. Голуби, свой гараж, стройка Глушилки с Шумодавом, а теперь — серверная Кощея и рэп-баттл за музыку города.", 18, false, Color(0.75, 0.8, 0.88))
+	var d := _label("Бей в бит — урон ×2. Голуби, свой гараж, Шумодав и рэп-баттл с Кощеем, а теперь — концерт в ГК и трёхголовый Змей Горыныч.", 18, false, Color(0.75, 0.8, 0.88))
 	d.custom_minimum_size = Vector2(520, 0)
 	v.add_child(d)
 	menu_continue = _btn("ПРОДОЛЖИТЬ", func(): g.continue_game(), 260)
@@ -578,6 +578,9 @@ func _skill_button(name: String, icon: String, label: String) -> void:
 func _draw() -> void:
 	if g == null or not g.in_world():
 		return
+	if g.is_concert():
+		_draw_concert()
+		return
 	var s := size
 	var cam: Camera3D = g.cam
 
@@ -899,3 +902,51 @@ func show_list(title: String, sub: String, rows: Array) -> void:
 		sep.custom_minimum_size = Vector2(0, 1)
 		list_box.add_child(sep)
 	list_panel.visible = true
+
+
+# ================================================================== 0.5: concert HUD (rhythm game)
+func _draw_concert() -> void:
+	var s := size
+	var c: Dictionary = g.concert
+	if c.is_empty():
+		return
+	var now: float = g.beat_time()
+	_rrect(Rect2(s.x / 2 - 300, 14, 600, 66), PANEL, 20)
+	_txt(Vector2(s.x / 2, 44), "КОНЦЕРТ В ГК «ПЕСНЯ»", 24, GOLD, true, HORIZONTAL_ALIGNMENT_CENTER)
+	_txt(Vector2(s.x / 2, 70), "Очки %d · Комбо ×%d · Идеально %d · В бит %d · Мимо %d" % [c.score, c.combo, c.perfect, c.good, c.miss], 16, CREAM, false, HORIZONTAL_ALIGNMENT_CENTER)
+	_bar(Rect2(s.x / 2 - 220, 90, 440, 16), c.hype / 100.0, PURPLE if c.hype < 70.0 else GOLD, "Зал качает: %d%%" % int(c.hype))
+	if c.lyric != "":
+		_txt(Vector2(s.x / 2, 150), c.lyric, 26, CREAM, true, HORIZONTAL_ALIGNMENT_CENTER, -1, 5)
+	var ly := s.y - 118.0
+	var hx := 250.0
+	_rrect(Rect2(130, ly - 54, s.x - 260, 108), Color(0.04, 0.05, 0.1, 0.74), 54)
+	var ph: float = g.beat_phase()
+	draw_circle(Vector2(hx, ly), 44, Color(GOLD, 0.12 + 0.3 * maxf(0.0, 1.0 - minf(ph, 1.0 - ph) * 4.0)))
+	draw_arc(Vector2(hx, ly), 48, 0, TAU, 48, GOLD, 6)
+	var speed := 380.0
+	for i in range(c.notes.size()):
+		if c.judged[i]:
+			continue
+		var t: float = c.notes[i]
+		var x := hx + (t - now) * speed
+		if x < 110.0 or x > s.x - 140.0:
+			continue
+		var off := absf(fposmod((t - float(c.start)) / g.beat_len, 1.0) - 0.5) < 0.01
+		draw_circle(Vector2(x, ly), 31, Color("ff5d7a") if off else TEAL)
+		draw_arc(Vector2(x, ly), 31, 0, TAU, 32, Color(1, 1, 1, 0.65), 3)
+		_icon("note", Vector2(x, ly), 34, NAVY)
+	if now < float(c.start):
+		var left := int(ceil((float(c.start) - now) / g.beat_len))
+		if left <= 4:
+			_txt(Vector2(s.x / 2, s.y * 0.44), str(left) if left > 0 else "ПОЕХАЛИ!", 84, GOLD, true, HORIZONTAL_ALIGNMENT_CENTER, -1, 8)
+	if c.fb_t > 0.0:
+		_txt(Vector2(hx, ly - 72), c.fb, 30, Color(c.fb_col, minf(1.0, c.fb_t * 2.0)), true, HORIZONTAL_ALIGNMENT_CENTER, -1, 6)
+	_txt(Vector2(s.x / 2, s.y - 20), "Жми в любом месте экрана, когда нота в золотом круге · розовые — между долями", 15, CREAM, false, HORIZONTAL_ALIGNMENT_CENTER, -1, 3)
+	for i in range(toasts.size()):
+		var tt: Dictionary = toasts[i]
+		_txt(Vector2(s.x / 2, 200 + i * 30), tt.text, 19, Color(tt.col, clampf(3.2 - tt.t, 0, 1)), true, HORIZONTAL_ALIGNMENT_CENTER, -1, 4)
+	if big_t > 0.0:
+		var a4 := clampf(big_t * 2.0, 0, 1)
+		_txt(Vector2(s.x / 2, s.y * 0.34), big_text, 46, Color(GOLD, a4), true, HORIZONTAL_ALIGNMENT_CENTER, -1, 7)
+		if big_sub != "":
+			_txt(Vector2(s.x / 2, s.y * 0.34 + 42), big_sub, 22, Color(CREAM, a4), true, HORIZONTAL_ALIGNMENT_CENTER, -1, 5)
