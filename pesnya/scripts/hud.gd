@@ -51,6 +51,7 @@ var combo_title: Label
 var combo_text: Label
 var pause_music: Button
 var pause_quality: Button
+var pause_look: Button
 var pause_offset: Label
 var theme_main: Theme
 var tracker_rect := Rect2()   # 0.6: tap on the quest tracker opens the journal
@@ -192,7 +193,7 @@ func _build_menu() -> void:
 	logo.custom_minimum_size = Vector2(220, 60)
 	v.add_child(logo)
 	v.add_child(_label("ПЕСНЯ ♪", 76, true, GOLD))
-	var sub := _label("Офлайн-версия 0.9 · «Своё дело»", 22, false, CREAM)
+	var sub := _label("Офлайн-версия 0.9 · «Своё дело» · пилот «Новый облик»", 22, false, CREAM)
 	sub.custom_minimum_size = Vector2(520, 0)
 	v.add_child(sub)
 	var d := _label("Бей в бит — урон ×2. Новое: Помойка с изобретателями Дедом Утилем и Кешей, Король Хлама, мастерская «Идея» в боксе №13, постройки до 5 уровня, поделки из хлама, спецматериалы из ремиксов и мелодия «Ветер без пароля».", 18, false, Color(0.75, 0.8, 0.88))
@@ -430,6 +431,8 @@ func _build_pause() -> void:
 	v.add_child(pause_music)
 	pause_quality = _secondary(_btn("", func(): g.set_quality(1 - g.quality); refresh_pause()))
 	v.add_child(pause_quality)
+	pause_look = _btn("", func(): g.toggle_look())
+	v.add_child(pause_look)
 	var h := HBoxContainer.new()
 	h.add_theme_constant_override("separation", 10)
 	v.add_child(h)
@@ -446,6 +449,7 @@ func _build_pause() -> void:
 func refresh_pause() -> void:
 	pause_music.text = "Музыка: " + ("вкл" if g.music_on else "выкл")
 	pause_quality.text = "Графика: " + ("Красиво" if g.quality == 1 else "Быстро (без теней)")
+	pause_look.text = "Облик: НОВЫЙ (пилот 1.0) → включить классику" if World.new_look else "Облик: классика → включить НОВЫЙ (пилот 1.0)"
 	pause_offset.text = "Сдвиг бита: %+d мс" % int(round(g.beat_offset * 1000))
 
 
@@ -559,7 +563,7 @@ func _txt(p: Vector2, s: String, size: int, col: Color, display := false, align 
 		pp.x -= tw2
 		align = HORIZONTAL_ALIGNMENT_LEFT
 	if outline > 0:
-		draw_string_outline(f, pp, s, align, w, size, outline, Color(0, 0, 0, 0.85))
+		draw_string_outline(f, pp, s, align, w, size, outline, Color(0, 0, 0, 0.85 * col.a))
 	else:
 		draw_string(f, pp + Vector2(1.5, 1.5), s, align, w, size, Color(0, 0, 0, 0.5))
 	draw_string(f, pp, s, align, w, size, col)
@@ -683,38 +687,56 @@ func _draw() -> void:
 			draw_rect(Rect2(0, s.y - 24 - i * 10, s.x, 24 + i * 10), Color(0.9, 0.05, 0.1, a * 0.4))
 
 	# nameplates (mobs, npc, loot)
+	var nl := World.new_look
 	for m in g.mobs:
 		if not m.alive:
 			continue
 		var hp3: Vector3 = m.pos + Vector3(0, m.height + 0.4, 0)
-		if cam.is_position_behind(hp3) or hp3.distance_to(cam.global_position) > 32:
+		var md := hp3.distance_to(cam.global_position)
+		if cam.is_position_behind(hp3) or md > 32:
 			continue
-		var sp := cam.unproject_position(hp3)
 		var is_t: bool = is_same(m, g.target)
+		# new look: far nameplates fade out (the target, bosses and wounded mobs stay)
+		var ma := 1.0
+		if nl and not is_t and not m.boss and m.hp >= m.hp_max:
+			ma = 1.0 - clampf((md - 13.0) / 5.0, 0.0, 1.0)
+			if ma <= 0.0:
+				continue
+		var sp := cam.unproject_position(hp3)
 		var col := Color("ff7070") if m.boss else (Color("ffb0a0") if not is_t else Color("ffe0a0"))
+		col.a = ma
 		_txt(sp + Vector2(0, -18), "%d  %s" % [m.lvl, m.name], 17 if not m.boss else 21, col, true, HORIZONTAL_ALIGNMENT_CENTER, -1, 4)
 		var bw := 110.0 if not m.boss else 180.0
-		_bar(Rect2(sp.x - bw / 2, sp.y - 10, bw, 11), m.hp / m.hp_max, Color("e8424c"))
+		if ma >= 1.0:
+			_bar(Rect2(sp.x - bw / 2, sp.y - 10, bw, 11), m.hp / m.hp_max, Color("e8424c"))
 		if m.stun > 0.0:
 			_txt(sp + Vector2(0, -42), "ОГЛУШЁН", 15, Color("ffe066"), false, HORIZONTAL_ALIGNMENT_CENTER, -1, 3)
 	for n in g.npcs:
 		var npc_p: Vector3 = n.pos + Vector3(0, n.get("h", 2.2), 0)
-		if cam.is_position_behind(npc_p) or npc_p.distance_to(cam.global_position) > 40:
+		var nd := npc_p.distance_to(cam.global_position)
+		if cam.is_position_behind(npc_p) or nd > 40:
 			continue
 		var sp2 := cam.unproject_position(npc_p)
-		_txt(sp2, n.name, 18, Color("ffe6a0"), true, HORIZONTAL_ALIGNMENT_CENTER, -1, 4)
-		_txt(sp2 + Vector2(0, 18), n.role, 13, Color(0.85, 0.9, 1.0), false, HORIZONTAL_ALIGNMENT_CENTER, -1, 3)
+		var na := 1.0 if not nl else 1.0 - clampf((nd - 16.0) / 6.0, 0.0, 1.0)
+		if na > 0.0:
+			_txt(sp2, n.name, 18, Color(1.0, 0.9, 0.63, na), true, HORIZONTAL_ALIGNMENT_CENTER, -1, 4)
+			if not nl or nd < 12.0:
+				_txt(sp2 + Vector2(0, 18), n.role, 13, Color(0.85, 0.9, 1.0, na), false, HORIZONTAL_ALIGNMENT_CENTER, -1, 3)
 		var mk: String = g.npc_marker(n.id)
 		if mk != "":
 			var bounce := sin(g.time * 5.0) * 5.0
 			_txt(sp2 + Vector2(0, -24 + bounce), mk, 46, GOLD, true, HORIZONTAL_ALIGNMENT_CENTER, -1, 6)
 	for e in g.world_labels():
 		var lp2: Vector3 = e[0]
-		if cam.is_position_behind(lp2) or lp2.distance_to(cam.global_position) > 30:
+		var ld := lp2.distance_to(cam.global_position)
+		if cam.is_position_behind(lp2) or ld > 30:
 			continue
 		var sp5 := cam.unproject_position(lp2)
 		var bounce2 := sin(g.time * 5.0) * 4.0
-		_txt(sp5 + Vector2(0, bounce2), e[1], e[2], e[3], true, HORIZONTAL_ALIGNMENT_CENTER, -1, 5)
+		var lc: Color = e[3]
+		if nl:
+			lc.a = 1.0 - clampf((ld - 20.0) / 8.0, 0.0, 1.0)
+		_txt(sp5 + Vector2(0, bounce2), e[1], e[2], lc, true, HORIZONTAL_ALIGNMENT_CENTER, -1, 5)
 	for l in g.loots:
 		var lp: Vector3 = l.pos + Vector3(0, 1.3, 0)
 		if cam.is_position_behind(lp) or lp.distance_to(cam.global_position) > 26:

@@ -3,6 +3,9 @@ class_name World
 
 const BOUNDS := Rect2(-19.0, -29.0, 38.0, 47.0)   # x, z, w, h — where the player may walk
 
+## «Новый облик» (1.0 pilot): the big detailed yard and the new character bodies.
+static var new_look := false
+
 static func _house(p: Node3D, pos: Vector3, size: Vector3, m: Material) -> void:
 	Kit.part(p, Kit.BOX, m, size, pos + Vector3(0, size.y / 2, 0))
 	Kit.part(p, Kit.BOX, Kit.mat(Color("6a6460"), 0.9), Vector3(size.x + 0.4, 0.4, size.z + 0.4), pos + Vector3(0, size.y + 0.2, 0))
@@ -13,7 +16,21 @@ static func _house(p: Node3D, pos: Vector3, size: Vector3, m: Material) -> void:
 		Kit.part(p, Kit.BOX, Kit.mat(Color("4a3a32"), 0.6), Vector3(1.2, 2.2, 0.1), Vector3(x, 1.1, pos.z + size.z / 2 + 0.02))
 
 
+## Yard exits (they move to the new edges in the big «Новый облик» yard).
+static func gate(id: String) -> Vector3:
+	match id:
+		"cheb":
+			return Vector3(-32.4, 0, 9.0) if new_look else Vector3(-18.2, 0, 9.0)
+		"laundry":
+			return Vector3(32.4, 0, 2.0) if new_look else Vector3(18.2, 0, 2.0)
+		"river":
+			return Vector3(0, 0, 30.2) if new_look else Vector3(0, 0, 17.4)
+	return Vector3.ZERO
+
+
 static func build_yard(parent: Node3D) -> Dictionary:
+	if new_look:
+		return Yard10.build(parent)
 	var root := Node3D.new()
 	root.name = "World"
 	parent.add_child(root)

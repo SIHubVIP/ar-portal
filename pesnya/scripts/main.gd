@@ -51,6 +51,7 @@ var combo := 0
 var combo_t := 0.0
 var idle_t := 0.0
 var walk_phase := 0.0
+var shot_cam := {}   # autotest screenshots: a fixed camera {pos, at}
 var attack_anim := 0.0
 var dash_t := 0.0
 var dash_dir := Vector3.ZERO
@@ -205,6 +206,11 @@ func _ready() -> void:
 	_setup_audio()
 	_setup_env()
 	_load_settings_only()
+	if OS.get_cmdline_user_args().has("--classic"):
+		World.new_look = false
+	elif OS.get_cmdline_user_args().has("--newlook"):
+		World.new_look = true
+	Kit.set_lowpoly(World.new_look)
 	fx_root = Node3D.new()
 	add_child(fx_root)
 	var layer := CanvasLayer.new()
@@ -296,6 +302,24 @@ func _setup_env() -> void:
 	cam.far = 260
 	cam.fov = 60
 	add_child(cam)
+
+
+## «Новый облик» ↔ классика: rebuilds the current map in place (pause menu).
+func toggle_look() -> void:
+	World.new_look = not World.new_look
+	Kit.set_lowpoly(World.new_look)
+	var p := pos
+	var f := facing
+	var y := yaw
+	var m := map_id
+	music.stream_paused = false
+	await _travel(m, "start")
+	if world.has("bounds"):
+		pos = World.resolve(p, 0.45, world.rects, world.circles, world.bounds)
+		facing = f
+		yaw = y
+	save_game()
+	hud.toast("Облик: " + ("новый — пилот 1.0 (двор и персонажи)" if World.new_look else "классика"), Hud.GOLD)
 
 
 func set_quality(q: int) -> void:
@@ -581,6 +605,7 @@ func skill_info() -> Array:
 
 func continue_game() -> void:
 	var old_ver := int(_read_save().get("ver", GameData.SAVE_VERSION))
+	var first_look: bool = not _read_save().get("settings", {}).has("look")
 	if not load_game():
 		hud.toast("Сохранение не читается — начнём заново", Hud.CREAM)
 		open_select()
@@ -605,6 +630,8 @@ func continue_game() -> void:
 		if quest5 >= 7:
 			hud.toast("Мыслитель Зари на набережной нашёл карту парка «Заря»", Hud.CREAM)
 		hud.toast("Карта Рубина — новая кнопка вверху справа", Hud.CREAM)
+	if first_look and World.new_look:
+		hud.toast("Пилот 1.0 «Новый облик»: двор вдвое больше и новые персонажи. Вернуть классику — в паузе", Hud.GOLD)
 	if old_ver < 9 and old_ver >= 8:
 		hud.toast("Обновление 0.9 «Своё дело»: Помойка, изобретатели и постройки до 5 уровня!", Hud.GOLD)
 		if quest7 >= 7:
@@ -710,7 +737,7 @@ func _save_dict() -> Dictionary:
 		"prince": {"met": prince.met, "next": prince.next},
 		"mount": mount_owned, "res": res, "food": food,
 		"buildings": buildings, "b_since": b_since, "robot": robot_task, "daily": daily, "map": map_id, "side": side.to_save(), "u08": u08.to_save(), "u09": u09.to_save(),
-		"settings": {"music": music_on, "quality": quality, "beat_offset": beat_offset}, "saved_at": now()}
+		"settings": {"music": music_on, "quality": quality, "beat_offset": beat_offset, "look": 1 if World.new_look else 0}, "saved_at": now()}
 
 
 func save_game() -> void:
@@ -750,6 +777,7 @@ func _load_settings_only() -> void:
 		music_on = bool(d.settings.get("music", true))
 		quality = int(d.settings.get("quality", 1))
 		beat_offset = float(d.settings.get("beat_offset", 0.0))
+	World.new_look = int(d.get("settings", {}).get("look", 1)) == 1
 
 
 func load_game() -> bool:
@@ -845,6 +873,7 @@ func _travel(to: String, spawn: String) -> void:
 
 
 func _enter_map(id: String, spawn: String) -> void:
+	var t_load := Time.get_ticks_msec()
 	_clear_world()
 	map_id = id
 	stage.visible = false
@@ -950,6 +979,8 @@ func _enter_map(id: String, spawn: String) -> void:
 	side.refresh_marks()
 	if id == "embankment" and prince.met and Time.get_datetime_dict_from_system().weekday == 5:
 		_prince_appear("friday")
+	if autotest:
+		print("MAP_LOAD %s look=%s ms=%d" % [id, "new" if World.new_look else "classic", Time.get_ticks_msec() - t_load])
 
 
 func _spawn_npc(id: String, at: Vector3, rot: float) -> void:
@@ -2792,6 +2823,8 @@ func _process(delta: float) -> void:
 			side.update(dt)
 			u08.update(dt)
 			u09.update(dt)
+			if world.has("ambient"):
+				Yard10.update_ambient(world.ambient, dt)
 			save_t += dt
 			if save_t > 30.0:
 				save_game()
@@ -2893,6 +2926,8 @@ func _update_player(dt: float) -> void:
 				pos.x += push.x
 				pos.z += push.y
 	_animate_hero(dt, spd)
+	if World.new_look:
+		RenderingServer.global_shader_parameter_set(&"player_pos", pos)
 	if target != null and (not target.alive or target.pos.distance_to(pos) > 30.0):
 		target = null
 	current_interact = _find_interact()
@@ -2933,6 +2968,10 @@ func _animate_hero(dt: float, spd: float) -> void:
 
 
 func _update_camera(dt: float) -> void:
+	if not shot_cam.is_empty():
+		cam.global_position = shot_cam.pos
+		cam.look_at(shot_cam.at, Vector3.UP)
+		return
 	cam_touch_t = maxf(0.0, cam_touch_t - dt)
 	if cam_touch_t <= 0.0 and joy_vec.length() > 0.5 and state == PLAY:
 		var want := facing + PI
@@ -2940,6 +2979,21 @@ func _update_camera(dt: float) -> void:
 	var pivot := pos + Vector3(0, 1.7 + (2.2 if mounted else 0.0), 0)
 	var back := Vector3(sin(yaw), 0, cos(yaw))
 	var dd := dist + (2.6 if mounted else 0.0) + _boss_cam_extra()
+	if World.new_look and map_id == "yard" and world.has("bounds"):
+		# don't let the camera go inside the houses at the edges: shorten the arm to the yard (+1 m)
+		var br: Rect2 = world.bounds.grow(0.2)
+		var hx := back.x * cos(pitch)
+		var hz := back.z * cos(pitch)
+		var lim := dd
+		if hx > 0.001:
+			lim = minf(lim, (br.end.x - pivot.x) / hx)
+		elif hx < -0.001:
+			lim = minf(lim, (br.position.x - pivot.x) / hx)
+		if hz > 0.001:
+			lim = minf(lim, (br.end.y - pivot.z) / hz)
+		elif hz < -0.001:
+			lim = minf(lim, (br.position.y - pivot.z) / hz)
+		dd = maxf(2.2, lim)
 	var cp := pivot + back * dd * cos(pitch) + Vector3.UP * dd * sin(pitch)
 	cp.y = maxf(cp.y, 0.6)
 	cam.global_position = cam.global_position.lerp(cp, minf(1.0, dt * 14.0)) if cam.global_position.distance_to(cp) < 20 else cp
@@ -3339,7 +3393,23 @@ func _apply_map_env(id: String) -> void:
 			"sune": sun.light_energy, "sunr": sun.rotation_degrees}
 	var e: Dictionary = map_env
 	env_world.background_mode = Environment.BG_SKY
-	if id == "server":
+	env_world.sky.sky_material = sky_mat
+	env_world.tonemap_exposure = 1.0
+	sun.directional_shadow_max_distance = 34.0
+	if id == "yard" and World.new_look:
+		# «Новый облик»: a clear warm afternoon with clouds, softer sun so the textures keep their colour
+		env_world.sky.sky_material = Yard10.yard_sky()
+		env_world.tonemap_exposure = 0.94
+		env_world.fog_light_color = Color("e0cdb8")
+		env_world.fog_density = 0.0032
+		env_world.ambient_light_color = Color("98a2c8")
+		env_world.ambient_light_energy = 0.6
+		env_world.adjustment_saturation = 1.14
+		sun.light_color = Color("ffd29c")
+		sun.light_energy = 1.42
+		sun.rotation_degrees = Vector3(-29, 218, 0)
+		sun.directional_shadow_max_distance = 40.0
+	elif id == "server":
 		# inside the tower: dark server hall, cold light, the iron oak glows
 		env_world.background_mode = Environment.BG_COLOR
 		env_world.background_color = Color("0a0d16")
@@ -4399,8 +4469,9 @@ func _phone_call() -> void:
 
 
 func _add_river_portal() -> void:
-	world.portals.append({"pos": Vector3(0, 0, 17.4), "r": 1.3, "to": "embankment", "spawn": "from_yard", "label": "Набережная"})
-	Chars.ring(world.root, Vector3(0, 0.05, 17.4), 1.2, Color("4ad8ff"), 0.08, 3.0)
+	var rp := World.gate("river")
+	world.portals.append({"pos": rp, "r": 1.3, "to": "embankment", "spawn": "from_yard", "label": "Набережная"})
+	Chars.ring(world.root, rp + Vector3(0, 0.05, 0), 1.2, Color("4ad8ff"), 0.08, 3.0)
 
 
 func _talk_zina_q5() -> void:
@@ -5543,6 +5614,18 @@ func _run_autotest() -> void:
 		await _shots09(shots_dir)
 		_finish_report(lg, t0)
 		return
+	if args.has("--only10"):
+		await _shots10(shots_dir)
+		_finish_report(lg, t0)
+		return
+	if args.has("--test10"):
+		await _autotest_10(lg)
+		_finish_report(lg, t0)
+		return
+	if args.has("--chars"):
+		await _shots_chars(shots_dir)
+		_finish_report(lg, t0)
+		return
 	if args.has("--only06"):
 		await _shots06(shots_dir)
 		_finish_report(lg, t0)
@@ -5665,8 +5748,36 @@ func _run_autotest() -> void:
 	await _autotest_07(lg, shots_dir)
 	await _autotest_08(lg, shots_dir)
 	await _autotest_09(lg, shots_dir)
+	await _autotest_10(lg)
 	_lg(lg, "final level=%d coins=%d food=%d items=%d" % [level, coins, food, inventory.size()])
 	_finish_report(lg, t0)
+
+
+## «Новый облик» pilot: the toggle rebuilds the yard in place, the gates move, bodies are skinned, labels fade.
+func _autotest_10(lg: Array) -> void:
+	await _at_goto_map("yard")
+	var was := World.new_look
+	var b0: Rect2 = world.bounds
+	var skinned0 := hero.has("skeleton")
+	var amb0: int = world.get("ambient", []).size()
+	pos = Vector3(-3.0, 0, -4.0)
+	toggle_look()
+	for k in range(6):
+		await get_tree().process_frame
+	var b1: Rect2 = world.bounds
+	var skinned1 := hero.has("skeleton")
+	var near := pos.distance_to(Vector3(-3.0, 0, -4.0)) < 1.5
+	_lg(lg, "look toggle %s->%s bounds %.0fx%.0f -> %.0fx%.0f skinned %s->%s ambient=%d kept_pos=%s gate_cheb=%s" % [str(was), str(World.new_look),
+		b0.size.x, b0.size.y, b1.size.x, b1.size.y, str(skinned0), str(skinned1), amb0, str(near), str(World.gate("cheb"))])
+	toggle_look()
+	for k in range(6):
+		await get_tree().process_frame
+	_lg(lg, "look back=%s bounds=%.0fx%.0f mobs=%d npcs=%d" % [str(World.new_look), world.bounds.size.x, world.bounds.size.y, mobs.size(), npcs.size()])
+	# the river gate of the big yard works
+	quest5 = maxi(quest5, 3)
+	await _travel("yard", "start")
+	await _at_portal(World.gate("river"), "embankment")
+	_lg(lg, "river gate -> %s" % map_id)
 
 
 func _autotest_q3(lg: Array, shots_dir: String) -> void:
@@ -5928,7 +6039,7 @@ func _autotest_q5(lg: Array, shots_dir: String) -> void:
 	_close_dialog()
 	_accept_q5()
 	_lg(lg, "q5 accepted quest5=%d portals=%d" % [quest5, world.portals.size()])
-	await _at_portal(Vector3(0, 0, 17.4), "embankment")
+	await _at_portal(World.gate("river"), "embankment")
 	_lg(lg, "embankment quest5=%d mobs=%d zina=%s" % [quest5, mobs.size(), str(not companion.is_empty())])
 	var f := await _bot_fight(5000, func(): return quest5 >= 5)
 	_lg(lg, "speakers quest5=%d kills=%d frames=%d hp_min_ok=%s" % [quest5, q5_kills, f, str(hp > 0)])
@@ -6744,7 +6855,7 @@ func _autotest_08(lg: Array, shots_dir: String) -> void:
 	var yp := []
 	for pt in world.portals:
 		yp.append(pt.to)
-	await _at_portal(Vector3(-18.2, 0, 9.0), "cheburek")
+	await _at_portal(World.gate("cheb"), "cheburek")
 	var guests := 0
 	for n in npcs:
 		if n.has("guest"):
@@ -6783,7 +6894,7 @@ func _autotest_08(lg: Array, shots_dir: String) -> void:
 			medic_ids.append(n.id)
 	_lg(lg, "yard medics=%s" % str(medic_ids))
 	# the Прачечная
-	await _at_portal(Vector3(18.2, 0, 2.0), "laundry")
+	await _at_portal(World.gate("laundry"), "laundry")
 	_lg(lg, "laundry quest7=%d mobs=%d npcs=%d" % [quest7, mobs.size(), npcs.size()])
 	for m in mobs:
 		m.st = "chase"
@@ -7281,6 +7392,152 @@ func _shots09(dir: String) -> void:
 	await _frames(3)
 	await _snap(dir, "r15_city_map")
 	close_list()
+
+
+## Screenshots of the yard for the «Новый облик» pilot (run with --only10 --shots DIR under xvfb; add --classic for the old look).
+func _shots10(dir: String) -> void:
+	quest = 5
+	quest2 = 6
+	quest3 = 6
+	quest4 = 8
+	quest5 = 7
+	quest6 = 7
+	quest7 = 7
+	quest8 = 2
+	for q in SideQ.ORDER.slice(0, 29):
+		side.st[q] = {"s": 0, "n": 0, "t": 0.0, "done": true}
+	while level < 21:
+		gain_xp(xp_next() - xp)
+	invuln = 9999.0
+	await _at_goto_map("garages")
+	await _at_goto_map("yard")
+	for m in mobs:
+		m.st = "idle"
+	await _frames(130)
+	var views := [
+		["y01_start", Vector3(0, 0, 12), Vector3(0, 0, 0), 0.26, 7.6],
+		["y02_overview", Vector3(0, 0, 8), Vector3(0, 0, -6), 0.62, 22.0],
+		["y03_playground", Vector3(4.0, 0, 2.0), Vector3(11.0, 0, -6.0), 0.22, 7.0],
+		["y04_zina", Vector3(-2.5, 0, -2.0), Vector3(-6.5, 0, -6.0), 0.18, 5.5],
+		["y05_garages", Vector3(2.0, 0, -16.0), Vector3(5.0, 0, -30.0), 0.2, 8.0],
+		["y08_pavlin", Vector3(8.0, 0, 9.0), Vector3(14.5, 0, 14.5), 0.2, 6.0],
+		["y09_kiosk", Vector3(-8.0, 0, -6.0), Vector3(-12.0, 0, -13.0), 0.22, 7.0],
+		["y10_south", Vector3(0, 0, -2.0), Vector3(0, 0, 18.0), 0.24, 8.0]]
+	if World.new_look:
+		views += [
+			["y11_box", Vector3(-18.6, 0, -4.2), Vector3(-26.0, 0, -4.2), 0.3, 7.5],
+			["y12_parking", Vector3(-14.0, 0, 16.0), Vector3(-24.0, 0, 24.0), 0.26, 8.0],
+			["y13_trash_laundry", Vector3(25.5, 0, -7.5), Vector3(25.5, 0, -18.0), 0.2, 7.0],
+			["y14_lawn", Vector3(25.5, 0, 4.6), Vector3(25.5, 0, 18.0), 0.26, 7.5],
+			["y15_overview_ne", Vector3(14.0, 0, -14.0), Vector3(-10.0, 0, 12.0), 0.55, 18.0]]
+	_tri_report()
+	for v in views:
+		_look(v[1], v[2], v[3], v[4])
+		await _frames(29)
+		invuln = 0.0
+		await _frames(1)
+		await _snap_perf(dir, v[0])
+		invuln = 9999.0
+	# the hero: a close-up from the front and a walk cycle from the side
+	_look(Vector3(0, 0, 6.0), Vector3(0, 0, 0), 0.08, 3.2)
+	yaw = facing
+	await _frames(29)
+	invuln = 0.0
+	await _frames(1)
+	await _snap_perf(dir, "y06_hero")
+	_look(Vector3(-2.0, 0, 6.0), Vector3(-2.0, 0, 0), 0.12, 4.2)
+	for k in range(17):
+		joy_vec = Vector2(0, -1)
+		yaw = facing + PI / 2
+		invuln = 0.0
+		await get_tree().process_frame
+	await _snap_perf(dir, "y07_walk")
+	joy_vec = Vector2.ZERO
+	invuln = 9999.0
+
+
+## A line-up of characters for checking the new bodies (run with --chars --shots DIR).
+func _shots_chars(dir: String) -> void:
+	await _at_goto_map("yard")
+	for m in mobs:
+		m.node.visible = false
+		m.alive = false
+	for n in npcs:
+		n.node.visible = false
+	var cast := [Chars.hero("rapper", "cop"), Chars.hero("punk", "medic"), Chars.hero("rapper", "medic"), Chars.hero("punk", "cop"),
+		Chars.granny_npc(), Chars.misha_npc(), Chars.lyuba_npc(), Npcs.build("pavlin"), Npcs.build("lis"), Npcs.build("kent")]
+	var i := 0
+	for h in cast:
+		world.root.add_child(h.root)
+		h.root.position = Vector3(-5.85 + i * 1.3, 0, -2.0)
+		Kit.bake_tree(h.root)
+		if h.has("legs") and i % 2 == 1:
+			h.legs[0].rotation.x = 0.55
+			h.legs[1].rotation.x = -0.5
+			h.arms[0].rotation.x = -0.5
+			h.arms[1].rotation.x = 0.45
+		i += 1
+	_look(Vector3(0, 0, 3.0), Vector3(0, 0, -3.0), 0.06, 5.0)
+	hero.root.scale = Vector3.ONE * 0.001
+	shot_cam = {"pos": Vector3(0, 1.6, 6.5), "at": Vector3(0, 1.0, -2.0)}
+	hud.visible = false
+	await _frames(20)
+	await _snap(dir, "c01_lineup")
+	for k in [[-5.2, "c02_close_a"], [-2.6, "c03_close_b"], [0.0, "c04_close_c"], [2.6, "c05_close_d"], [5.2, "c06_close_e"]]:
+		shot_cam = {"pos": Vector3(k[0], 1.45, 1.6), "at": Vector3(k[0], 1.0, -2.0)}
+		await _frames(6)
+		await _snap(dir, k[1])
+	# three-quarter and side views
+	shot_cam = {"pos": Vector3(-1.0, 1.3, 1.0), "at": Vector3(-4.6, 0.95, -2.0)}
+	await _frames(6)
+	await _snap(dir, "c07_three_quarter")
+	shot_cam = {"pos": Vector3(-5.2, 1.2, -5.6), "at": Vector3(-4.6, 0.95, -2.0)}
+	await _frames(6)
+	await _snap(dir, "c08_back")
+	shot_cam = {}
+	hud.visible = true
+
+
+func _tri_report() -> void:
+	var agg := {}
+	var stack: Array = [world.root]
+	while stack.size():
+		var n: Node = stack.pop_back()
+		for ch in n.get_children():
+			stack.append(ch)
+		if n is MeshInstance3D and n.mesh != null:
+			var m: Mesh = n.mesh
+			for si in range(m.get_surface_count()):
+				var mat = n.material_override if n.material_override != null else m.surface_get_material(si)
+				var key := "other"
+				if mat is ShaderMaterial:
+					key = "shader"
+				elif mat is StandardMaterial3D:
+					if mat.albedo_texture != null:
+						key = "tex:" + mat.albedo_texture.resource_path.get_file() + ("" if mat.albedo_texture.resource_path != "" else str(mat.albedo_texture.get_width()))
+					elif mat.vertex_color_use_as_albedo:
+						key = "vc"
+					else:
+						key = "plain"
+				if n.skin != null:
+					key = "skinned"
+				key += " [static]" if str(n.name).begins_with("Chunk_") else ""
+				var arr := m.surface_get_arrays(si)
+				var idx = arr[Mesh.ARRAY_INDEX]
+				var tris: int = (idx.size() if idx is PackedInt32Array and idx.size() > 0 else (arr[Mesh.ARRAY_VERTEX] as PackedVector3Array).size()) / 3
+				if not agg.has(key):
+					agg[key] = [0, 0]
+				agg[key][0] += 1
+				agg[key][1] += tris
+	for k in agg:
+		print("TRIS %s surfaces=%d tris=%d" % [k, agg[k][0], agg[k][1]])
+
+
+func _snap_perf(dir: String, name: String) -> void:
+	await _snap(dir, name)
+	print("SHOT %s draws=%d prims=%d fps=%d" % [name, RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_DRAW_CALLS_IN_FRAME),
+		RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_PRIMITIVES_IN_FRAME), Engine.get_frames_per_second()])
+
 
 func _look(p: Vector3, at: Vector3, pt := 0.26, d := 7.6) -> void:
 	pos = World.resolve(p, 0.45, world.rects, world.circles, world.bounds)

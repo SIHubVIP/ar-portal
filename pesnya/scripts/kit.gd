@@ -48,6 +48,21 @@ static func init() -> void:
 	DISC.radial_segments = 28
 
 
+## «Новый облик» uses lighter primitives for character parts and mobs (half the triangles, same look at phone size).
+static func set_lowpoly(on: bool) -> void:
+	init()
+	CYL.radial_segments = 12 if on else 20
+	CYL.rings = 0 if on else 4
+	SPH.radial_segments = 12 if on else 18
+	SPH.rings = 7 if on else 10
+	CAP.radial_segments = 12 if on else 14
+	CAP.rings = 2 if on else 4
+	CONE.radial_segments = 10 if on else 16
+	CONE.rings = 0 if on else 4
+	DISC.radial_segments = 16 if on else 28
+	DISC.rings = 0 if on else 4
+
+
 ## Physically based material, cached by its parameters.
 static func mat(c: Color, rough := 0.65, metal := 0.0, emis := Color.BLACK, emis_e := 0.0) -> StandardMaterial3D:
 	var key := "%s|%.2f|%.2f|%s|%.2f" % [c.to_html(), rough, metal, emis.to_html(), emis_e]
@@ -235,7 +250,7 @@ static func _vc_mat(r: float, m: float) -> StandardMaterial3D:
 
 
 static func _mergeable(mi: MeshInstance3D) -> bool:
-	if mi.mesh == null or mi.transparency > 0.0 or not mi.visible:
+	if mi.mesh == null or mi.transparency > 0.0 or not mi.visible or mi.skin != null:
 		return false
 	var m = mi.material_override
 	if m is BaseMaterial3D:

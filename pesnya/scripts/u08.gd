@@ -281,16 +281,18 @@ func on_enter_map(id: String) -> void:
 	premiere = []
 	god = {}
 	if id == "yard":
+		var cg := World.gate("cheb")
+		var lg := World.gate("laundry")
 		if map_open_cheb():
-			g.world.portals.append({"pos": Vector3(-18.2, 0, 9.0), "r": 1.3, "to": "cheburek", "spawn": "from_yard", "label": "Чебуречная «Сочная» (трамвай)"})
-			Chars.ring(g.world.root, Vector3(-18.2, 0.05, 9.0), 1.2, Color("ffb05a"), 0.08, 3.0)
-			Chars.label(g.world.root, "ЧЕБУРЕЧНАЯ «СОЧНАЯ» ←", 70, Color(3.0, 2.2, 1.0), Vector3(-19.2, 2.4, 9.0), Vector3(0, PI / 2, 0), 0.0075, 8)
+			g.world.portals.append({"pos": cg, "r": 1.3, "to": "cheburek", "spawn": "from_yard", "label": "Чебуречная «Сочная» (трамвай)"})
+			Chars.ring(g.world.root, cg + Vector3(0, 0.05, 0), 1.2, Color("ffb05a"), 0.08, 3.0)
+			Chars.label(g.world.root, "ЧЕБУРЕЧНАЯ «СОЧНАЯ» ←", 70, Color(3.0, 2.2, 1.0), cg + Vector3(-1.0, 2.4, 0), Vector3(0, PI / 2, 0), 0.0075, 8)
 		if map_open_laundry():
-			g.world.portals.append({"pos": Vector3(18.2, 0, 2.0), "r": 1.3, "to": "laundry", "spawn": "from_yard", "label": "Прачечная «Ромашка»"})
-			Chars.ring(g.world.root, Vector3(18.2, 0.05, 2.0), 1.2, Color("8ad8ff"), 0.08, 3.0)
-			Chars.label(g.world.root, "→ ПРАЧЕЧНАЯ «РОМАШКА»", 70, Color(2.4, 3.0, 3.6), Vector3(19.2, 2.4, 2.0), Vector3(0, -PI / 2, 0), 0.0075, 8)
-		g.world.spawns["from_cheburek"] = [Vector3(-15.8, 0, 9.0), PI / 2]
-		g.world.spawns["from_laundry"] = [Vector3(15.8, 0, 2.0), -PI / 2]
+			g.world.portals.append({"pos": lg, "r": 1.3, "to": "laundry", "spawn": "from_yard", "label": "Прачечная «Ромашка»"})
+			Chars.ring(g.world.root, lg + Vector3(0, 0.05, 0), 1.2, Color("8ad8ff"), 0.08, 3.0)
+			Chars.label(g.world.root, "→ ПРАЧЕЧНАЯ «РОМАШКА»", 70, Color(2.4, 3.0, 3.6), lg + Vector3(1.0, 2.4, 0), Vector3(0, -PI / 2, 0), 0.0075, 8)
+		g.world.spawns["from_cheburek"] = [cg + Vector3(2.4, 0, 0), PI / 2]
+		g.world.spawns["from_laundry"] = [lg + Vector3(-2.4, 0, 0), -PI / 2]
 		if g.side.is_done("toilet"):
 			Mobs08.ambulance(g.world.root, Vector3(-14.4, 0, 6.8), PI)
 			g.world.rects.append(Rect2(-15.6, 4.0, 2.4, 5.8))

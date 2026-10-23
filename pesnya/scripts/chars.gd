@@ -41,32 +41,51 @@ static func human(o: Dictionary) -> Dictionary:
 	var shoes := _m(o.get("shoes", Color("f4f1ea")), 0.5)
 	var sole := _m(Color("22232b"), 0.6)
 	var w: float = o.get("width", 1.0)
+	var nl := World.new_look
 	var legs := []
 	var arms := []
 	var hands := []
+	var elbows := []
+	var knees := []
 	for s in [-1, 1]:
 		var hip := Node3D.new()
 		hip.position = Vector3(0.17 * s * w, 0.62, 0)
 		body.add_child(hip)
-		Kit.part(hip, Kit.CAP, pants, Vector3(0.62, 0.6, 0.62), Vector3(0, -0.27, 0))
-		Kit.part(hip, Kit.BOX, shoes, Vector3(0.3, 0.17, 0.46), Vector3(0, -0.55, 0.07))
-		Kit.part(hip, Kit.BOX, sole, Vector3(0.32, 0.05, 0.48), Vector3(0, -0.63, 0.07))
+		if nl:
+			var knee := Node3D.new()
+			knee.position = Vector3(0, -0.26, 0)
+			hip.add_child(knee)
+			knees.append(knee)
+		else:
+			Kit.part(hip, Kit.CAP, pants, Vector3(0.62, 0.6, 0.62), Vector3(0, -0.27, 0))
+			Kit.part(hip, Kit.BOX, shoes, Vector3(0.3, 0.17, 0.46), Vector3(0, -0.55, 0.07))
+			Kit.part(hip, Kit.BOX, sole, Vector3(0.32, 0.05, 0.48), Vector3(0, -0.63, 0.07))
 		legs.append(hip)
 		var sh := Node3D.new()
 		sh.position = Vector3(0.45 * s * w, 1.2, 0)
 		body.add_child(sh)
-		Kit.part(sh, Kit.CAP, top, Vector3(0.52, 0.6, 0.52), Vector3(0, -0.27, 0))
-		Kit.part(sh, Kit.SPH, skin, Vector3(0.21, 0.21, 0.21), Vector3(0, -0.6, 0))
 		var hand := Node3D.new()
-		hand.position = Vector3(0, -0.62, 0)
-		sh.add_child(hand)
+		if nl:
+			var elbow := Node3D.new()
+			elbow.position = Vector3(0, -0.28, 0)
+			sh.add_child(elbow)
+			elbows.append(elbow)
+			hand.position = Vector3(0, -0.34, 0)
+			elbow.add_child(hand)
+		else:
+			Kit.part(sh, Kit.CAP, top, Vector3(0.52, 0.6, 0.52), Vector3(0, -0.27, 0))
+			Kit.part(sh, Kit.SPH, skin, Vector3(0.21, 0.21, 0.21), Vector3(0, -0.6, 0))
+			hand.position = Vector3(0, -0.62, 0)
+			sh.add_child(hand)
 		hands.append(hand)
 		arms.append(sh)
-	Kit.part(body, Kit.CAP, top, Vector3(1.5 * w, 0.76, 1.0 * w), Vector3(0, 0.95, 0))
+	if not nl:
+		Kit.part(body, Kit.CAP, top, Vector3(1.5 * w, 0.76, 1.0 * w), Vector3(0, 0.95, 0))
 	var head := Node3D.new()
 	head.position = Vector3(0, 1.6, 0)
 	body.add_child(head)
-	Kit.part(head, Kit.SPH, skin, Vector3(0.7, 0.68, 0.66))
+	if not nl:
+		Kit.part(head, Kit.SPH, skin, Vector3(0.7, 0.68, 0.66))
 	# face
 	if not o.get("shades", false):
 		for s in [-1, 1]:
@@ -80,7 +99,8 @@ static func human(o: Dictionary) -> Dictionary:
 		for s in [-1, 1]:
 			Kit.part(head, Kit.BOX, Kit.mat(Color("7af0ff"), 0.05, 0.9), Vector3(0.21, 0.1, 0.02), Vector3(0.13 * s, 0.04, 0.335))
 	Kit.part(head, Kit.BOX, _m(Color("6a2a2a"), 0.5), Vector3(0.14, 0.035, 0.03), Vector3(0, -0.17, 0.31), Vector3(0, 0, o.get("smirk", 0.15)))
-	Kit.part(head, Kit.SPH, skin, Vector3(0.12, 0.1, 0.1), Vector3(0, -0.04, 0.34))
+	if not nl:
+		Kit.part(head, Kit.SPH, skin, Vector3(0.12, 0.1, 0.1), Vector3(0, -0.04, 0.34))
 	var hair: String = o.get("hair", "")
 	var hc: Color = o.get("hair_color", Color("2a1d17"))
 	if hair in ["police_cap", "mohawk", "cap_back"]:
@@ -139,13 +159,21 @@ static func human(o: Dictionary) -> Dictionary:
 	if o.has("vest"):
 		var vc: Color = o.vest
 		var vm := _m(vc, 0.7)
-		Kit.part(body, Kit.CAP, vm, Vector3(1.62 * w, 0.62, 1.1 * w), Vector3(0, 0.98, 0))
+		if not nl:
+			Kit.part(body, Kit.CAP, vm, Vector3(1.62 * w, 0.62, 1.1 * w), Vector3(0, 0.98, 0))
 		if not o.get("vest_plain", false):
 			var refl := Kit.mat(Color("d8ff3a"), 0.4, 0.0, Color("d8ff3a"), 0.8)
 			for yy in [0.84, 1.0]:
-				Kit.part(body, Kit.CYL, refl, Vector3(0.83 * w, 0.045, 0.6 * w), Vector3(0, yy, 0))
+				if nl:
+					# hugs the sculpted torso (radius at that height + 1 cm)
+					# 12-sided ring: its flats must clear the sculpted torso, so divide by cos(15°)
+					var rx := (0.322 if yy < 0.9 else 0.338) * w / 0.966 + 0.008
+					var rz := (0.232 if yy < 0.9 else 0.236) * lerpf(1.0, w, 0.8) / 0.966 + 0.008
+					Kit.part(body, Kit.CYL, refl, Vector3(rx * 2.0, 0.04, rz * 2.0), Vector3(0, yy, 0.006))
+				else:
+					Kit.part(body, Kit.CYL, refl, Vector3(0.83 * w, 0.045, 0.6 * w), Vector3(0, yy, 0))
 		if o.has("back_text"):
-			label(body, o.back_text, 56, o.get("back_color", Color("f4f6ff")), Vector3(0, 1.17, -0.3), Vector3(0, PI, 0), 0.0032, 4)
+			label(body, o.back_text, 56, o.get("back_color", Color("f4f6ff")), Vector3(0, 1.17, -0.252 if nl else -0.3), Vector3(0, PI, 0), 0.0032, 4)
 	if o.get("jacket_studs", false):
 		var st := _m(Color("d0d4dc"), 0.2, 1.0)
 		for s in [-1, 1]:
@@ -153,10 +181,11 @@ static func human(o: Dictionary) -> Dictionary:
 				Kit.part(body, Kit.SPH, st, Vector3.ONE * 0.06, Vector3(s * (0.28 + k * 0.05), 1.26 - k * 0.02, -0.05 + k * 0.05))
 	if o.has("armband"):
 		var arm: Node3D = arms[0]
-		Kit.part(arm, Kit.CYL, _m(Color("f4f4f4")), Vector3(0.3, 0.1, 0.3), Vector3(0, -0.18, 0))
-		Kit.part(arm, Kit.BOX, glowmat(Color("2ee88a"), 1.2), Vector3(0.05, 0.08, 0.02), Vector3(-0.15, -0.18, 0.0), Vector3(0, PI / 2, 0))
-		Kit.part(arm, Kit.BOX, glowmat(Color("2ee88a"), 1.2), Vector3(0.05, 0.02, 0.08), Vector3(-0.155, -0.18, 0.0))
-	if o.get("skirt", false):
+		var ar := 0.115 if nl else 0.15
+		Kit.part(arm, Kit.CYL, _m(Color("f4f4f4")), Vector3(ar * 2.0, 0.1, ar * 2.0), Vector3(0, -0.18, 0))
+		Kit.part(arm, Kit.BOX, glowmat(Color("2ee88a"), 1.2), Vector3(0.05, 0.08, 0.02), Vector3(-ar, -0.18, 0.0), Vector3(0, PI / 2, 0))
+		Kit.part(arm, Kit.BOX, glowmat(Color("2ee88a"), 1.2), Vector3(0.05, 0.02, 0.08), Vector3(-ar - 0.005, -0.18, 0.0))
+	if o.get("skirt", false) and not nl:
 		Kit.part(body, Kit.CYL, _m(o.get("skirt_color", Color("6a3b52")), 0.9), Vector3(1.0 * w, 0.55, 0.9 * w), Vector3(0, 0.45, 0))
 		var cone := CylinderMesh.new()
 		cone.top_radius = 0.3
@@ -164,16 +193,29 @@ static func human(o: Dictionary) -> Dictionary:
 		cone.height = 1.0
 		Kit.part(body, cone, _m(o.get("skirt_color", Color("6a3b52")), 0.9), Vector3(1.0 * w, 0.6, 0.9 * w), Vector3(0, 0.36, 0))
 	if o.get("backpack", false):
-		Kit.part(body, Kit.BOX, _m(Color("1a1b22"), 0.5), Vector3(0.56, 0.6, 0.28), Vector3(0, 0.95, -0.4))
-		Kit.part(body, Kit.CYL, Kit.neon(Kit.TEAL, 2.0), Vector3(0.2, 0.06, 0.2), Vector3(0, 0.95, -0.55), Vector3(PI / 2, 0, 0))
+		var bz := 0.12 if nl else 0.0
+		Kit.part(body, Kit.BOX, _m(Color("1a1b22"), 0.5), Vector3(0.56, 0.6, 0.28), Vector3(0, 0.95, -0.4 + bz))
+		Kit.part(body, Kit.CYL, Kit.neon(Kit.TEAL, 2.0), Vector3(0.2, 0.06, 0.2), Vector3(0, 0.95, -0.55 + bz), Vector3(PI / 2, 0, 0))
 	if o.get("stripe", false):
 		for s in [-1, 1]:
 			var leg: Node3D = legs[(s + 1) / 2]
-			Kit.part(leg, Kit.BOX, _m(Color("f4f4f4")), Vector3(0.04, 0.5, 0.06), Vector3(0.155 * s, -0.25, 0))
 			var arm: Node3D = arms[(s + 1) / 2]
-			Kit.part(arm, Kit.BOX, _m(Color("f4f4f4")), Vector3(0.04, 0.45, 0.06), Vector3(0.13 * s, -0.25, 0))
+			if nl:
+				# split at the knee / elbow so the stripes bend with the limb
+				Kit.part(leg, Kit.BOX, _m(Color("f4f4f4")), Vector3(0.035, 0.26, 0.05), Vector3(0.137 * s, -0.13, 0))
+				Kit.part(knees[(s + 1) / 2], Kit.BOX, _m(Color("f4f4f4")), Vector3(0.035, 0.2, 0.05), Vector3(0.11 * s, -0.1, 0))
+				Kit.part(arm, Kit.BOX, _m(Color("f4f4f4")), Vector3(0.03, 0.26, 0.05), Vector3(0.1 * s, -0.13, 0))
+				Kit.part(elbows[(s + 1) / 2], Kit.BOX, _m(Color("f4f4f4")), Vector3(0.03, 0.18, 0.05), Vector3(0.088 * s, -0.09, 0))
+			else:
+				Kit.part(leg, Kit.BOX, _m(Color("f4f4f4")), Vector3(0.04, 0.5, 0.06), Vector3(0.155 * s, -0.25, 0))
+				Kit.part(arm, Kit.BOX, _m(Color("f4f4f4")), Vector3(0.04, 0.45, 0.06), Vector3(0.13 * s, -0.25, 0))
 	root.scale = o.get("scale", Vector3.ONE)
-	return {"root": root, "body": body, "arms": arms, "legs": legs, "head": head, "hands": hands}
+	var h := {"root": root, "body": body, "arms": arms, "legs": legs, "head": head, "hands": hands}
+	if nl:
+		h["elbows"] = elbows
+		h["knees"] = knees
+		Look.attach(h, o, w)
+	return h
 
 
 static func pose(h: Dictionary, p: Dictionary) -> void:
