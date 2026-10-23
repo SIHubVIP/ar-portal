@@ -30,6 +30,19 @@ static func _garage(p: Node3D, x: float, z_front: float, facing_south: bool, col
 	l.rotation.y = g.rotation.y
 
 
+## 0.9: box №13 is hollow (walls, roof, floor) — the workshop «Идея» is seen through the open front
+static func _garage_open(p: Node3D, x: float, z_front: float, labels: Node3D) -> void:
+	var wall := Kit.mat(Color("b8b0a0"), 0.95)
+	for sx in [-1, 1]:
+		Kit.part(p, Kit.BOX, wall, Vector3(0.15, 2.8, 6.0), Vector3(x + 1.62 * sx, 1.4, z_front + 3.0))
+	Kit.part(p, Kit.BOX, wall, Vector3(3.4, 2.8, 0.15), Vector3(x, 1.4, z_front + 5.95))
+	Kit.part(p, Kit.BOX, Kit.mat(Color("3a3a3a"), 0.9), Vector3(3.5, 0.15, 6.4), Vector3(x, 2.85, z_front + 3.0))
+	Kit.part(p, Kit.BOX, Kit.mat(Color("6a6a6a"), 0.95), Vector3(3.2, 0.04, 5.8), Vector3(x, 0.0, z_front + 3.0))
+	var l := Chars.label(labels, "13", 60, Color("f4f4f4"), Vector3.ZERO, Vector3.ZERO, 0.006, 0)
+	l.position = Vector3(x, 2.45, z_front - 0.08)
+	l.rotation.y = PI
+
+
 static func build_garages(parent: Node3D) -> Dictionary:
 	var root := Node3D.new()
 	root.name = "World"
@@ -48,7 +61,10 @@ static func build_garages(parent: Node3D) -> Dictionary:
 		var x := i * 3.4
 		if i != 0:
 			_garage(st, x, -6.6, true, rust[(i + 9) % rust.size()], 40 + i, root)
-		_garage(st, x, 6.6, false, rust[(i + 12) % rust.size()], 70 + i, root)
+		if i == -6:
+			_garage_open(st, x, 6.6, root)   # 0.9: box №13 — hollow, for the inventors' workshop
+		else:
+			_garage(st, x, 6.6, false, rust[(i + 12) % rust.size()], 70 + i, root)
 	# box 40 — ours: teal, neon sign, Aolovo logo; the door belongs to the studio slot
 	_garage(st, 0, -6.6, true, Color("2a7a8a"), 40, root, false)
 	Kit.part(st, Kit.BOX, Kit.mat(Color("2a7a8a"), 0.6, 0.2), Vector3(3.4, 0.5, 0.1), Vector3(0, 2.55, -6.55))
@@ -114,7 +130,11 @@ static func build_garages(parent: Node3D) -> Dictionary:
 		root.add_child(a)
 		a.position = SLOTS[id]
 		anchors[id] = a
-	return {"root": root, "rects": rects, "circles": circles, "id": "garages", "name": "ГК «Песня»", "bounds": BOUNDS,
+	var wa := Node3D.new()
+	wa.name = "Workshop13"
+	root.add_child(wa)
+	wa.position = GameData.BOX13
+	return {"root": root, "workshop_anchor": wa, "rects": rects, "circles": circles, "id": "garages", "name": "ГК «Песня»", "bounds": BOUNDS,
 		"map_rects": [Rect2(-33, -6.2, 66, 12.4)],
 		"spawns": {"from_yard": [Vector3(27.5, 0, 0), -PI / 2], "start": [Vector3(27.5, 0, 0), -PI / 2], "respawn": [Vector3(2, 0, 0), PI],
 			"from_stroyka": [Vector3(-27.4, 0, 0), PI / 2]},
@@ -263,6 +283,8 @@ static func building(id: String, lvl: int) -> Node3D:
 					for k in range(4):
 						Kit.part(g, Kit.CYL, Kit.neon([Kit.GOLD, Color("ff5d7a"), Kit.TEAL, Color("c38bff")][k], 3.0), Vector3(0.2, 0.2, 0.2), Vector3(-1.1 + k * 0.73, 3.0, 1.0))
 					Chars.label(g, "СЦЕНА", 100, Color(3.0, 2.2, 1.0), Vector3(0, 3.6, 1.0), Vector3(0, PI, 0), 0.008, 8)
+	if lvl >= 4:
+		Mobs09.building_extra(g, id, lvl)
 	if lvl > 0:
 		var star := Chars.label(g, "%s · ур. %d" % [name, lvl], 44, Color(1.0, 0.95, 0.8), Vector3(0, 2.6 if id != "solar" else 4.2, 0 if id != "studio" else -1.4), Vector3.ZERO, 0.005, 6)
 		star.billboard = BaseMaterial3D.BILLBOARD_ENABLED

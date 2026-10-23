@@ -6,7 +6,7 @@ static func _m(c: Color, rough := 0.6, metal := 0.0) -> StandardMaterial3D:
 
 
 ## Height of the name plate above each model.
-const PLATE_H := {"pavlin": 2.6, "lis": 2.0, "jack": 2.1, "maloy": 2.0, "chef": 3.1, "zari": 3.0, "yarik": 2.6, "shcheben": 2.4, "pelmen": 2.1, "sochnya": 2.4, "dublevich": 2.4}
+const PLATE_H := {"pavlin": 2.6, "lis": 2.0, "jack": 2.1, "maloy": 2.0, "chef": 3.1, "zari": 3.0, "yarik": 2.6, "shcheben": 2.4, "pelmen": 2.1, "sochnya": 2.4, "dublevich": 2.4, "vasya": 2.9, "ded": 2.5}
 
 
 static func build(id: String) -> Dictionary:
@@ -31,6 +31,9 @@ static func build(id: String) -> Dictionary:
 		"dublevich": return Mobs08.dublevich()
 		"chel": return Mobs08.chel()
 		"osob": return Mobs08.osob()
+		"vasya": return Mobs09.vasya()
+		"kesha": return Mobs09.kesha()
+		"ded": return Mobs09.ded()
 	return Chars.petrovich_npc()
 
 

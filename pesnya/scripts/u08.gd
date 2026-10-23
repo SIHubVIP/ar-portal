@@ -117,7 +117,7 @@ func aggro_mult() -> float:
 
 
 func food_heal() -> float:
-	return 0.6 if blessed("appetite") else 0.4
+	return (0.6 if blessed("appetite") else 0.4) + g.u09.food_bonus()
 
 
 func neighbours_count() -> int:

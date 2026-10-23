@@ -2,7 +2,7 @@ class_name GameData
 ## All tunable numbers and texts of «Песня» in one place.
 
 const SAVE_PATH := "user://pesnya_save.json"
-const SAVE_VERSION := 8
+const SAVE_VERSION := 9
 
 const ITEMS := {
 	"seeds": {"name": "Семки", "rarity": 0, "slot": "", "power": 0, "desc": "Голубиная валюта. Баба Зина говорит, полезные."},
@@ -151,10 +151,58 @@ const ITEMS := {
 		"desc": "Хлоп — и дубль! Враги путают, где кадр, а где бит."},
 	"detective_glasses": {"name": "Очки «Детектив»", "rarity": 2, "slot": "head", "power": 52, "lvl": 18, "stats": {"luck": 6}, "unique": true,
 		"desc": "Как у бабы Зины в сериале. Видно, кто не доел."},
-	"dough_mat": {"name": "Тесто вечности", "rarity": 2, "slot": "", "power": 0, "unique": true,
+	"dough_mat": {"name": "Тесто вечности", "rarity": 2, "slot": "", "power": 0, "unique": true, "mat": true,
 		"desc": "Спецматериал. Не кончается. Пригодится изобретателям на Помойке."},
-	"drum_mat": {"name": "Барабан стиралки", "rarity": 2, "slot": "", "power": 0, "unique": true,
+	"drum_mat": {"name": "Барабан стиралки", "rarity": 2, "slot": "", "power": 0, "unique": true, "mat": true,
 		"desc": "Спецматериал. Крутится сам. Пригодится изобретателям на Помойке."},
+	# 0.9 «Своё дело» — спецматериалы (падают в ремиксах боссов и за задания)
+	"feather_mat": {"name": "Перо Пахана", "rarity": 2, "slot": "", "power": 0, "unique": true, "mat": true,
+		"desc": "Спецматериал из ремикса «Голубиный рэп». Пахан роняет его, когда уходит в отрыв."},
+	"concrete_mat": {"name": "Бетон сцены", "rarity": 2, "slot": "", "power": 0, "unique": true, "mat": true,
+		"desc": "Спецматериал из ремикса «Бетонный бас». Шумодав был сценой — бетон помнит музыку."},
+	"chip_mat": {"name": "Чип бессмертия", "rarity": 2, "slot": "", "power": 0, "unique": true, "mat": true,
+		"desc": "Спецматериал из ремикса «Бессмертие 1.1». Внутри — чужая подписка. Кеша её обнулит."},
+	"scale_mat": {"name": "Чешуя Горыныча", "rarity": 2, "slot": "", "power": 0, "unique": true, "mat": true,
+		"desc": "Спецматериал из ремикса «Три куплета». Тёплая, с запахом рекламы."},
+	"spoke_mat": {"name": "Спица колеса", "rarity": 2, "slot": "", "power": 0, "unique": true, "mat": true,
+		"desc": "Спецматериал из ремикса «Бесконечная загрузка». Крутится, даже когда не надо."},
+	"atom_mat": {"name": "Гаечный ключ «Атом»", "rarity": 3, "slot": "", "power": 0, "unique": true, "mat": true,
+		"desc": "Спецматериал из ремикса «Генеральная уборка». Откручивает всё, даже плохое настроение."},
+	"light_mat": {"name": "Светочастицы", "rarity": 3, "slot": "", "power": 0, "unique": true, "mat": true,
+		"desc": "Рассвет, соскобленный с неба. Их прячут на подпольном складе Рынка электроники (0.10)."},
+	# 0.9 — Помойка: хлам и вещи мобов
+	"rat_tail": {"name": "Хвост-брелок", "rarity": 0, "slot": "", "power": 0, "desc": "Крыса-коллектор носила на нём ключи от чужих кошельков."},
+	"frost_cube": {"name": "Кубик инея", "rarity": 0, "slot": "", "power": 0, "desc": "Не тает. Холодильник был очень обижен."},
+	"coil": {"name": "Матрасная пружина", "rarity": 0, "slot": "", "power": 0, "desc": "Прыгает сама. Кеша говорит, это «энергия сна»."},
+	"collector_cap": {"name": "Кепка коллектора", "rarity": 1, "slot": "head", "power": 34, "lvl": 17, "desc": "На ней написано «ВЕРНИ ДОЛГ». Долг вернули — кепка твоя."},
+	"coin_sack": {"name": "Мешок с медью", "rarity": 2, "slot": "weapon", "power": 70, "lvl": 19, "desc": "Звенит в бит. Крысы смотрят с уважением."},
+	"fridge_door": {"name": "Дверца-щит", "rarity": 1, "slot": "body", "power": 36, "lvl": 19, "desc": "С магнитиками. Холодильник больше не кусается — отдал дверцу."},
+	"ice_shades": {"name": "Очки «Иней»", "rarity": 2, "slot": "head", "power": 54, "lvl": 20, "desc": "Всё видно, всё прохладно. Бит — в особенности."},
+	"bounce_slippers": {"name": "Тапки-пружинки", "rarity": 1, "slot": "feet", "power": 34, "lvl": 18, "desc": "Шаг — и ты уже на полметра дальше."},
+	"pillow_neck": {"name": "Подушка-воротник", "rarity": 2, "slot": "neck", "power": 52, "lvl": 20, "desc": "Мягко держит голову. Даже под ударом."},
+	"junk_crown": {"name": "Корона Короля Хлама", "rarity": 3, "slot": "head", "power": 74, "lvl": 22, "desc": "Из крышек, ложек и гордости. Король был не прав, корона — ни при чём."},
+	"press_gauntlets": {"name": "Перчатки-пресс", "rarity": 3, "slot": "weapon", "power": 96, "lvl": 22, "desc": "Утрамбовывают врагов в аккуратный кубик."},
+	"tarp_cape": {"name": "Мантия из брезента", "rarity": 3, "slot": "body", "power": 78, "lvl": 22, "desc": "Королевская, непромокаемая, с запахом приключений."},
+	# 0.9 — поделки Кеши и Деда (крафт из хлама)
+	"pot_helmet": {"name": "Шлем-кастрюля", "rarity": 2, "slot": "head", "power": 56, "lvl": 19, "stats": {"rhythm": 4},
+		"desc": "Дед Утиль: «Звенит, если ударить в бит. Значит, правильная»."},
+	"wire_scarf": {"name": "Шарф из проводов", "rarity": 2, "slot": "neck", "power": 54, "lvl": 19, "stats": {"luck": 5},
+		"desc": "Кеша сплёл. Ловит удачу и немного вай-фай."},
+	"mattress_coat": {"name": "Пальто-матрас", "rarity": 2, "slot": "body", "power": 58, "lvl": 20, "stats": {"hp": 6},
+		"desc": "Тёплое, мягкое, удар держит. Спать в нём тоже можно."},
+	"spring_sneakers": {"name": "Кеды на пружинах", "rarity": 2, "slot": "feet", "power": 56, "lvl": 20, "stats": {"speed": 5},
+		"desc": "Подпрыгивают на каждом шаге. Догоняют даже крысу."},
+	"basin_guitar": {"name": "Гитара из тазика", "rarity": 2, "slot": "weapon", "power": 76, "lvl": 21, "stats": {"vibe": 5},
+		"desc": "Три струны, один тазик, ноль сомнений. Звучит как свалка — в хорошем смысле."},
+	"inventor_crown": {"name": "Корона изобретателя", "rarity": 3, "slot": "head", "power": 78, "lvl": 22, "stats": {"luck": 6, "rhythm": 6}, "unique": true,
+		"desc": "Из гаечного ключа «Атом» и чипа бессмертия. Дед Утиль: «Носи — и думай»."},
+	# 0.9 — награды заданий соседей
+	"propeller_cap": {"name": "Пропеллер-кепка", "rarity": 2, "slot": "head", "power": 56, "lvl": 18, "stats": {"speed": 5}, "unique": true,
+		"desc": "Шустрый Пилот проверил: крутится. Взлететь не даёт, но очень хочется."},
+	"hoop_neck": {"name": "Обруч от бочки", "rarity": 2, "slot": "neck", "power": 54, "lvl": 19, "stats": {"rhythm": 5}, "unique": true,
+		"desc": "Молодой Мельник: «Квас без обруча — просто вода с мечтой»."},
+	"joystick": {"name": "Джойстик «Кент»", "rarity": 2, "slot": "weapon", "power": 76, "lvl": 20, "stats": {"vibe": 5}, "unique": true,
+		"desc": "Кент Организатор собрал приставку, а джойстик отдал тебе. Комбо — как в игре."},
 }
 
 const SELL_PRICE := [5, 20, 60, 0]
@@ -238,6 +286,18 @@ const MOBS := {
 		"loot": [[0.04, "foam_sneakers"], [0.18, "bubble_neck"], [0.6, "foam_drop"]], "res": [[0.3, "cement", 1, 2]]},
 	"drum": {"name": "Барабан Судьбы", "hp": [30000.0, 0.0], "dmg": [36.0, 0.0], "xp": [1500, 0], "scale": 1.0, "height": 6.4, "radius": 2.7,
 		"speed": 0.0, "aggro": 20.0, "leash": 99.0, "atk": 2.4, "loot": [], "res": [], "boss": true},
+	# 0.9 — Помойка
+	"rat": {"name": "Крыса-коллектор", "hp": [120.0, 30.0], "dmg": [11.0, 3.5], "xp": [58, 16], "scale": 1.0, "height": 1.2, "radius": 0.55,
+		"speed": 5.4, "aggro": 10.0, "leash": 20.0, "atk": 1.6,
+		"loot": [[0.04, "coin_sack"], [0.18, "collector_cap"], [0.6, "rat_tail"]], "res": [[0.5, "wires", 1, 3]]},
+	"fridge": {"name": "Холодильник-кусака", "hp": [260.0, 50.0], "dmg": [14.0, 4.0], "xp": [70, 18], "scale": 1.0, "height": 2.4, "radius": 0.9,
+		"speed": 1.8, "aggro": 8.0, "leash": 14.0, "atk": 2.6,
+		"loot": [[0.04, "ice_shades"], [0.18, "fridge_door"], [0.6, "frost_cube"]], "res": [[0.5, "wires", 2, 3], [0.4, "brick", 2, 3]]},
+	"mattress": {"name": "Матрас-пружина", "hp": [180.0, 40.0], "dmg": [13.0, 3.8], "xp": [64, 17], "scale": 1.0, "height": 2.2, "radius": 0.8,
+		"speed": 2.6, "aggro": 9.0, "leash": 16.0, "atk": 2.8,
+		"loot": [[0.04, "pillow_neck"], [0.18, "bounce_slippers"], [0.6, "coil"]], "res": [[0.5, "planks", 2, 3]]},
+	"king": {"name": "Король Хлама", "hp": [36000.0, 0.0], "dmg": [38.0, 0.0], "xp": [1700, 0], "scale": 1.0, "height": 5.6, "radius": 2.6,
+		"speed": 1.2, "aggro": 22.0, "leash": 99.0, "atk": 2.6, "loot": [], "res": [], "boss": true},
 }
 
 const RES_NAMES := {"brick": "Кирпич", "cement": "Цемент", "planks": "Доски", "wires": "Провода"}
@@ -246,23 +306,29 @@ const RES_ORDER := ["brick", "cement", "planks", "wires"]
 # Buildings at the base. cost[level-1] = [coins, {res}]; effect[level-1] = value
 const BUILDINGS := {
 	"grill": {"name": "Мангал", "desc": "Жарит шаурму сам. Шаурма лечит 40% здоровья (кнопка еды в бою).",
-		"cost": [[60, {"planks": 6, "brick": 4}], [200, {"planks": 12, "brick": 10, "wires": 2}], [500, {"planks": 20, "brick": 20, "cement": 6, "wires": 6}]],
-		"period": [600, 420, 300], "cap": 5, "fx": "шаурма раз в %d мин"},
+		"cost": [[60, {"planks": 6, "brick": 4}], [200, {"planks": 12, "brick": 10, "wires": 2}], [500, {"planks": 20, "brick": 20, "cement": 6, "wires": 6}],
+			[1200, {"planks": 24, "brick": 24, "cement": 10, "wires": 10}], [2400, {"planks": 30, "brick": 30, "cement": 14, "wires": 14}]],
+		"period": [600, 420, 300, 180, 120], "cap": [5, 5, 5, 8, 10], "fx": "шаурма раз в %d мин"},
 	"garden": {"name": "Огород", "desc": "Растит урожай, Люба покупает его за монеты.",
-		"cost": [[50, {"planks": 8}], [180, {"planks": 14, "wires": 4}], [450, {"planks": 20, "cement": 8, "wires": 8}]],
-		"period": [600, 600, 600], "coins": [25, 50, 90], "cap": 6, "fx": "+%d монет раз в 10 мин"},
+		"cost": [[50, {"planks": 8}], [180, {"planks": 14, "wires": 4}], [450, {"planks": 20, "cement": 8, "wires": 8}],
+			[1100, {"planks": 26, "cement": 10, "wires": 10}], [2200, {"planks": 32, "cement": 14, "wires": 14}]],
+		"period": [600, 600, 600, 600, 600], "coins": [25, 50, 90, 180, 260], "cap": [6, 6, 6, 6, 6], "fx": "+%d монет раз в 10 мин"},
 	"gym": {"name": "Гаражный спортзал", "desc": "Качалка из покрышек и гантелей. Больше здоровья.",
-		"cost": [[80, {"brick": 6, "wires": 2}], [250, {"brick": 14, "cement": 4, "wires": 4}], [600, {"brick": 24, "cement": 10, "wires": 8}]],
-		"value": [0.08, 0.16, 0.25], "fx": "+%d%% к здоровью"},
+		"cost": [[80, {"brick": 6, "wires": 2}], [250, {"brick": 14, "cement": 4, "wires": 4}], [600, {"brick": 24, "cement": 10, "wires": 8}],
+			[1300, {"brick": 30, "cement": 14, "wires": 10}], [2500, {"brick": 36, "cement": 18, "wires": 14}]],
+		"value": [0.08, 0.16, 0.25, 0.35, 0.45], "fx": "+%d%% к здоровью"},
 	"stage": {"name": "Сцена", "desc": "Репетиции на публику. Вайб копится быстрее — ХИТ! чаще.",
-		"cost": [[100, {"planks": 10, "wires": 4}], [300, {"planks": 16, "wires": 10}], [700, {"planks": 24, "cement": 6, "wires": 16}]],
-		"value": [0.2, 0.4, 0.6], "fx": "+%d%% к вайбу"},
+		"cost": [[100, {"planks": 10, "wires": 4}], [300, {"planks": 16, "wires": 10}], [700, {"planks": 24, "cement": 6, "wires": 16}],
+			[1400, {"planks": 30, "cement": 10, "wires": 20}], [2700, {"planks": 36, "cement": 14, "wires": 26}]],
+		"value": [0.2, 0.4, 0.6, 0.8, 1.0], "fx": "+%d%% к вайбу"},
 	"studio": {"name": "Студия", "desc": "Звукозапись в гараже. Твои удары звучат мощнее.",
-		"cost": [[150, {"brick": 8, "cement": 4, "wires": 6}], [400, {"brick": 16, "cement": 8, "wires": 12}], [900, {"brick": 26, "cement": 14, "wires": 20}]],
-		"value": [0.05, 0.1, 0.15], "fx": "+%d%% к урону"},
+		"cost": [[150, {"brick": 8, "cement": 4, "wires": 6}], [400, {"brick": 16, "cement": 8, "wires": 12}], [900, {"brick": 26, "cement": 14, "wires": 20}],
+			[1600, {"brick": 30, "cement": 18, "wires": 24}], [3000, {"brick": 36, "cement": 22, "wires": 30}]],
+		"value": [0.05, 0.1, 0.15, 0.2, 0.26], "fx": "+%d%% к урону"},
 	"solar": {"name": "Солнечные панели", "desc": "Питают Васю. Он возвращается быстрее.",
-		"cost": [[120, {"wires": 8, "brick": 4}], [300, {"wires": 14, "cement": 4}], [650, {"wires": 22, "cement": 10}]],
-		"value": [0.15, 0.3, 0.45], "fx": "Вася быстрее на %d%%"},
+		"cost": [[120, {"wires": 8, "brick": 4}], [300, {"wires": 14, "cement": 4}], [650, {"wires": 22, "cement": 10}],
+			[1200, {"wires": 28, "cement": 12, "brick": 8}], [2400, {"wires": 34, "cement": 16, "brick": 12}]],
+		"value": [0.15, 0.3, 0.45, 0.6, 0.75], "fx": "Вася быстрее на %d%%"},
 }
 const BUILD_ORDER := ["grill", "garden", "gym", "stage", "studio", "solar"]
 
@@ -293,8 +359,9 @@ const DAILIES := [
 
 # Map names (loading screen, minimap)
 const MAP_NAMES := {"yard": "двор «Берёзки»", "garages": "ГК «Песня»", "stroyka": "стройку Глушилки", "server": "серверную Кощея",
-	"embankment": "набережную и Калинов мост", "park": "парк «Заря»", "cheburek": "Чебуречную «Сочная»", "laundry": "Прачечную «Ромашка»"}
-const MAPS := ["yard", "garages", "stroyka", "server", "embankment", "park", "cheburek", "laundry"]
+	"embankment": "набережную и Калинов мост", "park": "парк «Заря»", "cheburek": "Чебуречную «Сочная»", "laundry": "Прачечную «Ромашка»",
+	"dump": "Помойку"}
+const MAPS := ["yard", "garages", "stroyka", "server", "embankment", "park", "cheburek", "laundry", "dump"]
 
 # Quest 3 «Флешка Кощея»
 const Q3_DRONES := 8
@@ -380,11 +447,17 @@ const REMIX := {
 		"twist": "Делится вдвое чаще, а лепёшки из теста падают рядами", "where": "Чебуречная, двор за кухней", "items": ["rolling_pin", "chef_hat", "dough_apron"]},
 	"drum": {"title": "Отжим 1400", "map": "laundry", "pos": Vector3(0, 0, -15), "lvl": 20, "need": ["quest7", 5], "console": Vector3(8.8, 0, -8.0), "rot": -PI / 2,
 		"twist": "Центрифуга крутит быстрее, носки летят в два ряда", "where": "Прачечная, зал премьеры", "items": ["drumsticks", "porthole_helmet", "fluffy_robe"]},
+	"king": {"title": "Генеральная уборка", "map": "dump", "pos": Vector3(14, 0, -12), "lvl": 22, "need": ["quest8", 3], "console": Vector3(3.6, 0, -3.2), "rot": PI * 0.75,
+		"twist": "Пресс-атаки с трёх сторон сразу и мусорный залп рядами", "where": "Помойка, площадка пресса", "items": ["junk_crown", "press_gauntlets", "tarp_cape"]},
 }
-const REMIX_ORDER := ["pakhan", "shumodav", "koschei", "gorynych", "wheel", "dough", "drum"]
+## 0.9: every remix win drops the boss's special material (not limited by the day): [Демо, Сингл, Альбом, Платина]
+const REMIX_MAT := {"pakhan": "feather_mat", "shumodav": "concrete_mat", "koschei": "chip_mat", "gorynych": "scale_mat", "wheel": "spoke_mat",
+	"dough": "dough_mat", "drum": "drum_mat", "king": "atom_mat"}
+const REMIX_MAT_N := [1, 1, 2, 3]
+const REMIX_ORDER := ["pakhan", "shumodav", "koschei", "gorynych", "wheel", "dough", "drum", "king"]
 ## [name, hp ×, damage ×, level +, golden singles]
 const REMIX_DIFF := [["Демо", 1.0, 1.0, 0, 1], ["Сингл", 1.45, 1.2, 1, 2], ["Альбом", 2.0, 1.45, 2, 3], ["Платина", 2.8, 1.75, 3, 5]]
-const REMIX_HP := {"pakhan": 0.7, "shumodav": 0.9, "koschei": 1.0, "gorynych": 1.1, "wheel": 1.15, "dough": 1.1, "drum": 1.2}
+const REMIX_HP := {"pakhan": 0.7, "shumodav": 0.9, "koschei": 1.0, "gorynych": 1.1, "wheel": 1.15, "dough": 1.1, "drum": 1.2, "king": 1.25}
 
 ## Сингл Принц appears for 3 minutes; random visits every 30–40 minutes of play (after the first meeting)
 const PRINCE_TIME := 180.0
@@ -438,7 +511,7 @@ const CITY_PLACES := [
 	{"id": "cheb", "name": "Чебуречная", "p": Vector2(0.31, 0.24), "map": "cheburek"},
 	{"id": "laundry", "name": "Прачечная", "p": Vector2(0.53, 0.44), "map": "laundry"},
 	{"id": "tower", "name": "Телебашня", "p": Vector2(0.59, 0.37), "ver": "1.0", "about": "Финал Части 2: здесь споёт Жар-птица"},
-	{"id": "dump", "name": "Помойка", "p": Vector2(0.87, 0.22), "ver": "0.9", "about": "Дед Утиль и Кеша продают идеи построек"},
+	{"id": "dump", "name": "Помойка", "p": Vector2(0.87, 0.22), "map": "dump"},
 	{"id": "market", "name": "Рынок электроники", "p": Vector2(0.89, 0.34), "ver": "0.10", "about": "Подпольный склад светочастиц"},
 	{"id": "taxi", "name": "Таксопарк", "p": Vector2(0.88, 0.46), "ver": "1.1", "about": "Внедорожник «Носорог» у вокзала"},
 	{"id": "parkour", "name": "Паркур Парк", "p": Vector2(0.07, 0.24), "ver": "0.11", "about": "Ищем профи, чтобы расписать детсад"},
@@ -455,7 +528,7 @@ const CITY_PLACES := [
 	{"id": "portal", "name": "Тридевятое царство", "p": Vector2(0.88, 0.055), "ver": "1.9", "about": "Лукоморье и Кощеево царство"},
 ]
 const CITY_LINKS := [["yard", "garages"], ["garages", "stroyka"], ["stroyka", "server"], ["yard", "embankment"], ["embankment", "park"],
-	["yard", "cheb"], ["yard", "laundry"]]
+	["yard", "cheb"], ["yard", "laundry"], ["stroyka", "dump"]]
 const CITY_INFO := {
 	"yard": ["Голуби, самокаты, пылесосы · ур. 2–6", "Баба Зина, Люба, Дядя Миша, Павлин Футболист, Невысокий Лис", "Здесь всё начинается"],
 	"garages": ["Твой бокс №40, постройки и Вася · концерт", "Петрович, Шустрый Пилот, Кент Организатор, Джек Скалолаз", "Двор → арка «ГК Песня» у гаражей"],
@@ -465,15 +538,16 @@ const CITY_INFO := {
 	"park": ["Газонокосилки, пакеты, робо-утки, кружочки · ур. 14–18", "Охранник Подписочкин · Колесо Обновлений", "Набережная → Калинов мост"],
 	"cheburek": ["Тараканы-ниндзя, мухи, чебуреки, вантузы · ур. 14–18", "Тётя Сочня, Пельмень Недоеденный, сантехник Вентилёв", "Двор → западная калитка (трамвай)"],
 	"laundry": ["Носки, стиралки, утюги, пена · ур. 16–20", "Тамара Ресепшн, режиссёр Дубль Дублевич", "Двор → восточная калитка"],
+	"dump": ["Крысы, холодильники, матрасы, пакеты · ур. 17–22", "Дед Утиль, Кеша Вторсырьё, Вася-3000 · Король Хлама", "Стройка → южные ворота «Свалка»"],
 }
 
 
 # ================================================================== 0.8 «Мыльная опера»
 ## Music: loops at the same tempo; they change by themselves (each map has its theme, then the playlist goes on)
 const TRACKS := [["music_run", "Двор качает"], ["music_funk", "Гаражный фанк"], ["music_river", "Набережная"], ["music_disco", "Чебурек-диско"],
-	["music_soap", "Мыльная опера"], ["music_dawn", "Рассвет"]]
+	["music_soap", "Мыльная опера"], ["music_dawn", "Рассвет"], ["music_wind", "Ветер без пароля"]]
 const MAP_TRACK := {"yard": "music_run", "garages": "music_funk", "stroyka": "music_funk", "server": "music_dawn", "embankment": "music_river",
-	"park": "music_dawn", "cheburek": "music_disco", "laundry": "music_soap"}
+	"park": "music_dawn", "cheburek": "music_disco", "laundry": "music_soap", "dump": "music_wind"}
 
 ## Благословения Бога Здорово: the first «Здорово!» of the day at a bench gives one of them for the day
 const BLESSINGS := {
@@ -506,9 +580,62 @@ const RHYTHM := {
 		"lines": ["Мотор!", "Камера! Свет!", "Хорошо… ещё!", "Снято! Почти."]},
 	"stream": {"say": "Эфир! Жми в бит — зрители остаются. Промахнёшься — уходят смотреть котиков.", "title": "ЭФИР «ОТЖИМ»", "meter": "Зрители в эфире", "notes": [0, 0.5, 1, 2, 3, 3.5, 4, 5, 6, 7, 7.5, 8, 9, 10, 10.5, 11, 12, 13, 14, 14.5, 15, 16, 17, 18, 19, 19.5, 20, 21, 22, 23],
 		"lines": ["Всем привет, это «Отжим»!", "Лайк, если пахнет ромашкой!", "Баба Зина в кадре!", "Не переключайтесь!"]},
+	"console": {"say": "Приставка собрана! Проверяем: жми в бит — если не зависнет, значит, работает. Если зависнет — значит, тоже работает, но медленно.",
+		"title": "ТЕСТ ПРИСТАВКИ", "meter": "Приставка работает", "notes": [0, 1, 1.5, 2, 3, 4, 5, 5.5, 6, 7, 8, 9, 10, 10.5, 11, 12, 13, 13.5, 14, 15, 16, 17, 18, 18.5, 19, 20, 21, 22],
+		"lines": ["Загрузка… 99%…", "Уровень 1: двор!", "Комбо! Ещё комбо!", "Новый рекорд Кента!"]},
 }
 
 ## Скамейки Здорово (one per place; the server room has none — «там тишина»)
 const BENCHES := {"yard": [Vector3(-6.9, 0, -8.0), PI / 2, true], "garages": [Vector3(25.5, 0, 5.4), PI, false], "stroyka": [Vector3(24.5, 0, 9.0), PI, false],
 	"embankment": [Vector3(22.0, 0, 5.2), 0.0, true], "park": [Vector3(-5.2, 0, -17.0), PI / 2, false], "cheburek": [Vector3(-5.0, 0, 13.4), PI, false],
-	"laundry": [Vector3(-16.0, 0, 8.5), 0.0, false]}
+	"laundry": [Vector3(-16.0, 0, 8.5), 0.0, false], "dump": [Vector3(-16.0, 0, 7.4), 0.0, false]}
+
+
+# ================================================================== 0.9 «Своё дело»
+## Идеи изобретателей: улучшения построек до 4–5 уровня. Купить идею — монеты; построить — спецматериалы + обычная цена уровня.
+## "soon": материал появится в следующем обновлении (идею видно, но строить пока нельзя).
+const IDEAS := {
+	"grill4": {"name": "Мангал-реактор", "b": "grill", "lvl": 4, "price": 900, "mats": {"scale_mat": 3, "dough_mat": 2},
+		"desc": "Шаурма раз в 3 минуты, лечит 50%, запас 8", "by": "Кеша"},
+	"grill5": {"name": "Мангал «Жар-птица»", "b": "grill", "lvl": 5, "price": 2200, "mats": {"feather_mat": 3, "scale_mat": 2, "atom_mat": 1},
+		"desc": "Шаурма раз в 2 минуты, лечит 60%, запас 10", "by": "Дед Утиль"},
+	"garden4": {"name": "Гидропоника из стиралки", "b": "garden", "lvl": 4, "price": 1000, "mats": {"drum_mat": 1, "atom_mat": 1},
+		"desc": "Урожай вдвое больше: 180 монет раз в 10 минут", "by": "Кеша"},
+	"garden5": {"name": "Теплица на тесте вечности", "b": "garden", "lvl": 5, "price": 2400, "mats": {"dough_mat": 2, "spoke_mat": 2},
+		"desc": "260 монет и шаурма с каждого урожая", "by": "Дед Утиль"},
+	"gym4": {"name": "Качалка из бетона сцены", "b": "gym", "lvl": 4, "price": 1000, "mats": {"concrete_mat": 4},
+		"desc": "+35% к здоровью", "by": "Дед Утиль"},
+	"gym5": {"name": "Качалка-центрифуга", "b": "gym", "lvl": 5, "price": 2400, "mats": {"drum_mat": 2, "concrete_mat": 2, "atom_mat": 1},
+		"desc": "+45% к здоровью", "by": "Кеша"},
+	"stage4": {"name": "Сцена с пиротехникой", "b": "stage", "lvl": 4, "price": 1100, "mats": {"feather_mat": 3, "spoke_mat": 1},
+		"desc": "+80% к вайбу, концерт в ГК даёт вдвое больше монет", "by": "Кеша"},
+	"stage5": {"name": "Сцена «Колесо обозрения»", "b": "stage", "lvl": 5, "price": 2600, "mats": {"spoke_mat": 3, "chip_mat": 1},
+		"desc": "+100% к вайбу, концерт втрое щедрее", "by": "Дед Утиль"},
+	"studio4": {"name": "Студия «Золотой сингл»", "b": "studio", "lvl": 4, "price": 1200, "mats": {"chip_mat": 2}, "singles": 1,
+		"desc": "+20% к урону", "by": "Кеша"},
+	"studio5": {"name": "Студия «Бессмертный хит»", "b": "studio", "lvl": 5, "price": 2800, "mats": {"chip_mat": 2, "scale_mat": 2, "atom_mat": 1},
+		"desc": "+26% к урону", "by": "Дед Утиль"},
+	"solar4": {"name": "Ветряк без пароля", "b": "solar", "lvl": 4, "price": 900, "mats": {"spoke_mat": 2, "atom_mat": 1},
+		"desc": "Вася быстрее на 60%: ветер дует без пароля", "by": "Кеша"},
+	"solar5": {"name": "Панели на светочастицах", "b": "solar", "lvl": 5, "price": 2400, "mats": {"light_mat": 8}, "soon": "0.10",
+		"desc": "Вася быстрее на 75%: светит и ночью", "by": "Дед Утиль"},
+}
+const IDEA_ORDER := ["grill4", "grill5", "garden4", "garden5", "gym4", "gym5", "stage4", "stage5", "studio4", "studio5", "solar4", "solar5"]
+## Where the special materials come from (shown in the workshop)
+const MAT_SOURCE := {"feather_mat": "ремикс Пахана (двор)", "concrete_mat": "ремикс Шумодава (стройка)", "chip_mat": "ремикс Кощея (серверная)",
+	"scale_mat": "ремикс Горыныча (набережная)", "spoke_mat": "ремикс Колеса (парк)", "dough_mat": "ремикс Теста (Чебуречная)",
+	"drum_mat": "ремикс Барабана (Прачечная)", "atom_mat": "ремикс Короля Хлама (Помойка)", "light_mat": "Рынок электроники (0.10)"}
+const MAT_ORDER := ["feather_mat", "concrete_mat", "chip_mat", "scale_mat", "spoke_mat", "dough_mat", "drum_mat", "atom_mat", "light_mat"]
+## Поделки: вещи из хлама. "after" — когда рецепт открывается (quest8)
+const CRAFTS := {
+	"pot_helmet": {"items": {"crust": 3, "scale_bit": 2, "wrapper": 2}, "coins": 300},
+	"wire_scarf": {"items": {"fly_wing": 3, "button": 3, "coil": 2}, "coins": 300},
+	"mattress_coat": {"items": {"foam_drop": 3, "lone_sock": 3, "frost_cube": 2}, "coins": 350},
+	"spring_sneakers": {"items": {"coil": 3, "spring": 3, "grass": 2}, "coins": 350},
+	"basin_guitar": {"items": {"whisker": 3, "pixel": 2, "rat_tail": 3}, "coins": 400},
+	"inventor_crown": {"items": {"atom_mat": 2, "chip_mat": 1, "scale_mat": 1}, "coins": 1500, "after": 5},
+}
+const CRAFT_ORDER := ["pot_helmet", "wire_scarf", "mattress_coat", "spring_sneakers", "basin_guitar", "inventor_crown"]
+## Мастерская в боксе №13 (финал «Своего дела»)
+const WORKSHOP_COST := [600, {"planks": 16, "brick": 12, "wires": 10}, {"atom_mat": 1}]
+const BOX13 := Vector3(-20.4, 0, 6.6)

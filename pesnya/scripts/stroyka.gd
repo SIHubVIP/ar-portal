@@ -150,7 +150,15 @@ static func build(parent: Node3D) -> Dictionary:
 	# construction fence with Koschei's signs
 	var blue := Color("2a5ab8")
 	_fence(st, Vector3(-28, 0, -18), Vector3(26, 0, -18), blue)
-	_fence(st, Vector3(-28, 0, 18), Vector3(26, 0, 18), blue)
+	_fence(st, Vector3(-28, 0, 18), Vector3(19.4, 0, 18), blue)
+	_fence(st, Vector3(24.6, 0, 18), Vector3(26, 0, 18), blue)
+	# 0.9: the south gate to the city dump (the barrier is lowered until the story opens it)
+	var gp := Kit.mat(Color("5a6a7a"), 0.5, 0.6)
+	for x in [19.6, 24.4]:
+		Kit.part(st, Kit.BOX, gp, Vector3(0.35, 3.6, 0.35), Vector3(x, 1.8, 18.0))
+		circles.append(Vector3(x, 18.0, 0.3))
+	Kit.part(st, Kit.BOX, Kit.mat(Color("2a3a2a"), 0.6), Vector3(5.2, 0.7, 0.1), Vector3(22.0, 3.5, 18.0))
+	Chars.label(root, "ГОРОДСКАЯ СВАЛКА →", 70, Color(3.0, 2.6, 1.4), Vector3(22.0, 3.5, 17.92), Vector3(0, PI, 0), 0.0068, 8)
 	_fence(st, Vector3(-28, 0, -18), Vector3(-28, 0, 18), blue)
 	_fence(st, Vector3(28, 0, -18), Vector3(28, 0, -3.2), blue)
 	_fence(st, Vector3(28, 0, 3.2), Vector3(28, 0, 18), blue)
@@ -180,7 +188,7 @@ static func build(parent: Node3D) -> Dictionary:
 	return {"root": root, "rects": rects, "circles": circles, "id": "stroyka", "name": "Стройка Глушилки", "bounds": BOUNDS,
 		"map_rects": [Rect2(-16, -3, 44, 6), Rect2(-25, -9, 18, 18)],
 		"spawns": {"from_garages": [Vector3(24.0, 0, 0), -PI / 2], "start": [Vector3(24.0, 0, 0), -PI / 2], "respawn": [Vector3(21, 0, 4), -PI / 2],
-			"from_server": [Vector3(-9.0, 0, 3.0), PI / 2]},
+			"from_server": [Vector3(-9.0, 0, 3.0), PI / 2], "from_dump": [Vector3(22.0, 0, 14.6), PI]},
 		"portals": [{"pos": Vector3(26.6, 0, 0), "r": 1.3, "to": "garages", "spawn": "from_stroyka", "label": "ГК «Песня»"}],
 		"npcs": [],
 		"beacon": beacon,

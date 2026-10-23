@@ -192,10 +192,10 @@ func _build_menu() -> void:
 	logo.custom_minimum_size = Vector2(220, 60)
 	v.add_child(logo)
 	v.add_child(_label("ПЕСНЯ ♪", 76, true, GOLD))
-	var sub := _label("Офлайн-версия 0.8 · «Мыльная опера»", 22, false, CREAM)
+	var sub := _label("Офлайн-версия 0.9 · «Своё дело»", 22, false, CREAM)
 	sub.custom_minimum_size = Vector2(520, 0)
 	v.add_child(sub)
-	var d := _label("Бей в бит — урон ×2. Новое: Чебуречная «Сочная» и Прачечная «Ромашка», Тесто Вечности и Барабан Судьбы, Бог Здорово и его скамейки, скорая «Отлично-03», пять новых мелодий — и соседи по всему сюжету.", 18, false, Color(0.75, 0.8, 0.88))
+	var d := _label("Бей в бит — урон ×2. Новое: Помойка с изобретателями Дедом Утилем и Кешей, Король Хлама, мастерская «Идея» в боксе №13, постройки до 5 уровня, поделки из хлама, спецматериалы из ремиксов и мелодия «Ветер без пароля».", 18, false, Color(0.75, 0.8, 0.88))
 	d.custom_minimum_size = Vector2(520, 0)
 	v.add_child(d)
 	menu_continue = _btn("ПРОДОЛЖИТЬ", func(): g.continue_game(), 260)
@@ -403,6 +403,16 @@ func show_bag() -> void:
 		sep.color = Color(1, 1, 1, 0.07)
 		sep.custom_minimum_size = Vector2(0, 1)
 		bag_list.add_child(sep)
+	var mats := []
+	for id in junk:
+		if junk[id][0].get("mat", false):
+			mats.append(id)
+	if mats.size() > 0:
+		bag_list.add_child(_label("Спецматериалы (для мастерской «Идея»)", 17, true, Color("d8a8ff")))
+		for id in mats:
+			var e0: Array = junk[id]
+			bag_list.add_child(_label("%s ×%d — %s" % [e0[0].name, e0[1], e0[0].desc], 15, false, Color(0.86, 0.8, 0.95)))
+			junk.erase(id)
 	if not junk.is_empty():
 		bag_list.add_child(_label("Мелочи и квестовые вещи", 17, true, GOLD))
 		for id in junk:

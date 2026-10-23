@@ -154,6 +154,8 @@ var fusion_t := 0.0
 var slow_t := 0.0             # 0.8: plunger slow
 var wind_day := ""            # 0.8: «Второе дыхание» (once a day)
 var u08: U08
+var quest8 := 0               # 0.9 «Своё дело»: see U09.main_lines
+var u09: U09
 var concert_nodes: Array = []
 var waves: Array = []         # expanding noise rings (speakers, Gorynych)
 var traps: Array = []         # delayed red circles on the ground
@@ -194,6 +196,7 @@ func _ready() -> void:
 	Engine.max_fps = 60
 	side = SideRun.new(self)
 	u08 = U08.new(self)
+	u09 = U09.new(self)
 	autotest = OS.get_cmdline_user_args().has("--autotest")
 	if autotest:
 		save_path = "user://pesnya_autotest.json"
@@ -602,6 +605,11 @@ func continue_game() -> void:
 		if quest5 >= 7:
 			hud.toast("Мыслитель Зари на набережной нашёл карту парка «Заря»", Hud.CREAM)
 		hud.toast("Карта Рубина — новая кнопка вверху справа", Hud.CREAM)
+	if old_ver < 9 and old_ver >= 8:
+		hud.toast("Обновление 0.9 «Своё дело»: Помойка, изобретатели и постройки до 5 уровня!", Hud.GOLD)
+		if quest7 >= 7:
+			hud.toast("Мыслитель Зари на набережной знает, что дальше", Hud.CREAM)
+		hud.toast("Ремиксы боссов теперь дают спецматериалы для мастерской", Hud.CREAM)
 	if old_ver < 8 and old_ver >= 7:
 		hud.toast("Обновление 0.8 «Мыльная опера»: Чебуречная, Прачечная, Бог Здорово и 5 новых мелодий!", Hud.GOLD)
 		if quest6 >= 7:
@@ -679,6 +687,7 @@ func _reset_progress() -> void:
 	daily = {"date": "", "pigeon": 0, "scooter": 0, "vacuum": 0, "claimed": []}
 	side.reset()
 	u08.reset()
+	u09.reset()
 	fusion_t = 0.0
 	slow_t = 0.0
 	map_id = "yard"
@@ -700,7 +709,7 @@ func _save_dict() -> Dictionary:
 		"quest6": quest6, "q6_stones": q6_stones, "singles": singles, "taxi": taxi, "remix": remix, "metro_until": metro_until,
 		"prince": {"met": prince.met, "next": prince.next},
 		"mount": mount_owned, "res": res, "food": food,
-		"buildings": buildings, "b_since": b_since, "robot": robot_task, "daily": daily, "map": map_id, "side": side.to_save(), "u08": u08.to_save(),
+		"buildings": buildings, "b_since": b_since, "robot": robot_task, "daily": daily, "map": map_id, "side": side.to_save(), "u08": u08.to_save(), "u09": u09.to_save(),
 		"settings": {"music": music_on, "quality": quality, "beat_offset": beat_offset}, "saved_at": now()}
 
 
@@ -789,7 +798,7 @@ func load_game() -> bool:
 	for k in res:
 		res[k] = int(d.get("res", {}).get(k, 0))
 	for k in buildings:
-		buildings[k] = clampi(int(d.get("buildings", {}).get(k, 0)), 0, 3)
+		buildings[k] = clampi(int(d.get("buildings", {}).get(k, 0)), 0, 5)
 	for k in b_since:
 		b_since[k] = float(d.get("b_since", {}).get(k, 0.0))
 	var rt: Dictionary = d.get("robot", {})
@@ -800,6 +809,8 @@ func load_game() -> bool:
 	side.load_from(d.get("side", {}))
 	var u8 = d.get("u08", {})
 	u08.load_from(u8 if u8 is Dictionary else {})
+	var u9 = d.get("u09", {})
+	u09.load_from(u9 if u9 is Dictionary else {})
 	fusion_t = 0.0
 	slow_t = 0.0
 	inventory.clear()
@@ -852,6 +863,7 @@ func _enter_map(id: String, spawn: String) -> void:
 		"park": world = Park.build(self, quest6 >= 6)
 		"cheburek": world = Cheb.build(self)
 		"laundry": world = Laundry.build(self)
+		"dump": world = Dump.build(self)
 		_: world = Base.build_garages(self)
 	if id == "garages" and quest3 >= 2:
 		_add_site_portal()
@@ -925,6 +937,7 @@ func _enter_map(id: String, spawn: String) -> void:
 	if id == "park":
 		_enter_park()
 	u08.on_enter_map(id)
+	u09.on_enter_map(id)
 	_add_remix_consoles()
 	if mounted:
 		_create_mount_vis()
@@ -1008,6 +1021,8 @@ func _spawn_mob(kind: String, at: Vector3, lvl: int) -> Dictionary:
 		"wheel": model = Park.wheel()
 		"roach", "fly", "cheb", "plunger_mob", "pelmeshek", "sock", "washer", "iron", "bubble", "dough", "drum":
 			model = u08.model(kind, at)
+		"rat", "fridge", "mattress", "king":
+			model = u09.model(kind)
 		_: model = Chars.vacuum()
 	world.root.add_child(model.root)
 	Kit.bake_tree(model.root)
@@ -1027,6 +1042,8 @@ func _spawn_mob(kind: String, at: Vector3, lvl: int) -> Dictionary:
 	}
 	if kind in U08.MOB_KINDS:
 		u08.setup_mob(m)
+	if kind in U09.MOB_KINDS:
+		u09.setup_mob(m)
 	if kind == "wheel":
 		m.yaw = 0.0
 		m.fly_t = 18.0
@@ -1202,8 +1219,10 @@ func main_quest_lines() -> Array:
 			4: out = ["Рассвет по подписке", "Положи камни на летнюю сцену «Заря»", "В конце главной аллеи парка"]
 			5: out = ["Рассвет по подписке", "Останови Колесо Обновлений!", "Жёлтые круги — отбегай · «Не выключайте» — бей в бит"]
 			6: out = ["Рассвет по подписке", "Вернись к Мыслителю Зари на набережную"]
-	else:
+	elif quest7 < 7:
 		out = u08.main_lines()
+	else:
+		out = u09.main_lines()
 	return out
 
 
@@ -1298,12 +1317,16 @@ func npc_marker(id: String) -> String:
 			if quest4 == 1:
 				return "!"
 		"petrovich":
+			if u09.petrovich_marker() != "" and not side.has_talk_for("petrovich"):
+				return u09.petrovich_marker()
 			if quest2 == 1 or (quest2 == 0 and quest >= 5) or quest3 == 1 or (quest4 >= 8 and quest5 == 0):
 				return "!"
 			if quest2 == 5:
 				return "?"
 		"zari":
 			var zm: String = u08.zari_marker()
+			if zm == "":
+				zm = u09.zari_marker()
 			if zm != "" and not side.has_talk_for("zari"):
 				return zm
 			if not side.has_talk_for("zari"):
@@ -1332,6 +1355,7 @@ func world_labels() -> Array:
 	out += side.world_labels()
 	out += _labels07()
 	out += u08.labels()
+	out += u09.labels()
 	for pt in world.portals:
 		out.append([pt.pos + Vector3(0, 2.2, 0), "→ " + pt.label, 18, Hud.TEAL])
 	if map_id == "garages" and quest2 >= 2:
@@ -1386,6 +1410,7 @@ func _on_kill(m: Dictionary) -> void:
 		_wheel_defeated(m)
 		return
 	u08.on_kill(m)
+	u09.on_kill(m)
 	side.on_kill(m)
 	if not m.temp and daily.has(m.kind):
 		daily[m.kind] = int(daily[m.kind]) + 1
@@ -1471,6 +1496,7 @@ func _interactables() -> Array:
 	out += side.interactables()
 	out += _interactables07()
 	out += u08.interactables()
+	out += u09.interactables()
 	if map_id == "server" and world.has("door"):
 		if quest4 == 2:
 			out.append({"label": "Рэп-код", "kind": "door", "id": "door", "pos": Vector3(ServerRoom.DOOR_X + 1.6, 0, 0), "r": 3.2})
@@ -1517,6 +1543,8 @@ func interact() -> void:
 	match e.kind:
 		"npc":
 			u08.greet(e.id)
+			if e.id == "kesha" and u09.kesha_talk():
+				return
 			var ne = _npc_entry(e.id)
 			if ne != null and ne.has("guest") and not side.has_business(e.id):
 				u08.guest_line(ne)
@@ -1524,6 +1552,10 @@ func interact() -> void:
 			if e.id == "zari" and _zari_main():
 				return
 			if e.id == "zari" and not side.has_talk_for("zari") and u08.zari_talk():
+				return
+			if e.id == "zari" and not side.has_talk_for("zari") and u09.zari_talk():
+				return
+			if e.id == "petrovich" and not side.has_talk_for("petrovich") and u09.petrovich_talk():
 				return
 			if e.id == "prince":
 				_talk_prince()
@@ -1548,6 +1580,7 @@ func interact() -> void:
 		"slot": open_list("slot", e.id)
 		"robot": open_list("robot")
 		"bench": u08.bench()
+		"ideas", "workshop": u09.interact(e)
 
 
 func _npc_entry(id: String):
@@ -1682,6 +1715,8 @@ func open_list(kind: String, arg := "") -> void:
 		"remix": _list_remix(arg)
 		"prince": _list_prince()
 		"bench": u08.bench_list()
+		"ideas": u09.list_ideas(arg)
+		"workshop13": u09.list_workshop13()
 
 
 func close_list() -> void:
@@ -1844,16 +1879,16 @@ func _list_slot(id: String) -> void:
 		hud.toast("Сначала получи бокс №40 у Петровича", Hud.CREAM)
 		return
 	var rows := []
-	rows.append({"text": "%s · уровень %d / 3" % [b.name, lv], "sub": "%s\nСейчас: %s" % [b.desc, _effect_text(id, lv)], "color": Hud.GOLD})
+	rows.append({"text": "%s · уровень %d / %d" % [b.name, lv, u09.max_level()], "sub": "%s\nСейчас: %s" % [b.desc, _effect_text(id, lv)], "color": Hud.GOLD})
 	if lv < 3:
 		var cost: Array = b.cost[lv]
 		rows.append({"text": ("Построить" if lv == 0 else "Улучшить до ур. %d" % (lv + 1)) + " → " + _effect_text(id, lv + 1),
 			"sub": "Нужно: " + _cost_text(cost), "btn": "Построить" if lv == 0 else "Улучшить", "enabled": _affordable(cost), "cb": func(): _build(id)})
 	else:
-		rows.append({"text": "Максимальный уровень", "sub": "Скоро здесь появятся новые улучшения", "color": Hud.GREEN})
+		rows += u09.slot_rows(id, lv)
 	if id == "grill" and lv > 0:
 		var n := _prod_count("grill")
-		rows.append({"text": "Готовая шаурма: %d (макс. 5)" % n, "sub": "Жарится сама, даже когда игра закрыта", "btn": "Забрать", "enabled": n > 0, "cb": func(): _collect("grill")})
+		rows.append({"text": "Готовая шаурма: %d (макс. %d)" % [n, u09.cap("grill")], "sub": "Жарится сама, даже когда игра закрыта", "btn": "Забрать", "enabled": n > 0, "cb": func(): _collect("grill")})
 	if id == "garden" and lv > 0:
 		var g := _prod_count("garden")
 		rows.append({"text": "Урожай: +%d монет" % (g * b.coins[lv - 1]), "sub": "Люба сразу выкупает всё оптом", "btn": "Собрать", "enabled": g > 0, "cb": func(): _collect("garden")})
@@ -1862,11 +1897,12 @@ func _list_slot(id: String) -> void:
 
 func _build(id: String) -> void:
 	var lv: int = buildings[id]
-	if lv >= 3:
+	if lv >= 5 or not u09.can_upgrade(id, lv):
 		return
 	var cost: Array = GameData.BUILDINGS[id].cost[lv]
 	if not _affordable(cost):
 		return
+	u09.pay_upgrade(id, lv)
 	coins -= cost[0]
 	for r in cost[1]:
 		res[r] -= cost[1][r]
@@ -1893,7 +1929,7 @@ func _prod_count(id: String) -> int:
 	if lv <= 0:
 		return 0
 	var b: Dictionary = GameData.BUILDINGS[id]
-	return mini(b.cap, int(maxf(0.0, now() - b_since[id]) / b.period[lv - 1]))
+	return mini(u09.cap(id), int(maxf(0.0, now() - b_since[id]) / b.period[lv - 1]))
 
 
 func _collect(id: String) -> void:
@@ -1909,7 +1945,10 @@ func _collect(id: String) -> void:
 		var c: int = n * b.coins[lv - 1]
 		coins += c
 		hud.toast("+%d монет за урожай" % c, Hud.GOLD)
-	if n >= b.cap:
+		if lv >= 5:
+			food += n
+			hud.toast("+%d шаурмы из теплицы" % n, Hud.GOLD)
+	if n >= u09.cap(id):
 		b_since[id] = now()
 	else:
 		b_since[id] += n * b.period[lv - 1]
@@ -2117,6 +2156,8 @@ func _drop_loot(m: Dictionary) -> void:
 		coins += 600
 	elif m.kind in ["dough", "drum"]:
 		drops = u08.loot(m)
+	elif m.kind == "king":
+		drops = u09.loot(m)
 	elif m.kind == "safe_hare":
 		drops = ["duck"]
 		coins += 150
@@ -2215,6 +2256,7 @@ func _beat_action(_name: String) -> bool:
 		if wh != null:
 			_wheel_beat(wh, true)
 		u08.beat(true)
+		u09.beat(true)
 		if target != null and target.alive and target.kind == "gorynych" and target.loading > 0.0:
 			target.loading = 0.0
 			hud.big("ЗАГРУЗКА ПРЕРВАНА РИТМОМ!", "Бэкап не восстановился", 2.0)
@@ -2242,6 +2284,7 @@ func _beat_action(_name: String) -> bool:
 		if wh2 != null:
 			_wheel_beat(wh2, false)
 		u08.beat(false)
+		u09.beat(false)
 	combo_t = 3.0
 	idle_t = 0.0
 	return ok
@@ -2414,6 +2457,10 @@ func damage_mob(m: Dictionary, dmg: float, crit: bool, stun := 0.0) -> void:
 		dmg = u08.on_damage(m, dmg, crit)
 		if m.kind == "drum" and m.shield:
 			stun = 0.0
+	if m.kind == "king":
+		dmg = u09.on_damage(m, dmg, crit)
+		if m.shield:
+			stun = 0.0
 	if m.kind in ["koschei", "wheel"] and m.shield:
 		dmg *= 0.08
 		stun = 0.0
@@ -2422,7 +2469,7 @@ func damage_mob(m: Dictionary, dmg: float, crit: bool, stun := 0.0) -> void:
 	m.hp -= dmg
 	m.hit = 0.18
 	if stun > 0.0:
-		m.stun = maxf(m.stun, stun * (0.5 if m.kind == "pakhan" else (0.25 if m.kind in ["shumodav", "gorynych", "wheel", "dough", "drum"] else 1.0)))
+		m.stun = maxf(m.stun, stun * (0.5 if m.kind == "pakhan" else (0.25 if m.kind in ["shumodav", "gorynych", "wheel", "dough", "drum", "king"] else 1.0)))
 		m.charge_t = 0.0
 	if m.st == "idle":
 		m.st = "chase"
@@ -2744,6 +2791,7 @@ func _process(delta: float) -> void:
 			_update_camera(dt)
 			side.update(dt)
 			u08.update(dt)
+			u09.update(dt)
 			save_t += dt
 			if save_t > 30.0:
 				save_game()
@@ -2927,7 +2975,7 @@ func _update_mobs(dt: float) -> void:
 				m.head.rotation.x = minf(0.5, m.dead_t * 0.4)
 				_remix_after(m)
 				continue
-			if u08.dead_anim(m, dt):
+			if u08.dead_anim(m, dt) or u09.dead_anim(m, dt):
 				continue
 			if m.kind == "wheel":
 				# the wheel slows down and stops; lights go warm
@@ -2969,7 +3017,7 @@ func _update_mobs(dt: float) -> void:
 				m.wander = m.home + Vector3(randf_range(-3.5, 3.5), 0, randf_range(-3.5, 3.5))
 				m.t = randf_range(2.5, 5.0)
 			var wd: Vector3 = m.wander - m.pos
-			if wd.length() > 0.3 and m.kind not in ["wheel", "drum"]:
+			if wd.length() > 0.3 and m.kind not in ["wheel", "drum", "king"]:
 				spd = 2.2 if m.kind in ["scooter", "drone"] else 1.2
 				m.yaw = lerp_angle(m.yaw, atan2(wd.x, wd.z), minf(1.0, dt * 4))
 				m.pos += wd.normalized() * spd * dt
@@ -3027,6 +3075,8 @@ func _mob_chase(m: Dictionary, dt: float, to_p: Vector3, dp: float) -> float:
 			return _park_chase(m, dt, to_p, dp)
 		"roach", "fly", "cheb", "plunger_mob", "pelmeshek", "sock", "washer", "iron", "bubble", "dough", "drum":
 			return u08.chase(m, dt, to_p, dp)
+		"rat", "fridge", "mattress", "king":
+			return u09.chase(m, dt, to_p, dp)
 		"shumodav":
 			m.yaw = lerp_angle(m.yaw, atan2(to_p.x, to_p.z), minf(1.0, dt * 3))
 			_shumodav_special(m, dt)
@@ -3100,6 +3150,8 @@ func _animate_mob(m: Dictionary, dt: float, spd: float) -> void:
 	m.flap = maxf(0.0, m.flap - dt)
 	if m.kind in U08.MOB_KINDS:
 		u08.animate(m, dt, spd)
+	elif m.kind in U09.MOB_KINDS:
+		u09.animate(m, dt, spd)
 	match m.kind:
 		"drone":
 			for r in m.wheels:
@@ -3162,8 +3214,8 @@ func _animate_mob(m: Dictionary, dt: float, spd: float) -> void:
 			m.body.scale = Vector3.ONE * (1.0 + (sin(time * 30.0) * 0.03 if m.flap > 0.0 else 0.0))
 		"mower", "bag", "duck", "loader", "wheel":
 			_animate_park_mob(m, dt, spd)
-		"roach", "fly", "cheb", "plunger_mob", "pelmeshek", "sock", "washer", "iron", "bubble", "dough", "drum":
-			pass   # 0.8: animated by U08.animate above
+		"roach", "fly", "cheb", "plunger_mob", "pelmeshek", "sock", "washer", "iron", "bubble", "dough", "drum", "rat", "fridge", "mattress", "king":
+			pass   # 0.8–0.9: animated by U08 / U09 above
 		_:
 			var flap := 0.0
 			if m.st == "chase" or m.flap > 0.0:
@@ -3338,6 +3390,19 @@ func _apply_map_env(id: String) -> void:
 		sun.light_color = Color("ffe0f0")
 		sun.light_energy = 0.95
 		sun.rotation_degrees = Vector3(-38, 150, 0)
+	elif id == "dump":
+		# the city dump: warm hazy evening, dust in the air, the bonfire of the inventors
+		sky_mat.sky_top_color = Color("4a6a8a")
+		sky_mat.sky_horizon_color = Color("e8c8a0")
+		sky_mat.ground_horizon_color = Color("c8a880")
+		env_world.fog_light_color = Color("c8b89c")
+		env_world.fog_density = 0.009
+		env_world.ambient_light_color = Color("b8b0a0")
+		env_world.ambient_light_energy = 0.75
+		env_world.adjustment_saturation = 1.05
+		sun.light_color = Color("ffe0b0")
+		sun.light_energy = 1.35
+		sun.rotation_degrees = Vector3(-26, 120, 0)
 	elif id == "cheburek":
 		# golden hour by the tram stop: warm and appetising
 		sky_mat.sky_top_color = Color("3a5ab0")
@@ -3389,6 +3454,8 @@ func _boss_cam_extra() -> float:
 	for m in mobs:
 		if m.alive and m.kind in ["shumodav", "gorynych", "wheel"] and m.pos.distance_to(pos) < 26.0:
 			return 3.0 if m.kind == "shumodav" else (6.5 if m.kind == "wheel" else 5.5)
+		if m.alive and m.kind in ["dough", "drum", "king"] and m.pos.distance_to(pos) < 26.0:
+			return u08.cam_extra(m) if m.kind != "king" else u09.cam_extra(m)
 	return 0.0
 
 
@@ -3539,6 +3606,9 @@ func _dismount(msg: String) -> void:
 func _create_mount_vis() -> void:
 	if not world.has("root"):
 		return
+	if u09.mount_skin == "cart":
+		mount_vis = u09.create_cart()
+		return
 	var iz := Chars.izba()
 	world.root.add_child(iz.root)
 	Kit.bake_tree(iz.root)
@@ -3549,6 +3619,9 @@ func _create_mount_vis() -> void:
 
 
 func _animate_mount(dt: float, spd: float, beat_bob: float) -> void:
+	if mount_vis.has("cart"):
+		u09.animate_cart(dt, spd, beat_bob)
+		return
 	var iz: Dictionary = mount_vis
 	iz.phase += dt * 10.0 * spd
 	var k := minf(1.0, spd)
@@ -4289,7 +4362,7 @@ func _finish_concert(cancel: bool) -> void:
 		hud.toast("Концерт прерван", Hud.CREAM)
 		return
 	var first: bool = not bool(daily.get("concert", false))
-	var gain: int = (40 * stars + int(c.perfect)) * (2 if first and stars > 0 else 1)
+	var gain: int = (40 * stars + int(c.perfect)) * (2 if first and stars > 0 else 1) * u09.concert_mult()
 	coins += gain
 	gain_xp(50 * stars)
 	if stars > 0:
@@ -5088,6 +5161,9 @@ func _remix_win(m: Dictionary) -> void:
 		note = " · пропуск в ремикс"
 	var c := 150 + 60 * i + int(m.lvl) * 6
 	coins += c
+	var mat: String = u09.remix_mats(b, i, m.pos)
+	if mat != "":
+		note += " · " + mat
 	if got > 0:
 		singles += got
 		if randf() < 0.35 + 0.15 * i or autotest:
@@ -5095,7 +5171,7 @@ func _remix_win(m: Dictionary) -> void:
 			_loot_at(str(pool[randi() % pool.size()]), m.pos + (Vector3(0, 0, -4.0) if b == "wheel" else Vector3.ZERO))
 		hud.big("РЕМИКС «%s» ПРОЙДЕН · %s" % [r.title, d[0]], "+%d %s%s · +%d монет" % [got, _singles_word(got), note, c], 4.5)
 	else:
-		hud.big("РЕМИКС «%s» ПРОЙДЕН · %s" % [r.title, d[0]], "Добыча сегодня уже получена — завтра снова! · +%d монет" % c, 4.5)
+		hud.big("РЕМИКС «%s» ПРОЙДЕН · %s" % [r.title, d[0]], "Синглы сегодня уже получены · +%d монет%s" % [c, note], 4.5)
 	if i < 3 and was < i:
 		hud.toast("Открыта сложность «%s»" % GameData.REMIX_DIFF[i + 1][0], Color("d8a8ff"))
 	_notes_fx(m.pos + Vector3(0, 3, 0), Color("b06eff"))
@@ -5140,7 +5216,7 @@ func _journal_rows07() -> Array:
 		for b in open:
 			var r: Dictionary = GameData.REMIX[b]
 			parts.append("«%s» (%s)%s" % [r.title, r.where, " — взято" if b in remix.looted else ""])
-		out.append({"text": "Ремиксы боссов: %d" % open.size(), "sub": "Пульт «РЕМИКС» у арены: повторный бой с новой фишкой, 4 сложности. Раз в сутки с каждого босса — золотые синглы («взято» — уже получено сегодня).\n" + " · ".join(parts),
+		out.append({"text": "Ремиксы боссов: %d" % open.size(), "sub": "Пульт «РЕМИКС» у арены: повторный бой с новой фишкой, 4 сложности. Раз в сутки с каждого босса — золотые синглы («взято» — уже получено сегодня), а спецматериал для мастерской «Идея» — за каждую победу.\n" + " · ".join(parts),
 			"color": Color("d8a8ff")})
 	if prince.met:
 		out.append({"text": "Сингл Принц · золотых синглов: %d" % singles, "sub": "Появляется сам: примерно раз в 30–40 минут игры, после каждой победы в ремиксе и по пятницам у Калинова моста. Лавка открыта 3 минуты.",
@@ -5297,6 +5373,7 @@ func unlock(kind: String) -> void:
 		hud.toast("Аэротакси «Ложка» открыто: карта Рубина → место → «Лететь» · от %d монет" % GameData.TAXI_BASE, Hud.GOLD)
 	else:
 		u08.unlock(kind)
+		u09.unlock(kind)
 
 
 func map_open(m: String) -> bool:
@@ -5315,6 +5392,8 @@ func map_open(m: String) -> bool:
 			return u08.map_open_cheb()
 		"laundry":
 			return u08.map_open_laundry()
+		"dump":
+			return u09.map_open()
 	return false
 
 
@@ -5456,6 +5535,14 @@ func _run_autotest() -> void:
 		await _shots08(shots_dir)
 		_finish_report(lg, t0)
 		return
+	if args.has("--test09"):
+		await _autotest_09(lg, shots_dir)
+		_finish_report(lg, t0)
+		return
+	if args.has("--only09"):
+		await _shots09(shots_dir)
+		_finish_report(lg, t0)
+		return
 	if args.has("--only06"):
 		await _shots06(shots_dir)
 		_finish_report(lg, t0)
@@ -5577,6 +5664,7 @@ func _run_autotest() -> void:
 	await _autotest_side(lg, shots_dir)
 	await _autotest_07(lg, shots_dir)
 	await _autotest_08(lg, shots_dir)
+	await _autotest_09(lg, shots_dir)
 	_lg(lg, "final level=%d coins=%d food=%d items=%d" % [level, coins, food, inventory.size()])
 	_finish_report(lg, t0)
 
@@ -6112,6 +6200,7 @@ func _kill_map(kind: String) -> String:
 		"mower", "bag", "duck", "loader": return "park"
 		"roach", "fly", "cheb", "plunger_mob", "pelmeshek": return "cheburek"
 		"sock", "washer", "iron", "bubble": return "laundry"
+		"rat", "fridge", "mattress": return "dump"
 	return map_id
 
 
@@ -6856,6 +6945,342 @@ func _autotest_08(lg: Array, shots_dir: String) -> void:
 	_lg(lg, "side08 done=%d/%d" % [side.done_count(), SideQ.ORDER.size()])
 	invuln = 0.0
 
+
+## 0.9 «Своё дело»: the dump, the inventors' chain with the King of Junk, the neighbours' quests, the idea shop, building levels 4–5,
+## crafting, remix materials, the workshop in box №13 with the party, the cart skin, save v9.
+func _autotest_09(lg: Array, shots_dir: String) -> void:
+	invuln = 9999.0
+	quest = 5
+	quest2 = 6
+	quest3 = 6
+	quest4 = 8
+	quest5 = 7
+	quest6 = maxi(quest6, 7)
+	quest7 = maxi(quest7, 7)
+	mount_owned = true
+	for q in SideQ.ORDER.slice(0, 29):
+		if not side.is_done(q):
+			side.st[q] = {"s": 0, "n": 0, "t": 0.0, "done": true}
+	while level < 18:
+		gain_xp(xp_next() - xp)
+	var wind := -1
+	for i in range(tracks.size()):
+		if tracks[i].id == "music_wind":
+			wind = i
+	_lg(lg, "music09 tracks=%d wind=%d len=%.1f dump_theme=%s" % [tracks.size(), wind, float(tracks[wind].len) if wind >= 0 else 0.0, GameData.MAP_TRACK.get("dump", "")])
+	# «Своё дело» starts at Мыслитель Зари
+	var mk := npc_marker("zari")
+	await _at_talk("zari")
+	var z_ok: bool = state == DIALOG and hud.dialog_name.text == "Мыслитель Зари"
+	await _at_press(0)
+	await _at_press(0)
+	if state == DIALOG:
+		_close_dialog()
+	_lg(lg, "q8 zari marker=%s dialog=%s quest8=%d dump_open=%s" % [mk, str(z_ok), quest8, str(map_open("dump"))])
+	await _at_goto_map("stroyka")
+	var sp := []
+	for pt in world.portals:
+		sp.append(pt.to)
+	await _at_portal(Vector3(22.0, 0, 16.4), "dump")
+	var guests := []
+	for n in npcs:
+		if n.has("guest"):
+			guests.append(n.id)
+	_lg(lg, "dump stroyka_portals=%s quest8=%d mobs=%d npcs=%d guests=%s bench=%s" % [str(sp), quest8, mobs.size(), npcs.size(), str(guests), str(not u08.bench_node.is_empty())])
+	# every new mob runs its AI
+	for m in mobs:
+		m.st = "chase"
+	pos = Vector3(4.0, 0, 6.0)
+	coins += 300
+	var c0 := coins
+	await _bot_fight(600, func(): return false)
+	var dead := 0
+	for m in mobs:
+		if not m.alive:
+			dead += 1
+	_lg(lg, "ai dump dead=%d coins %d->%d slow=%.1f" % [dead, c0, coins, slow_t])
+	# the inventors' chain
+	for q in ["vasya_who", "idea_q", "fridge", "utilization"]:
+		await _at_side_quest(lg, q)
+	_lg(lg, "dump chain quest8=%d shop=%s ideas=%s atom=%d cart=%s singles=%d" % [quest8, str(u09.shop_open), str(u09.ideas), count_item("atom_mat"), str(u09.cart_skin), singles])
+	# the neighbours at the dump
+	for q in ["propeller", "barrel", "console"]:
+		await _at_side_quest(lg, q)
+	_lg(lg, "side09 propeller_cap=%d hoop=%d joystick=%d done=%d/%d" % [count_item("propeller_cap"), count_item("hoop_neck"), count_item("joystick"), side.done_count(), SideQ.ORDER.size()])
+	# the idea shop at the dump
+	await _at_goto_map("dump")
+	pos = Dump.IDEA_TABLE + Vector3(0.6, 0, 1.6)
+	await _frames(2)
+	var lab := interact_label()
+	interact()
+	var shop_ok: bool = state == LIST and list_kind == "ideas"
+	var rows: int = hud.list_box.get_child_count()
+	coins += 20000
+	u09._buy_idea("gym4")
+	u09._buy_idea("solar5")
+	if state == LIST:
+		close_list()
+	_lg(lg, "idea shop label=%s list=%s rows=%d ideas=%s" % [lab, str(shop_ok), rows, str(u09.ideas)])
+	# Петрович gives box №13
+	var pm := npc_marker("petrovich")
+	await _at_talk("petrovich")
+	await _at_press(0)
+	await _at_press(0)
+	if state == DIALOG:
+		_close_dialog()
+	_lg(lg, "petrovich marker=%s quest8=%d" % [pm, quest8])
+	# build the workshop
+	res.planks += 40
+	res.brick += 40
+	res.wires += 40
+	res.cement += 40
+	if count_item("atom_mat") < 1:
+		add_item("atom_mat")
+	await _at_goto_map("garages")
+	pos = GameData.BOX13 + Vector3(0.4, 0, -1.6)
+	await _frames(2)
+	var wl := interact_label()
+	interact()
+	var ws_ok: bool = state == LIST and list_kind == "workshop13"
+	u09._build_workshop()
+	await _frames(3)
+	var dancers := 0
+	for n in u09.party:
+		if not n.has("bulb"):
+			dancers += 1
+	var gk_guests := []
+	for n in npcs:
+		if n.has("guest"):
+			gk_guests.append(n.id)
+	_lg(lg, "workshop label=%s list=%s quest8=%d dancers=%d guests=%s" % [wl, str(ws_ok), quest8, dancers, str(gk_guests)])
+	if shots_dir != "":
+		await _snap(shots_dir, "09_party")
+	# Кеша's finale
+	pos = Vector3(-19.0, 0, 4.4) + Vector3(0.8, 0, -1.2)
+	await _frames(2)
+	interact()
+	var fin_ok: bool = state == DIALOG and hud.dialog_name.text == "Кеша Вторсырьё"
+	for k in range(6):
+		await _at_press(0)
+	if state == DIALOG:
+		_close_dialog()
+	_lg(lg, "q8 finale dialog=%s quest8=%d lines=%s" % [str(fin_ok), quest8, str(main_quest_lines())])
+	# building levels 4–5: ideas + special materials
+	for id in GameData.BUILD_ORDER:
+		buildings[id] = 3
+	coins += 40000
+	res.planks += 300
+	res.brick += 300
+	res.wires += 300
+	res.cement += 300
+	singles += 5
+	for id in ["grill4", "grill5", "garden4", "garden5", "gym4", "gym5", "stage4", "stage5", "studio4", "studio5", "solar4", "solar5"]:
+		if not (id in u09.ideas):
+			u09.ideas.append(id)
+	for k in GameData.MAT_ORDER:
+		if k == "light_mat":
+			continue
+		for j in range(8):
+			inventory.append(u09._item(k))
+	var hp3 := hp_max
+	var heal3: float = u08.food_heal()
+	for id in GameData.BUILD_ORDER:
+		_build(id)
+		_build(id)
+	close_list()
+	_recalc_stats()
+	_lg(lg, "buildings %s hp_max %d->%d food_heal %.2f->%.2f concert_x=%d grill_cap=%d solar=%d errand=%ds" % [str(buildings), int(hp3), int(hp_max), heal3, u08.food_heal(),
+		u09.concert_mult(), u09.cap("grill"), buildings.solar, int(_errand_time("dump"))])
+	open_list("slot", "solar")
+	var slot_rows: int = hud.list_box.get_child_count()
+	close_list()
+	_lg(lg, "slot solar rows=%d (lvl 5 waits for 0.10)" % slot_rows)
+	# crafting
+	for id in ["crust", "crust", "crust", "scale_bit", "scale_bit", "wrapper", "wrapper"]:
+		inventory.append(u09._item(id))
+	var ph := count_item("pot_helmet")
+	u09._craft("pot_helmet")
+	var crown0 := count_item("inventor_crown")
+	u09._craft("inventor_crown")
+	_lg(lg, "craft pot_helmet %d->%d crown %d->%d" % [ph, count_item("pot_helmet"), crown0, count_item("inventor_crown")])
+	# remixes give special materials (King of Junk and Pakhan)
+	for b in ["king", "pakhan"]:
+		await _at_goto_map(GameData.REMIX[b].map)
+		var mat: String = GameData.REMIX_MAT[b]
+		var n0 := count_item(mat)
+		_start_remix(b, 2)
+		var bm = _find_mob(b)
+		if bm != null:
+			damage_mob(bm, 999999999.0, false)
+		await _frames(120)
+		_lg(lg, "remix %s open=%s spawned=%s %s %d->%d" % [b, str(remix_open(b)), str(bm != null), mat, n0, count_item(mat)])
+		_prince_leave("test")
+	# the King: the charge lane, the press, «Кеша взламывает» with combo ×8
+	await _at_goto_map("dump")
+	var km := _spawn_mob("king", Dump.KING_HOME, 22)
+	km.st = "chase"
+	pos = Dump.KING_HOME + Vector3(0, 0, 6.0)
+	km.special = 0.0
+	await _frames(3)
+	var lane_ok: bool = u09.lane != null
+	var fr := 0
+	while km.charge_t <= 0.0 and fr < 120:
+		fr += 1
+		await get_tree().process_frame
+	var drove: bool = km.charge_t > 0.0
+	await _frames(60)
+	u09._press(km)
+	var hp0: float = km.hp
+	damage_mob(km, 1000.0, false)
+	var cut: float = hp0 - km.hp
+	combo = 8
+	u09.beat(true)
+	_lg(lg, "king lane=%s drove=%s press_dmg=%d broken=%s stun=%.1f" % [str(lane_ok), str(drove), int(cut), str(not km.shield), km.stun])
+	km.alive = false
+	km.node.visible = false
+	u09._clear_lane()
+	# the rat steals coins and gives them back twice when caught
+	invuln = 0.0
+	coins = 500
+	var rm := _spawn_mob("rat", pos + Vector3(1.0, 0, 0), 18)
+	rm.st = "chase"
+	rm.atk_cd = 0.0
+	var rf := 0
+	while int(rm.loot_coins) == 0 and rf < 200:
+		rf += 1
+		hp = hp_max
+		await get_tree().process_frame
+	var stolen: int = rm.loot_coins
+	var c1 := coins
+	damage_mob(rm, 999999.0, false)
+	_lg(lg, "rat stole=%d coins %d->%d" % [stolen, c1, coins])
+	invuln = 9999.0
+	# the cart skin
+	u09.mount_skin = "cart"
+	mounted = true
+	if not mount_vis.is_empty() and is_instance_valid(mount_vis.root):
+		mount_vis.root.queue_free()
+	mount_vis = {}
+	_create_mount_vis()
+	await _frames(10)
+	_lg(lg, "cart skin=%s mounted=%s" % [str(mount_vis.has("cart")), str(mounted)])
+	_dismount("")
+	# the aerotaxi to the dump
+	_lg(lg, "taxi garages->dump=%d yard->dump=%d" % [GameData.taxi_price("garages", "dump"), GameData.taxi_price("yard", "dump")])
+	# save v9 round trip
+	save_game()
+	var keep := [quest8, u09.ideas.size(), u09.shop_open, u09.cart_skin, u09.mount_skin, buildings.grill]
+	quest8 = 0
+	u09.ideas = []
+	u09.shop_open = false
+	u09.cart_skin = false
+	buildings.grill = 0
+	load_game()
+	_lg(lg, "save09 roundtrip %s==%s ver=%d" % [str(keep), str([quest8, u09.ideas.size(), u09.shop_open, u09.cart_skin, u09.mount_skin, buildings.grill]), GameData.SAVE_VERSION])
+	_lg(lg, "side09 total done=%d/%d" % [side.done_count(), SideQ.ORDER.size()])
+	invuln = 0.0
+
+
+## Screenshots of 0.9 (run with --only09 --shots DIR under xvfb).
+func _shots09(dir: String) -> void:
+	quest = 5
+	quest2 = 6
+	quest3 = 6
+	quest4 = 8
+	quest5 = 7
+	quest6 = 7
+	quest7 = 7
+	quest8 = 2
+	mount_owned = true
+	for q in SideQ.ORDER.slice(0, 29):
+		side.st[q] = {"s": 0, "n": 0, "t": 0.0, "done": true}
+	while level < 21:
+		gain_xp(xp_next() - xp)
+	for id in ["junk_crown", "press_gauntlets", "tarp_cape", "spring_sneakers"]:
+		add_item(id)
+	for it in inventory:
+		if it.id in ["junk_crown", "press_gauntlets", "tarp_cape", "spring_sneakers"]:
+			equip(it)
+	invuln = 9999.0
+	await _at_goto_map("stroyka")
+	_look(Vector3(20.0, 0, 11.0), Vector3(22.0, 0, 18.0), 0.2, 7.0)
+	await _frames(30)
+	await _snap(dir, "r01_stroyka_gate")
+	await _at_goto_map("dump")
+	_look(Vector3(0, 0, 17.0), Vector3(0, 0, 0), 0.34, 12.0)
+	await _frames(40)
+	await _snap(dir, "r02_dump_entrance")
+	_look(Vector3(-6.0, 0, 7.0), Vector3(-13.0, 0, 1.0), 0.24, 7.5)
+	await _frames(30)
+	await _snap(dir, "r03_camp")
+	var kp: Vector3 = SideQ.NPCS.kesha.pos
+	_look(kp + Vector3(1.6, 0, 3.0), kp + Vector3(-2.4, 0, -1.0), 0.16, 5.5)
+	await _frames(20)
+	await _snap(dir, "r04_inventors")
+	_look(Vector3(-14.0, 0, -3.0), Vector3(-24.0, 0, -12.0), 0.28, 8.0)
+	await _frames(20)
+	await _snap(dir, "r05_fridge_graveyard")
+	for kind in ["rat", "fridge", "mattress"]:
+		await _shot_mob(dir, kind)
+	var km := _spawn_mob("king", Dump.KING_HOME, 22)
+	_look(Dump.KING_HOME + Vector3(-4.0, 0, 9.5), Dump.KING_HOME, 0.18, 9.5)
+	target = km
+	km.st = "chase"
+	for k in range(50):
+		await get_tree().process_frame
+		hp = hp_max
+	await _snap(dir, "r06_king")
+	km.special = 0.0
+	await _frames(12)
+	await _snap(dir, "r07_king_lane")
+	await _frames(70)
+	u09._press(km)
+	await _frames(30)
+	await _snap(dir, "r08_king_press")
+	km.alive = false
+	km.node.visible = false
+	u09._clear_lane()
+	target = null
+	u09.shop_open = true
+	pos = Dump.IDEA_TABLE + Vector3(0.6, 0, 1.6)
+	await _frames(2)
+	interact()
+	await _frames(3)
+	await _snap(dir, "r09_idea_shop")
+	close_list()
+	# the workshop with the party and upgraded buildings
+	quest8 = 5
+	for id in GameData.BUILD_ORDER:
+		buildings[id] = 4 if id in ["gym", "solar"] else 5
+	await _at_goto_map("garages")
+	_look(GameData.BOX13 + Vector3(2.0, 0, -4.0), GameData.BOX13 + Vector3(0, 0, 1.0), 0.62, 7.0)
+	await _frames(40)
+	await _snap(dir, "r10_workshop_party")
+	_look(Vector3(2.0, 0, 0.0), Vector3(-4.8, 0, -3.0), 0.3, 9.0)
+	await _frames(20)
+	await _snap(dir, "r11_buildings_45")
+	_look(Vector3(-2.0, 0, 0.5), Vector3(3.4, 0, -5.0), 0.3, 8.5)
+	await _frames(20)
+	await _snap(dir, "r12_buildings_45b")
+	open_list("slot", "grill")
+	await _frames(2)
+	await _snap(dir, "r13_slot_grill")
+	close_list()
+	# the cart skin
+	u09.cart_skin = true
+	u09.mount_skin = "cart"
+	toggle_mount()
+	_look(Vector3(8.0, 0, 0.0), Vector3(12.0, 0, 0.0), 0.2, 6.5)
+	facing = -PI / 2 + 0.6
+	await _frames(30)
+	await _snap(dir, "r14_cart")
+	_dismount("")
+	taxi = true
+	open_map()
+	hud.city_map.select("dump")
+	await _frames(3)
+	await _snap(dir, "r15_city_map")
+	close_list()
 
 func _look(p: Vector3, at: Vector3, pt := 0.26, d := 7.6) -> void:
 	pos = World.resolve(p, 0.45, world.rects, world.circles, world.bounds)
