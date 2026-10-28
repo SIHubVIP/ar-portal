@@ -1,15 +1,17 @@
 class_name IsoCamera
 extends Camera3D
-## Изометрическая камера: фиксированный азимут 45°, наклон 55°, ограниченный зум.
-## Здания между камерой и героем становятся полупрозрачными.
+## Изометрическая камера: наклон 55°, ограниченный зум, поворот вокруг героя
+## (свайп по свободной части экрана или кнопки ⟲ ⟳). Здания между камерой
+## и героем становятся полупрозрачными. Ввод стика всегда относительно камеры.
 
-const YAW := deg_to_rad(45.0)
 const PITCH := deg_to_rad(55.0)
-const ZOOM_MIN := 12.0
+const ZOOM_MIN := 10.0
 const ZOOM_MAX := 26.0
 
 var target: Node3D
-var distance := 18.0
+var distance := 14.0
+var yaw := deg_to_rad(45.0)
+var _yaw_target := deg_to_rad(45.0)
 var _faded: Array = []
 
 
@@ -25,23 +27,36 @@ func zoom_by(amount: float) -> void:
 	distance = clampf(distance + amount, ZOOM_MIN, ZOOM_MAX)
 
 
+## Плавный поворот на угол (радианы); свайп передаёт мелкие шаги.
+func rotate_by(radians: float) -> void:
+	_yaw_target += radians
+
+
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.pressed:
 		if event.button_index == MOUSE_BUTTON_WHEEL_UP:
 			zoom_by(-1.0)
 		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
 			zoom_by(1.0)
+	elif event is InputEventKey and event.pressed and not event.echo:
+		if event.physical_keycode == KEY_Z:
+			rotate_by(deg_to_rad(-45.0))
+		elif event.physical_keycode == KEY_X:
+			rotate_by(deg_to_rad(45.0))
 
 
 func _desired() -> Vector3:
-	var back := Vector3(sin(YAW), 0, cos(YAW)) * cos(PITCH)
+	var back := Vector3(sin(yaw), 0, cos(yaw)) * cos(PITCH)
 	return target.global_position + (back + Vector3(0, sin(PITCH), 0)) * distance
 
 
 func _physics_process(delta: float) -> void:
 	if target == null:
 		return
-	global_position = global_position.lerp(_desired(), clampf(8.0 * delta, 0.0, 1.0))
+	yaw = lerp_angle(yaw, _yaw_target, clampf(12.0 * delta, 0.0, 1.0))
+	if "camera_yaw" in target:
+		target.camera_yaw = yaw
+	global_position = global_position.lerp(_desired(), clampf(10.0 * delta, 0.0, 1.0))
 	look_at(target.global_position + Vector3(0, 1, 0), Vector3.UP)
 	_update_occluders()
 
@@ -70,5 +85,5 @@ func _update_occluders() -> void:
 
 
 func _set_alpha(body: Node, alpha: float) -> void:
-	for mi in body.find_children("*", "MeshInstance3D", true, false):
+	for mi in body.find_children("*", "GeometryInstance3D", true, false):
 		mi.transparency = 1.0 - alpha

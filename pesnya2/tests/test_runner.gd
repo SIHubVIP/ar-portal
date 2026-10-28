@@ -189,3 +189,137 @@ func test_future_schema_is_rejected() -> void:
 func test_every_ability_kind_has_effect() -> void:
 	for a in GameData.abilities:
 		check(AbilityBook.EFFECTS.has(a.kind), "%s: нет эффекта для типа «%s»" % [a.id, a.kind])
+
+
+# ---------- 0.2: снаряжение, способности по уровням, диалоги ----------
+
+func test_starter_kit_is_equipped_once() -> void:
+	GameState.give_starter_kit()
+	GameState.give_starter_kit()
+	check(GameState.equipment.get("weapon", "") == "ITEM_P2_CROWBAR", "Вышибала получает монтировку")
+	check(GameState.stat("damage") == 6.0 and GameState.stat("armor") == 3.0, "бонусы надетого")
+	check(GameState.max_hp == 110.0 and GameState.hp == 110.0, "треники дают +10 здоровья")
+	check(GameState.item_count("ITEM_P2_BEER") == 2, "пиво выдано один раз")
+
+
+func test_equip_and_unequip() -> void:
+	GameState.add_item("ITEM_P2_PIPE")
+	GameState.add_item("ITEM_P2_CROWBAR")
+	check(GameState.equip("ITEM_P2_CROWBAR"), "надеть монтировку")
+	check(GameState.equip("ITEM_P2_PIPE"), "заменить на трубу")
+	check(GameState.equipment.weapon == "ITEM_P2_PIPE" and GameState.item_count("ITEM_P2_CROWBAR") == 1,
+			"прежнее оружие вернулось в ранец")
+	check(GameState.stat("damage") == 10.0, "урон трубы")
+	check(not GameState.equip("ITEM_P2_BEER"), "пиво не надевается")
+	check(GameState.unequip("weapon") and GameState.stat("damage") == 0.0, "снять оружие")
+	check(not GameState.equip("ITEM_P2_FOIL_HAT"), "нельзя надеть то, чего нет")
+
+
+func test_consumable_heals_and_raises_kukukha() -> void:
+	GameState.add_item("ITEM_P2_SHAWARMA")
+	GameState.damage(80)
+	check(GameState.use_item("ITEM_P2_SHAWARMA") != "", "шаурма съедена")
+	check(GameState.hp == 80.0 and GameState.kukukha == 8, "лечит 60, кукуха +8")
+	check(GameState.use_item("ITEM_P2_SHAWARMA") == "", "второй шаурмы нет")
+
+
+func test_storage_moves_both_ways_and_keeps_quest_items() -> void:
+	GameState.add_item("ITEM_P1_SCRAP", 3)
+	GameState.add_item("ITEM_P1_PHONE")
+	check(GameState.to_storage("ITEM_P1_SCRAP", 2) and GameState.storage.ITEM_P1_SCRAP == 2, "в сундук")
+	check(not GameState.to_storage("ITEM_P1_PHONE"), "квестовый предмет остаётся при себе")
+	check(GameState.from_storage("ITEM_P1_SCRAP") and GameState.item_count("ITEM_P1_SCRAP") == 2, "из сундука")
+	check(not GameState.from_storage("ITEM_P1_SCRAP", 5), "нельзя взять больше, чем лежит")
+
+
+func test_loot_table_rolls_known_items() -> void:
+	for r in [0.0, 0.3, 0.6, 0.9, 0.999]:
+		check(GameData.item_by_id.has(GameState.roll_loot("drone", r)), "трофей %.3f существует" % r)
+
+
+func test_equipment_survives_save() -> void:
+	GameState.give_starter_kit()
+	GameState.add_tone("purple")
+	var saved := JSON.stringify(GameState.to_dict())
+	GameState.reset("CLASS_1")
+	GameState.from_dict(JSON.parse_string(saved))
+	check(GameState.stat("armor") == 3.0 and GameState.max_hp == 110.0, "снаряжение после загрузки")
+	check(int(GameState.tones.get("purple", 0)) == 1, "тоны после загрузки")
+
+
+func test_abilities_unlock_gradually() -> void:
+	check(AbilityBook.unlock_level(0) == 1, "первая способность сразу")
+	var prev := 0
+	for i in 7:
+		check(AbilityBook.unlock_level(i) > prev, "уровни открытия растут (%d)" % i)
+		prev = AbilityBook.unlock_level(i)
+	check(prev <= GameData.max_level, "последняя открывается до потолка уровня")
+	for a in GameData.abilities:
+		var d := AbilityBook.describe(a, 1)
+		check(d.text != "" and d.shout != "" and d.stats != "", "%s: описание, выкрик, характеристики" % a.id)
+		check(GameData.ability_flavor.abilities[a.id].anim != "", "%s: своя анимация" % a.id)
+
+
+func test_dialogue_graphs_are_valid() -> void:
+	var errors := DialogueRunner.validate()
+	check(errors.is_empty(), "графы диалогов: %s" % ", ".join(errors))
+	for id in ["MAIN_001_INTRO", "PASSER", "TERMINAL", "KIOSK", "GLORP", "ZINA"]:
+		check(GameData.dialogues.has(id), "диалог %s есть" % id)
+
+
+func test_dialogue_canon_lines_are_verbatim() -> void:
+	var lines: Array = GameData.scene_by_id["SCENE_01"].lines
+	var found := 0
+	for id in GameData.dialogues:
+		for nid in GameData.dialogues[id].nodes:
+			var n: Dictionary = GameData.dialogues[id].nodes[nid]
+			if n.has("canon"):
+				found += 1
+				check(n.text == lines[int(String(n.canon).get_slice(":", 1))].text, "%s/%s дословно" % [id, nid])
+	check(found == lines.size(), "все 7 реплик SCENE_01 звучат в диалогах")
+
+
+func test_dialogue_options_respect_requirements_and_grant_once() -> void:
+	var r := DialogueRunner.new("ZINA")
+	var opts := r.options()
+	check(opts.size() == 4 and opts[1].locked and opts[3].locked, "без денег и кукухи два ответа закрыты")
+	check(r.choose(1).is_empty() and r.node_id == "n0", "закрытый ответ не выбирается")
+	r.choose(0)
+	check(r.node_id == "g" and GameState.reputation == 1, "по-хорошему: +1 репутация")
+	r.advance()
+	check(GameState.item_count("ITEM_P2_VALERIAN") == 1 and r.finished(), "валерьянка и конец")
+	var again := DialogueRunner.new("ZINA")
+	again.choose(0)
+	again.advance()
+	check(GameState.reputation == 1 and GameState.item_count("ITEM_P2_VALERIAN") == 1, "повторный разговор не начисляет")
+	check(int(GameState.tones.green) == 1, "тон засчитан один раз")
+
+
+func test_kiosk_dialogue_leads_to_both_canon_choices() -> void:
+	for pair in [["green", "choose_A"], ["purple", "choose_B"]]:
+		var r := DialogueRunner.new("KIOSK")
+		r.advance()
+		r.advance()
+		var picked := -1
+		for o in r.options():
+			if o.tone == pair[0]:
+				picked = o.index
+		check(r.choose(picked).has(pair[1]), "киоск: %s ведёт к %s" % pair)
+
+
+func test_terminal_debt_notice_passes_patrol() -> void:
+	QuestService.accept("MAIN_001")
+	QuestService.advance("MAIN_001", "MAIN_001_S01")
+	var r := DialogueRunner.new("TERMINAL")
+	check(r.options()[2].locked, "без уведомления умный ответ закрыт")
+	GameState.add_item("ITEM_P1_DEBT_NOTICE")
+	var ev := r.choose(2)
+	check(ev.has("pass") and QuestService.is_on_stage("MAIN_001", "MAIN_001_S03"), "уведомление о долге проводит мимо патруля")
+
+
+func test_character_title_follows_tones() -> void:
+	check(GameState.character_title() == "Тёмная лошадка", "без ответов — тёмная лошадка")
+	for i in 3:
+		GameState.add_tone("purple")
+	GameState.add_tone("green")
+	check(GameState.character_title() == "Отморозок", "чаще хамит — отморозок")

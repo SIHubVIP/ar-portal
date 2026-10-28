@@ -7,6 +7,8 @@ signal attack
 signal dodge
 signal interact
 signal ability(index: int)
+signal camera_rotate(radians: float)
+signal camera_zoom(amount: float)
 
 const STICK_RADIUS := 90.0
 
@@ -18,6 +20,8 @@ var _stick_finger := -1
 var _stick_origin := Vector2.ZERO
 var _stick_pos := Vector2.ZERO
 var _pressed: Dictionary = {}  # finger -> button id
+## Пальцы, которые крутят камеру (свайп по свободной части экрана): index -> позиция
+var _cam_fingers: Dictionary = {}
 
 
 func _ready() -> void:
@@ -32,9 +36,14 @@ func buttons() -> Dictionary:
 	var b := {"attack": [a, 72.0], "dodge": [a + Vector2(-285, 45), 44.0]}
 	if interact_label != "":
 		b["interact"] = [a + Vector2(0, -330), 48.0]
+	b["rot_left"] = [Vector2(s.x - 190, 120), 30.0]
+	b["rot_right"] = [Vector2(s.x - 60, 120), 30.0]
 	var inner := [180.0, 210.0, 240.0, 270.0]
 	var outer := [195.0, 225.0, 255.0]
 	for i in 7:
+		# закрытые способности не загромождают экран: видна только ближайшая следующая
+		if player and not player.ability_unlocked(i) and i > 0 and not player.ability_unlocked(i - 1):
+			continue
 		var ang: float = deg_to_rad(inner[i] if i < 4 else outer[i - 4])
 		var r := 176.0 if i < 4 else 270.0
 		b["ability_%d" % i] = [a + Vector2(cos(ang), sin(ang)) * r, 40.0]
@@ -56,20 +65,34 @@ func _input(event: InputEvent) -> void:
 				_stick_origin = event.position
 				_stick_pos = event.position
 				get_viewport().set_input_as_handled()
+			elif event.position.y > 90:
+				_cam_fingers[event.index] = event.position
 		else:
 			_pressed.erase(event.index)
+			_cam_fingers.erase(event.index)
 			if event.index == _stick_finger:
 				_stick_finger = -1
 				if player:
 					player.move_input = Vector2.ZERO
 		queue_redraw()
-	elif event is InputEventScreenDrag and event.index == _stick_finger:
-		_stick_pos = event.position
-		var v: Vector2 = (_stick_pos - _stick_origin) / STICK_RADIUS
-		if player:
-			player.move_input = v.limit_length(1.0) if v.length() > 0.12 else Vector2.ZERO
-		get_viewport().set_input_as_handled()
-		queue_redraw()
+	elif event is InputEventScreenDrag:
+		if event.index == _stick_finger:
+			_stick_pos = event.position
+			var v: Vector2 = (_stick_pos - _stick_origin) / STICK_RADIUS
+			if player:
+				player.move_input = v.limit_length(1.0) if v.length() > 0.12 else Vector2.ZERO
+			get_viewport().set_input_as_handled()
+			queue_redraw()
+		elif _cam_fingers.has(event.index):
+			var prev: Vector2 = _cam_fingers[event.index]
+			if _cam_fingers.size() >= 2:
+				# щипок: расстояние между двумя пальцами меняет зум
+				var other: Vector2 = _cam_fingers[_cam_fingers.keys().filter(func(k): return k != event.index)[0]]
+				camera_zoom.emit((prev.distance_to(other) - event.position.distance_to(other)) * 0.04)
+			else:
+				camera_rotate.emit(-(event.position.x - prev.x) * 0.008)
+			_cam_fingers[event.index] = event.position
+			get_viewport().set_input_as_handled()
 
 
 func _unhandled_key_input(event: InputEvent) -> void:
@@ -99,6 +122,8 @@ func _fire(id: String) -> void:
 		"attack": attack.emit()
 		"dodge": dodge.emit()
 		"interact": interact.emit()
+		"rot_left": camera_rotate.emit(deg_to_rad(-45.0))
+		"rot_right": camera_rotate.emit(deg_to_rad(45.0))
 		_: ability.emit(int(id.get_slice("_", 1)))
 
 
@@ -132,10 +157,18 @@ func _draw() -> void:
 			"interact":
 				col = Color(0.15, 0.55, 0.3, 0.75)
 				text = interact_label
+			"rot_left":
+				text = "↺"
+			"rot_right":
+				text = "↻"
 			_:
 				var i := int(id.get_slice("_", 1))
 				text = ability_names[i] if i < ability_names.size() else str(i + 1)
 				cd = player.ability_remaining(i) if player else 0.0
+				if player and not player.ability_unlocked(i):
+					col = Color(0.05, 0.05, 0.07, 0.45)
+					text = "с ур.\n%d" % player.unlock_level(i)
+					cd = 0.0
 		if held:
 			col = col.lightened(0.3)
 		draw_circle(c, r, col)
@@ -146,6 +179,8 @@ func _draw() -> void:
 			draw_arc(c, r - 6, -PI / 2, -PI / 2 + TAU * frac, 32, Color(0, 0, 0, 0.6), 12.0)
 			text = str(ceili(cd))
 		var fs := 16 if r < 45 else 22
+		if id.begins_with("rot_"):
+			fs = 30
 		var lines := text.split("\n")
 		var widest := 0.0
 		for ln in lines:

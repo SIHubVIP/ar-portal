@@ -39,6 +39,7 @@ func _ready() -> void:
 	_build_checkpoint()
 	_build_kiosk()
 	_build_exit_to_delovoy()
+	_build_locals()
 	_build_windows()
 
 	player = Player.new()
@@ -56,6 +57,8 @@ func _ready() -> void:
 	hud.controls.ability.connect(player.use_ability)
 	hud.controls.interact.connect(_on_interact)
 	hud.pause_action.connect(_on_pause_action)
+	hud.controls.camera_rotate.connect(camera.rotate_by)
+	hud.controls.camera_zoom.connect(camera.zoom_by)
 
 	EventBus.quest_stage_changed.connect(func(_q, _s): _queue_save())
 	EventBus.quest_state_changed.connect(func(_q, _s): _queue_save())
@@ -69,9 +72,24 @@ func _ready() -> void:
 	elif QuestService.state_of(QID) == QuestService.AVAILABLE:
 		_intro.call_deferred()
 	for arg in args:
+		if arg.begins_with("--open="):
+			_dev_open.call_deferred(arg.trim_prefix("--open="))
 		if arg.begins_with("--spawn="):
 			var xz := arg.trim_prefix("--spawn=").split(",")
 			player.position = Vector3(float(xz[0]), 0, float(xz[1]))
+
+
+## Отладка и скриншоты: --open=bags|hero|abilities|dlg:GLORP
+func _dev_open(what: String) -> void:
+	if GameState.class_id == "":
+		GameState.class_id = "CLASS_1"
+	GameState.give_starter_kit()
+	hud.dialog.skip()
+	await get_tree().process_frame
+	if what.begins_with("dlg:"):
+		hud.run_dialogue(what.trim_prefix("dlg:"))
+	else:
+		hud.open_inventory(what)
 
 
 func _notification(what: int) -> void:
@@ -300,7 +318,7 @@ func _build_queue() -> void:
 		tw.tween_property(p, "rotation_degrees:z", -3.0, 1.2 + i * 0.1)
 	var passer := _person(Vector3(-2, 0, 10), Color(0.6, 0.5, 0.35), "Прохожий")
 	_interactables.append({"pos": passer.position, "radius": 2.5, "label": "Говорить", "cb": func():
-		hud.play_dialog([_scene_line(2)]), "enabled": func(): return true})
+		hud.run_dialogue("PASSER"), "enabled": func(): return true})
 
 
 # ---------- патруль сборщиков обязательной благодарности (этап 2) ----------
@@ -317,12 +335,32 @@ func _build_checkpoint() -> void:
 	var beam := Kit.cylinder(self, 2.5, 60, CHECKPOINT_POS + Vector3(-4.5, 30, 0), Color(0.4, 1, 0.6, 0.12), 1.0)
 	beam.material_override = Kit.mat(Color(0.4, 1, 0.6, 0.12), 1.0)
 	beam.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	_zones.append({"pos": CHECKPOINT_POS, "radius": 9.0, "once": true, "cb": func():
-		hud.play_dialog([_scene_line(4)]), "when": func(): return QuestService.is_on_stage(QID, "MAIN_001_S02")})
+	_zones.append({"pos": CHECKPOINT_POS, "radius": 9.0, "once": true, "cb": _talk_terminal,
+			"when": func(): return QuestService.is_on_stage(QID, "MAIN_001_S02")})
+	_interactables.append({"pos": term.position, "radius": 3.5, "label": "Терминал", "cb": _talk_terminal,
+			"enabled": func(): return QuestService.is_on_stage(QID, "MAIN_001_S02")})
 	_zones.append({"pos": EXIT_POS, "radius": 4.5, "cb": _escaped_patrol,
 			"when": func(): return QuestService.is_on_stage(QID, "MAIN_001_S02")})
 	Kit.label(self, "ПЕРЕУЛОК →", EXIT_POS + Vector3(0, 0.1, 0), 90, Color(1, 1, 1, 0.6), false) \
 			.rotation_degrees = Vector3(-90, 0, 0)
+
+
+func _talk_terminal() -> void:
+	hud.run_dialogue("TERMINAL", _on_terminal_event)
+
+
+func _on_terminal_event(e: String) -> void:
+	match e:
+		"fight":
+			hud.show_toast("Патруль: «Коррекция лица!»")
+		"moon":
+			for d in _drones:
+				d.stun(4.0)
+			hud.show_toast("Дроны в шоке. Бей, пока перезагружаются!")
+		"bribe", "pass":
+			for d in _drones:
+				d.stun(30.0)
+			_escaped_patrol()
 
 
 func _spawn_drones() -> void:
@@ -337,8 +375,10 @@ func _spawn_drones() -> void:
 func _on_drone_defeated(d: EnemyDrone) -> void:
 	_drones.erase(d)
 	var loot := {"babki": d.loot_babki, "xp": 20}
-	if randf() < 0.35:
-		loot.items = {"ITEM_P1_SCRAP": 1}
+	if randf() < 0.45:
+		var drop := GameState.roll_loot("drone", randf())
+		loot.items = {drop: 1}
+		EventBus.toast.emit("Трофей: %s" % GameData.item_name(drop))
 	GameState.grant("loot:drone:%d:%d" % [Time.get_ticks_usec(), randi()], "Сборщик благодарности", loot)
 	if _drones.is_empty():
 		_drone_respawn = 25.0
@@ -347,7 +387,7 @@ func _on_drone_defeated(d: EnemyDrone) -> void:
 
 
 func _escaped_patrol() -> void:
-	if QuestService.advance(QID, "MAIN_001_S02"):
+	if QuestService.advance(QID, "MAIN_001_S02") or QuestService.is_on_stage(QID, "MAIN_001_S03"):
 		respawn_point = EXIT_POS
 		hud.show_toast("Патруль отстал. Где-то впереди киоск с живым человеком.")
 
@@ -378,22 +418,19 @@ func _build_kiosk() -> void:
 	_zones.append({"pos": KIOSK_POS, "radius": 6.0, "cb": _reach_kiosk,
 			"when": func(): return QuestService.is_on_stage(QID, "MAIN_001_S03")})
 	_interactables.append({"pos": KIOSK_POS + Vector3(0, 0, 2), "radius": 4.0, "label": "Решить",
-			"cb": _ask_choice, "enabled": func(): return QuestService.is_on_stage(QID, "MAIN_001_S04")})
+			"cb": _talk_kiosk, "enabled": func(): return QuestService.is_on_stage(QID, "MAIN_001_S04")})
 
 
 func _reach_kiosk() -> void:
-	if not QuestService.advance(QID, "MAIN_001_S03"):
-		return
-	hud.play_dialog([_scene_line(5), _scene_line(6)], _ask_choice)
+	if QuestService.advance(QID, "MAIN_001_S03"):
+		_talk_kiosk()
 
 
-func _ask_choice() -> void:
-	var q := GameData.quest(QID)
-	var opts := []
-	for key in ["A", "B"]:
-		opts.append({"key": key, "key_label": "А" if key == "A" else "Б", "text": q.choices[key].text,
-				"hint": q.choices[key].result})
-	hud.ask_choice("Решение", opts, _on_choice)
+## Канонический выбор MAIN_001 A/B живёт внутри разговора с киоскёром (события choose_A / choose_B).
+func _talk_kiosk() -> void:
+	hud.run_dialogue("KIOSK", func(e: String):
+		if e.begins_with("choose_"):
+			_on_choice(e.trim_prefix("choose_")))
 
 
 func _on_choice(key: String) -> void:
@@ -407,10 +444,42 @@ func _on_choice(key: String) -> void:
 		_battery.queue_free()
 		GameState.grant("main001:choice_b:item", "Батарея с места аварии", {"items": {"ITEM_P1_ALIEN_BATTERY": 1}})
 	QuestService.turn_in(QID)
-	hud.play_dialog([{"speaker": "Журнал", "text": "%s %s" % [q.choices[key].result, "."]},
-			{"speaker": "Поворот", "text": q.twist}], func():
+	hud.play_dialog([{"speaker": "journal", "text": "%s." % q.choices[key].result},
+			{"speaker": "journal", "text": "Поворот: %s" % q.twist}], func():
 		var next := GameData.quest("MAIN_002")
 		hud.show_toast("Новое задание: «%s» — %s" % [next.title, next.location]))
+
+
+# ---------- местные и пришелец-стажёр (editorial_P2) ----------
+
+func _build_locals() -> void:
+	# Гл'орп: стажёр флота, прилетел «в столицу», а попал в Рубин
+	var glorp := Node3D.new()
+	glorp.position = Vector3(5.5, 0, 7)
+	add_child(glorp)
+	Kit.capsule(glorp, 0.28, 0.8, Vector3(0, 0.75, 0), Color(0.25, 0.25, 0.3))
+	Kit.sphere(glorp, 0.32, Vector3(0, 1.45, 0), Color(0.56, 0.82, 0.48))
+	for side in [-1, 1]:
+		Kit.sphere(glorp, 0.1, Vector3(side * 0.12, 1.5, 0.27), Color(0.05, 0.05, 0.1))
+		Kit.cylinder(glorp, 0.02, 0.4, Vector3(side * 0.12, 1.9, 0), Color(0.4, 0.7, 0.3))
+		Kit.sphere(glorp, 0.06, Vector3(side * 0.12, 2.12, 0), Color(0.9, 1, 0.4), 3.0)
+	Kit.box(glorp, Vector3(0.08, 0.35, 0.02), Vector3(0, 1.0, 0.28), Color(0.8, 0.1, 0.15))
+	Kit.label(glorp, "Гл'орп", Vector3(0, 2.5, 0), 36, Color(0.7, 1, 0.6))
+	var shake := glorp.create_tween().set_loops()
+	shake.tween_property(glorp, "rotation_degrees:z", 4.0, 0.15)
+	shake.tween_property(glorp, "rotation_degrees:z", -4.0, 0.15)
+	_interactables.append({"pos": glorp.position, "radius": 2.5, "label": "Говорить", "cb": func():
+		hud.run_dialogue("GLORP"), "enabled": func(): return true})
+	# тётя Зина: балкон второго этажа над ломбардом
+	var balcony := Vector3(-12.6, 3.2, 1.5)
+	Kit.solid_box(self, Vector3(1.4, 0.15, 3), balcony, Color(0.55, 0.52, 0.5))
+	Kit.box(self, Vector3(0.08, 1.0, 3), balcony + Vector3(0.7, 0.55, 0), Color(0.4, 0.3, 0.3))
+	var zina := _person(balcony + Vector3(0, 0.08, 0), Color(0.7, 0.2, 0.3), "Тётя Зина")
+	zina.rotation_degrees.y = 90
+	for i in 5:
+		Kit.sphere(zina, 0.06, Vector3(-0.2 + i * 0.1, 2.0, 0), Color(0.95, 0.4, 0.6))
+	_interactables.append({"pos": Vector3(-9.5, 0, 1.5), "radius": 3.0, "label": "Зина", "cb": func():
+		hud.run_dialogue("ZINA"), "enabled": func(): return true})
 
 
 # ---------- дорога в Деловой (следующая сборка) ----------
@@ -434,7 +503,7 @@ func _scene_line(i: int) -> Dictionary:
 
 func _intro() -> void:
 	QuestService.accept(QID)
-	hud.play_dialog([_scene_line(0), _scene_line(1)], func():
+	hud.run_dialogue("MAIN_001_INTRO", Callable(), func():
 		hud.show_toast("Найди телефон, второй ботинок и уведомление о долге"))
 
 
@@ -558,18 +627,38 @@ func _run_autotest() -> void:
 		print("AUTOTEST_DONE" if ok else "AUTOTEST_FAIL")
 		get_tree().quit(0 if ok else 1)
 		return
+	if GameState.class_id == "":
+		GameState.class_id = "CLASS_1"
+	GameState.give_starter_kit()
 	_intro()
 	await _frames(5)
-	hud._finish_dialog()
+	log.call("вступление: портрет %s, ответов %d" % [hud.dialog._name.text, hud.dialog._options.get_child_count()])
+	hud.dialog.skip()
+	hud.dialog.pick_tone("cyan")
+	await _frames(2)
+	hud.dialog.skip()
+	await _frames(2)
+	log.call("стартовый набор: %s, урон +%d, броня +%d" % [str(GameState.equipment), GameState.stat("damage"), GameState.stat("armor")])
 	for id in ["ITEM_P1_PHONE", "ITEM_P1_SHOE", "ITEM_P1_DEBT_NOTICE"]:
 		player.global_position = _pickups[id].position * Vector3(1, 0, 1)
 		await _frames(3)
-		hud._finish_dialog()
+		hud.dialog.skip()
 	log.call("этап 1: %s" % QuestService.current_stage(QID).get("id", "-"))
-	# бой: подходим к патрулю, бьём дронов способностями
+	# Гл'орп по-рубински
+	hud.run_dialogue("GLORP")
+	hud.dialog.pick_tone("purple")
+	await _frames(2)
+	hud.dialog.skip()
+	await _frames(2)
+	log.call("характер: %s, кукуха %d" % [GameState.character_title(), GameState.kukukha])
+	# бой: подходим к патрулю, терминалу показываем задницу, бьём дронов
 	player.global_position = CHECKPOINT_POS + Vector3(0, 0, 5)
 	await _frames(3)
-	hud._finish_dialog()
+	log.call("терминал: %s" % hud.dialog._name.text)
+	hud.dialog.pick_tone("purple")
+	await _frames(2)
+	hud.dialog.skip()
+	await _frames(2)
 	for i in 7:
 		player.use_ability(i)
 		player.basic_attack()
@@ -580,14 +669,24 @@ func _run_autotest() -> void:
 	log.call("этап 2 -> %s" % QuestService.current_stage(QID).get("id", "-"))
 	player.global_position = KIOSK_POS + Vector3(0, 0, 4)
 	await _frames(3)
-	hud._finish_dialog()
+	hud.dialog.skip()
+	log.call("киоск: ответов %d" % hud.dialog._options.get_child_count())
+	hud.dialog.pick_tone("orange")
 	await _frames(2)
-	for c in hud._choice_box.get_children():
-		if c is Button:
-			c.pressed.emit()
-			break
+	hud.dialog.pick_tone("green")
 	await _frames(2)
-	hud._finish_dialog()
+	hud.dialog.skip()
+	await _frames(3)
+	hud.dialog.skip()
+	await _frames(2)
+	# инвентарь: пиво и экран сумок
+	var hp_before := GameState.hp
+	GameState.damage(40)
+	GameState.use_item("ITEM_P2_BEER")
+	hud.open_inventory("bags")
+	await _frames(2)
+	log.call("инвентарь открыт: %s, HP %.0f -> %.0f" % [hud.inventory.visible, hp_before - 40, GameState.hp])
+	hud.inventory.close_panel()
 	log.call("MAIN_001: %s, выбор %s, флаги %s" % [QuestService.state_of(QID), QuestService.records[QID].choice,
 			str(GameState.flags.keys())])
 	log.call("ресурсы: бабки %d, репутация %d, уровень %d" % [GameState.babki, GameState.reputation, GameState.level])

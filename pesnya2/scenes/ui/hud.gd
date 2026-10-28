@@ -12,14 +12,8 @@ var _level: Label
 var _resources: Label
 var _quest: Label
 var _toast: Label
-var _dialog: PanelContainer
-var _dialog_speaker: Label
-var _dialog_text: Label
-var _dialog_lines: Array = []
-var _dialog_index := 0
-var _dialog_done: Callable
-var _choice: PanelContainer
-var _choice_box: VBoxContainer
+var dialog: DialogView
+var inventory: InventoryPanel
 var _pause: PanelContainer
 var _journal: Label
 var _death: PanelContainer
@@ -58,6 +52,13 @@ func _ready() -> void:
 	pause_btn.pressed.connect(toggle_pause)
 	root.add_child(pause_btn)
 	_place(pause_btn, Vector2(1, 0), Vector2(-110, 14), Vector2(-20, 74))
+	var bag_btn := Button.new()
+	bag_btn.text = " Сумка "
+	bag_btn.add_theme_font_size_override("font_size", 24)
+	bag_btn.focus_mode = Control.FOCUS_NONE
+	bag_btn.pressed.connect(func(): open_inventory("bags"))
+	root.add_child(bag_btn)
+	_place(bag_btn, Vector2(1, 0), Vector2(-250, 14), Vector2(-120, 74))
 
 	_toast = _label(root, "", 24)
 	_place(_toast, Vector2(0.5, 0), Vector2(-400, 90), Vector2(400, 160))
@@ -65,9 +66,15 @@ func _ready() -> void:
 	_toast.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_toast.modulate.a = 0.0
 
-	_build_dialog(root)
-	_build_choice(root)
 	_build_pause(root)
+	inventory = InventoryPanel.new()
+	root.add_child(inventory)
+	_place(inventory, Vector2(0.5, 0.5), Vector2(-600, -340), Vector2(600, 340))
+	inventory.set_toast(show_toast)
+	inventory.closed.connect(func(): _set_controls(true))
+	dialog = DialogView.new()
+	root.add_child(dialog)
+	dialog.closed.connect(func(): _set_controls(true))
 	_build_death(root)
 
 	EventBus.resources_changed.connect(func(_b, _r, _k): _refresh_resources())
@@ -76,7 +83,7 @@ func _ready() -> void:
 	EventBus.quest_stage_changed.connect(func(_q, _s): refresh_quest())
 	EventBus.quest_state_changed.connect(func(_q, _s): refresh_quest())
 	EventBus.toast.connect(show_toast)
-	EventBus.level_up.connect(func(l): show_toast("Новый уровень: %d" % l))
+	EventBus.level_up.connect(_on_level_up)
 	EventBus.item_added.connect(func(id, n): show_toast("+ %s%s" % [GameData.item_name(id), " ×%d" % n if n > 1 else ""]))
 	_refresh_resources()
 	_on_hp(GameState.hp, GameState.max_hp)
@@ -87,6 +94,7 @@ func _ready() -> void:
 
 func set_player(p: Player) -> void:
 	controls.player = p
+	inventory.player = p
 	var names := PackedStringArray()
 	for a in p.book.abilities:
 		names.append(_wrap(a.name))
@@ -217,89 +225,63 @@ func show_toast(text: String) -> void:
 	tw.tween_property(_toast, "modulate:a", 0.0, 0.4)
 
 
-# ---------- диалог ----------
-
-func _build_dialog(root: Control) -> void:
-	_dialog = _panel(root)
-	_place(_dialog, Vector2(0.5, 1), Vector2(-440, -270), Vector2(440, -20))
-	var v := VBoxContainer.new()
-	_dialog.add_child(v)
-	_dialog_speaker = _label(v, "", 22)
-	_dialog_speaker.add_theme_color_override("font_color", Color(0.95, 0.75, 0.2))
-	_dialog_text = _label(v, "", 26)
-	_dialog_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_dialog_text.custom_minimum_size = Vector2(820, 80)
-	var h := HBoxContainer.new()
-	h.alignment = BoxContainer.ALIGNMENT_END
-	v.add_child(h)
-	_button(h, "Пропустить", _finish_dialog, 20)
-	_button(h, "  Далее ▸  ", _next_line, 22)
-
+# ---------- диалог и выбор ----------
 
 func is_busy() -> bool:
-	return _dialog.visible or _choice.visible or _pause.visible or _death.visible
+	return dialog.visible or inventory.visible or _pause.visible or _death.visible
 
 
 ## lines: [{speaker, text}]; on_done вызывается и при пропуске (с теми же последствиями).
 func play_dialog(lines: Array, on_done := Callable()) -> void:
-	_dialog_lines = lines
-	_dialog_index = 0
-	_dialog_done = on_done
-	_dialog.visible = true
 	_set_controls(false)
-	_show_line()
+	dialog.play_lines(lines, on_done)
 
 
-func _show_line() -> void:
-	var l: Dictionary = _dialog_lines[_dialog_index]
-	_dialog_speaker.text = String(l.speaker).to_upper()
-	_dialog_text.text = l.text
+## Разговор по графу data/dialogues.json. on_event получает сюжетные события (choose_A, bribe, ...).
+func run_dialogue(id: String, on_event := Callable(), on_done := Callable()) -> void:
+	_set_controls(false)
+	dialog.run(id, on_event, on_done)
 
 
-func _next_line() -> void:
-	_dialog_index += 1
-	if _dialog_index >= _dialog_lines.size():
-		_finish_dialog()
-	else:
-		_show_line()
+## options: [{key, key_label, text, hint, tone?}]. Выбор не совершается без нажатия игрока.
+func ask_choice(title: String, options: Array, on_pick: Callable) -> void:
+	_set_controls(false)
+	var tones := ["green", "purple", "cyan", "orange"]
+	var i := 0
+	var opts: Array = []
+	for o in options:
+		opts.append({"text": "%s — %s" % [o.key_label, o.text], "tone": o.get("tone", tones[i % 4]),
+				"cb": func(): on_pick.call(o.key)})
+		i += 1
+	dialog.ask("journal", title, opts)
 
 
 func _finish_dialog() -> void:
-	if not _dialog.visible:
+	dialog.skip()
+
+
+func open_inventory(tab := "hero") -> void:
+	if is_busy():
 		return
-	_dialog.visible = false
-	_set_controls(true)
-	if _dialog_done.is_valid():
-		var cb := _dialog_done
-		_dialog_done = Callable()
-		cb.call()
-
-
-# ---------- выбор ----------
-
-func _build_choice(root: Control) -> void:
-	_choice = _panel(root)
-	_place(_choice, Vector2(0.5, 0.5), Vector2(-390, -170), Vector2(390, 170))
-	_choice_box = VBoxContainer.new()
-	_choice_box.add_theme_constant_override("separation", 12)
-	_choice.add_child(_choice_box)
-
-
-## options: [{key, text, hint}]. Выбор не совершается без нажатия игрока.
-func ask_choice(title: String, options: Array, on_pick: Callable) -> void:
-	for c in _choice_box.get_children():
-		c.queue_free()
-	var t := _label(_choice_box, title, 26)
-	t.add_theme_color_override("font_color", Color(0.95, 0.75, 0.2))
-	for o in options:
-		var b := _button(_choice_box, "%s — %s" % [o.key_label, o.text], func():
-			_choice.visible = false
-			_set_controls(true)
-			on_pick.call(o.key), 22)
-		b.tooltip_text = o.get("hint", "")
-		b.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_choice.visible = true
 	_set_controls(false)
+	inventory.open(tab)
+
+
+func open_storage() -> void:
+	if is_busy():
+		return
+	_set_controls(false)
+	inventory.open_storage()
+
+
+func _on_level_up(l: int) -> void:
+	var text := "Новый уровень: %d" % l
+	if controls.player:
+		for i in controls.player.book.abilities.size():
+			if AbilityBook.unlock_level(i) == l:
+				var a: Dictionary = controls.player.book.abilities[i]
+				text += "\nОткрыта способность «%s»! %s" % [a.name, AbilityBook.describe(a, l).text]
+	show_toast(text)
 
 
 # ---------- пауза и журнал ----------
@@ -330,7 +312,7 @@ func _build_pause(root: Control) -> void:
 
 
 func toggle_pause() -> void:
-	if _dialog.visible or _choice.visible:
+	if dialog.visible or inventory.visible:
 		return
 	_pause.visible = not _pause.visible
 	_set_controls(not _pause.visible)

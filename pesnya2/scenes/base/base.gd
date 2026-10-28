@@ -37,8 +37,8 @@ func _ready() -> void:
 	Kit.label(self, "ГАРАЖ №13 · ЛИЧНАЯ БАЗА", Vector3(0, 3.6, -7.7), 60, Color(1, 0.8, 0.3), false)
 	# хранилище
 	Kit.solid_box(self, Vector3(3, 1.4, 1.2), Vector3(-5, 0.7, -6), Color(0.5, 0.35, 0.2))
-	Kit.label(self, "Хранилище", Vector3(-5, 2.2, -6), 40, Color(1, 0.9, 0.6))
-	_interactables.append({"pos": Vector3(-5, 0, -4.5), "label": "Сложить", "cb": _stash})
+	Kit.label(self, "Сундук", Vector3(-5, 2.2, -6), 40, Color(1, 0.9, 0.6))
+	_interactables.append({"pos": Vector3(-5, 0, -4.5), "label": "Сундук", "cb": func(): hud.open_storage()})
 	# верстак
 	Kit.solid_box(self, Vector3(3, 1.0, 1.2), Vector3(5, 0.5, -6), Color(0.35, 0.3, 0.28))
 	Kit.label(self, "Верстак (скоро)", Vector3(5, 2.0, -6), 40, Color(0.8, 0.9, 1))
@@ -69,6 +69,9 @@ func _ready() -> void:
 	hud.controls.ability.connect(player.use_ability)
 	hud.controls.interact.connect(_on_interact)
 	hud.pause_action.connect(_on_pause_action)
+	hud.controls.camera_rotate.connect(camera.rotate_by)
+	hud.controls.camera_zoom.connect(camera.zoom_by)
+	hud.inventory.closed.connect(func(): SaveService.save_game())
 	GameState.heal(GameState.max_hp)
 	hud.show_toast("База: здесь безопасно, здоровье восстановлено")
 	if OS.get_cmdline_user_args().has("--autotest"):

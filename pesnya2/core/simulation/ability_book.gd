@@ -34,6 +34,27 @@ func _init(class_id: String) -> void:
 	abilities = GameData.class_abilities(class_id)
 
 
+## Способности открываются по одной: уровни из data/ability_flavor.json.
+static func unlock_level(index: int) -> int:
+	var levels: Array = GameData.ability_flavor.get("unlock_levels", [1, 2, 4, 7, 10, 14, 20])
+	return int(levels[clampi(index, 0, levels.size() - 1)])
+
+
+## Карточка способности для интерфейса: характеристики и описание.
+static func describe(ability: Dictionary, level: int) -> Dictionary:
+	var s: Dictionary = EFFECTS.get(ability.kind, {})
+	var flavor: Dictionary = GameData.ability_flavor.get("abilities", {}).get(ability.id, {})
+	var lines: PackedStringArray = []
+	if s.has("damage"):
+		lines.append("Урон %d" % roundi(scaled(float(s.damage), level, false)))
+	if s.has("duration"):
+		lines.append("Длится %.0f с" % float(s.duration))
+	lines.append("Перезарядка %.0f с" % float(ability.cooldown_s))
+	if float(ability.range_m) > 0.0:
+		lines.append("Дальность %.1f м" % float(ability.range_m))
+	return {"stats": " · ".join(lines), "text": flavor.get("text", ""), "shout": flavor.get("shout", "")}
+
+
 func spec(ability: Dictionary) -> Dictionary:
 	var s: Dictionary = EFFECTS.get(ability.kind, {"effect": "strike", "damage": 20.0}).duplicate()
 	s.range = maxf(float(ability.range_m), 2.0)

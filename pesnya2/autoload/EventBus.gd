@@ -11,3 +11,4 @@ signal item_added(item_id: String, count: int)
 signal player_hp_changed(hp: float, max_hp: float)
 signal ability_cast(ability_id: String, cooldown: float)
 signal toast(text: String)
+signal inventory_changed

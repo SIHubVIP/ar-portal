@@ -87,6 +87,7 @@ func _show_classes() -> void:
 func _new_game(class_id: String) -> void:
 	GameState.reset(class_id)
 	QuestService.reset()
+	GameState.give_starter_kit()
 	WorldRouter.go_to_world()
 
 

@@ -23,6 +23,8 @@ var pockets: Dictionary = {}
 var backpack: Dictionary = {}
 var equipment: Dictionary = {}
 var storage: Dictionary = {}
+## Сколько раз герой отвечал каждым тоном (green, orange, cyan, purple): из этого складывается характер.
+var tones: Dictionary = {}
 ## Где герой был в мире (для возврата с базы и после загрузки)
 var world_scene := ""
 var world_position := Vector3.ZERO
@@ -45,6 +47,7 @@ func reset(new_class := "") -> void:
 	backpack.clear()
 	equipment.clear()
 	storage.clear()
+	tones.clear()
 	world_scene = ""
 	world_position = Vector3.ZERO
 	playtime = 0.0
@@ -81,7 +84,7 @@ func _add_xp(amount: int) -> void:
 	xp += amount
 	while level < GameData.max_level and xp >= total_xp_for(level + 1):
 		level += 1
-		max_hp = 100.0 + 12.0 * (level - 1)
+		recalc_max_hp()
 		hp = max_hp
 		EventBus.level_up.emit(level)
 		EventBus.player_hp_changed.emit(hp, max_hp)
@@ -93,6 +96,25 @@ static func total_xp_for(l: int) -> int:
 	for i in range(1, l):
 		total += xp_to_next(i)
 	return total
+
+
+const TONE_TITLES := {"green": "Законник", "orange": "Барыга", "cyan": "Умник", "purple": "Отморозок"}
+
+
+func add_tone(tone: String) -> void:
+	if TONE_TITLES.has(tone):
+		tones[tone] = int(tones.get(tone, 0)) + 1
+
+
+## Характер героя по тому, как он чаще разговаривает. Пока ответов мало — «Тёмная лошадка».
+func character_title() -> String:
+	var best := ""
+	var best_n := 1
+	for t in tones:
+		if int(tones[t]) > best_n:
+			best_n = int(tones[t])
+			best = t
+	return TONE_TITLES.get(best, "Тёмная лошадка")
 
 
 func set_flag(flag: String) -> void:
@@ -114,6 +136,7 @@ func add_item(item_id: String, count := 1) -> void:
 		bag = pockets
 	bag[item_id] = int(bag.get(item_id, 0)) + count
 	EventBus.item_added.emit(item_id, count)
+	EventBus.inventory_changed.emit()
 
 
 func item_count(item_id: String) -> int:
@@ -130,6 +153,7 @@ func remove_item(item_id: String, count := 1) -> bool:
 			if bag[item_id] == 0:
 				bag.erase(item_id)
 			count -= take
+	EventBus.inventory_changed.emit()
 	return true
 
 
@@ -142,7 +166,105 @@ func stash_backpack() -> int:
 		storage[item_id] = int(storage.get(item_id, 0)) + int(backpack[item_id])
 		moved += int(backpack[item_id])
 		backpack.erase(item_id)
+	EventBus.inventory_changed.emit()
 	return moved
+
+
+## Перенос между героем и сундуком базы. Квестовые предметы всегда при себе.
+func to_storage(item_id: String, count := 1) -> bool:
+	if GameData.item_by_id.get(item_id, {}).get("type", "") == "quest" or not remove_item(item_id, count):
+		return false
+	storage[item_id] = int(storage.get(item_id, 0)) + count
+	EventBus.inventory_changed.emit()
+	return true
+
+
+func from_storage(item_id: String, count := 1) -> bool:
+	if int(storage.get(item_id, 0)) < count:
+		return false
+	storage[item_id] = int(storage[item_id]) - count
+	if storage[item_id] == 0:
+		storage.erase(item_id)
+	add_item(item_id, count)
+	return true
+
+
+## Бонус характеристики от надетого: damage, armor, max_hp.
+func stat(name: String) -> float:
+	var total := 0.0
+	for slot in equipment:
+		total += float(GameData.item_by_id.get(equipment[slot], {}).get("stats", {}).get(name, 0.0))
+	return total
+
+
+func recalc_max_hp() -> void:
+	max_hp = 100.0 + 12.0 * (level - 1) + stat("max_hp")
+	hp = minf(hp, max_hp)
+	EventBus.player_hp_changed.emit(hp, max_hp)
+
+
+## Надеть вещь из сумок. Прежняя вещь из того же слота возвращается в ранец.
+func equip(item_id: String) -> bool:
+	var slot: String = GameData.item_by_id.get(item_id, {}).get("slot", "")
+	if slot == "" or not remove_item(item_id):
+		return false
+	if equipment.has(slot):
+		backpack[equipment[slot]] = int(backpack.get(equipment[slot], 0)) + 1
+	equipment[slot] = item_id
+	recalc_max_hp()
+	EventBus.inventory_changed.emit()
+	return true
+
+
+func unequip(slot: String) -> bool:
+	if not equipment.has(slot):
+		return false
+	var item_id: String = equipment[slot]
+	equipment.erase(slot)
+	backpack[item_id] = int(backpack.get(item_id, 0)) + 1
+	recalc_max_hp()
+	EventBus.inventory_changed.emit()
+	return true
+
+
+## Расходник: лечит и двигает кукуху. Возвращает текст для всплывашки или "".
+func use_item(item_id: String) -> String:
+	var use: Dictionary = GameData.item_by_id.get(item_id, {}).get("use", {})
+	if use.is_empty() or not remove_item(item_id):
+		return ""
+	heal(float(use.get("heal", 0)))
+	kukukha = clampi(kukukha + int(use.get("kukukha", 0)), 0, 100)
+	ledger.append({"key": "use:%s" % item_id, "reason": "Использован предмет", "delta": use, "t": playtime})
+	EventBus.resources_changed.emit(babki, reputation, kukukha)
+	return "%s: +%d здоровья" % [GameData.item_name(item_id), int(use.get("heal", 0))]
+
+
+## Стартовый набор нового героя: оружие класса, треники, кепка, пиво и шаурма. Надевается сразу.
+func give_starter_kit() -> void:
+	if not grant("start:kit", "Стартовый набор", {}):
+		return
+	for it in GameData.items:
+		var start: String = it.get("start", "")
+		if start == "all" or start == class_id:
+			add_item(it.id, int(it.get("start_count", 1)))
+			if it.has("slot"):
+				equip(it.id)
+	hp = max_hp
+	EventBus.player_hp_changed.emit(hp, max_hp)
+
+
+## Случайный трофей из таблицы data/items.json -> loot_tables. roll в [0, 1).
+static func roll_loot(table: String, roll: float) -> String:
+	var rows: Array = GameData.loot_tables.get(table, [])
+	var total := 0.0
+	for r in rows:
+		total += float(r[1])
+	var acc := 0.0
+	for r in rows:
+		acc += float(r[1]) / total
+		if roll < acc:
+			return r[0]
+	return "" if rows.is_empty() else rows[-1][0]
 
 
 func damage(amount: float) -> void:
@@ -158,7 +280,7 @@ func heal(amount: float) -> void:
 func to_dict() -> Dictionary:
 	return {"class_id": class_id, "level": level, "xp": xp, "babki": babki, "reputation": reputation,
 			"kukukha": kukukha, "hp": hp, "flags": flags.keys(), "granted": granted.keys(), "ledger": ledger,
-			"pockets": pockets, "backpack": backpack, "equipment": equipment, "storage": storage,
+			"pockets": pockets, "backpack": backpack, "equipment": equipment, "storage": storage, "tones": tones,
 			"world_scene": world_scene, "world_position": [world_position.x, world_position.y, world_position.z],
 			"playtime": playtime}
 
@@ -170,7 +292,8 @@ func from_dict(d: Dictionary) -> void:
 	babki = int(d.get("babki", 0))
 	reputation = int(d.get("reputation", 0))
 	kukukha = int(d.get("kukukha", 0))
-	max_hp = 100.0 + 12.0 * (level - 1)
+	equipment = d.get("equipment", {})
+	recalc_max_hp()
 	hp = clampf(float(d.get("hp", max_hp)), 1.0, max_hp)
 	flags.clear()
 	for f in d.get("flags", []):
@@ -181,8 +304,8 @@ func from_dict(d: Dictionary) -> void:
 	ledger = d.get("ledger", [])
 	pockets = _int_dict(d.get("pockets", {}))
 	backpack = _int_dict(d.get("backpack", {}))
-	equipment = d.get("equipment", {})
 	storage = _int_dict(d.get("storage", {}))
+	tones = _int_dict(d.get("tones", {}))
 	world_scene = d.get("world_scene", "")
 	var p: Array = d.get("world_position", [0, 0, 0])
 	world_position = Vector3(p[0], p[1], p[2])

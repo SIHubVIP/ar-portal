@@ -19,7 +19,13 @@ var scenes: Array = []
 var scene_by_id: Dictionary = {}
 var items: Array = []
 var item_by_id: Dictionary = {}
+var loot_tables: Dictionary = {}
 var max_level := 55
+## Редакторские описания способностей и уровни открытия
+var ability_flavor: Dictionary = {}
+## Диалоги: id -> граф узлов (data/dialogues.json)
+var dialogues: Dictionary = {}
+var dialogues_speakers: Dictionary = {}
 
 
 func _ready() -> void:
@@ -35,7 +41,13 @@ func load_all() -> void:
 	abilities = abl.get("abilities", [])
 	max_level = int(abl.get("max_level", 55))
 	scenes = _read("res://data/scenes.json").get("scenes", [])
-	items = _read("res://data/items.json").get("items", [])
+	var it := _read("res://data/items.json")
+	items = it.get("items", [])
+	loot_tables = it.get("loot_tables", {})
+	ability_flavor = _read("res://data/ability_flavor.json")
+	var dlg := _read("res://data/dialogues.json")
+	dialogues = dlg.get("dialogues", {})
+	dialogues_speakers = dlg.get("speakers", {})
 	quest_by_id = _index(quests)
 	npc_by_id = _index(npcs)
 	boss_by_id = _index(bosses)
