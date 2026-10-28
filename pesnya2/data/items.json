@@ -230,6 +230,28 @@
     "ITEM_P2_PIPE",
     6
    ]
+  ],
+  "trash": [
+   [
+    "ITEM_P2_BEER",
+    40
+   ],
+   [
+    "ITEM_P2_SHAWARMA",
+    25
+   ],
+   [
+    "ITEM_P2_VALERIAN",
+    15
+   ],
+   [
+    "ITEM_P1_SCRAP",
+    15
+   ],
+   [
+    "ITEM_P2_FOIL_HAT",
+    5
+   ]
   ]
  }
 }

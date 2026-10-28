@@ -27,6 +27,9 @@ var _kiosk_owner: Node3D
 var _lit_windows: Array = []
 var _dark_windows: Array = []
 var _save_pending := false
+var _marker: Node3D
+var _npc_marks: Array = []
+var _objective_tick := 0.0
 var _autotest := false
 
 
@@ -41,9 +44,19 @@ func _ready() -> void:
 	_build_exit_to_delovoy()
 	_build_locals()
 	_build_windows()
+	PogulyayDressing.build(self)
 
+	if OS.get_cmdline_user_args().has("--gender=f"):
+		GameState.gender = "f"
 	player = Player.new()
 	add_child(player)
+	# герой всегда чуть подсвечен тёплым светом, как в Torchlight
+	var hero_light := OmniLight3D.new()
+	hero_light.position = Vector3(0, 2.6, 0)
+	hero_light.light_color = Color(1, 0.85, 0.65)
+	hero_light.light_energy = 1.1
+	hero_light.omni_range = 6.5
+	player.add_child(hero_light)
 	player.died.connect(_on_player_died)
 	camera = IsoCamera.new()
 	camera.target = player
@@ -52,6 +65,8 @@ func _ready() -> void:
 	hud = Hud.new()
 	add_child(hud)
 	hud.set_player(player)
+	hud.pointer.camera = camera
+	_build_marker()
 	hud.controls.attack.connect(player.basic_attack)
 	hud.controls.dodge.connect(player.dodge)
 	hud.controls.ability.connect(player.use_ability)
@@ -59,6 +74,7 @@ func _ready() -> void:
 	hud.pause_action.connect(_on_pause_action)
 	hud.controls.camera_rotate.connect(camera.rotate_by)
 	hud.controls.camera_zoom.connect(camera.zoom_by)
+	hud.controls.camera_tilt.connect(camera.tilt_by)
 
 	EventBus.quest_stage_changed.connect(func(_q, _s): _queue_save())
 	EventBus.quest_state_changed.connect(func(_q, _s): _queue_save())
@@ -76,6 +92,8 @@ func _ready() -> void:
 			var dy := arg.trim_prefix("--cam=").split(",")
 			camera.distance = float(dy[0])
 			camera.rotate_by(deg_to_rad(float(dy[1])))
+			if dy.size() > 2:
+				camera.tilt_by(deg_to_rad(float(dy[2])) - camera._pitch_target)
 		if arg.begins_with("--open="):
 			_dev_open.call_deferred(arg.trim_prefix("--open="))
 		if arg.begins_with("--spawn="):
@@ -83,7 +101,7 @@ func _ready() -> void:
 			player.position = Vector3(float(xz[0]), 0, float(xz[1]))
 
 
-## Отладка и скриншоты: --open=bags|hero|abilities|dlg:GLORP
+## Отладка и скриншоты: --open=bags|hero|abilities|quests|dlg:GLORP, --gender=f
 func _dev_open(what: String) -> void:
 	if GameState.class_id == "":
 		GameState.class_id = "CLASS_1"
@@ -92,6 +110,11 @@ func _dev_open(what: String) -> void:
 	await get_tree().process_frame
 	if what.begins_with("dlg:"):
 		hud.run_dialogue(what.trim_prefix("dlg:"))
+	elif what == "quests":
+		hud.open_quests()
+	elif what.begins_with("item:"):
+		hud.open_inventory("gear")
+		hud.inventory.select(what.trim_prefix("item:"))
 	else:
 		hud.open_inventory(what)
 
@@ -107,32 +130,40 @@ func _build_environment() -> void:
 	var env := Environment.new()
 	var sky := Sky.new()
 	var sm := ProceduralSkyMaterial.new()
-	# пять утра: розово-серый рассвет
-	sm.sky_top_color = Color(0.32, 0.36, 0.55)
-	sm.sky_horizon_color = Color(0.95, 0.66, 0.55)
-	sm.ground_horizon_color = Color(0.5, 0.42, 0.45)
-	sm.ground_bottom_color = Color(0.15, 0.14, 0.18)
+	# ночь после вторжения: тёмное небо, над городом зарево неона и тарелки
+	sm.sky_top_color = Color(0.03, 0.04, 0.1)
+	sm.sky_horizon_color = Color(0.32, 0.14, 0.3)
+	sm.ground_horizon_color = Color(0.2, 0.1, 0.18)
+	sm.ground_bottom_color = Color(0.03, 0.03, 0.05)
+	sm.sky_energy_multiplier = 0.8
 	sky.sky_material = sm
 	env.background_mode = Environment.BG_SKY
 	env.sky = sky
-	env.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
-	env.ambient_light_energy = 0.9
+	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
+	env.ambient_light_color = Color(0.36, 0.34, 0.46)
+	env.ambient_light_energy = 0.55
 	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
+	env.tonemap_exposure = 1.1
 	env.glow_enabled = true
-	env.glow_intensity = 0.6
+	env.glow_intensity = 0.9
+	env.glow_bloom = 0.03
+	env.glow_hdr_threshold = 0.9
 	env.fog_enabled = true
-	env.fog_light_color = Color(0.75, 0.62, 0.62)
-	env.fog_density = 0.0025
+	env.fog_light_color = Color(0.16, 0.12, 0.26)
+	env.fog_density = 0.006
+	env.adjustment_enabled = true
+	env.adjustment_saturation = 1.12
+	env.adjustment_contrast = 1.08
 	var we := WorldEnvironment.new()
 	we.environment = env
 	add_child(we)
-	var sun := DirectionalLight3D.new()
-	sun.rotation_degrees = Vector3(-38, 70, 0)
-	sun.light_color = Color(1.0, 0.82, 0.7)
-	sun.light_energy = 1.1
-	sun.shadow_enabled = true
-	sun.directional_shadow_max_distance = 70.0
-	add_child(sun)
+	var moon := DirectionalLight3D.new()
+	moon.rotation_degrees = Vector3(-52, 35, 0)
+	moon.light_color = Color(0.55, 0.62, 1.0)
+	moon.light_energy = 0.45
+	moon.shadow_enabled = true
+	moon.directional_shadow_max_distance = 60.0
+	add_child(moon)
 
 
 func _build_city() -> void:
@@ -165,7 +196,6 @@ func _build_city() -> void:
 		else:
 			Kit.solid_box(self, size, b[0] + Vector3(0, size.y / 2, 0), b[2], 0.0, true)
 			_queue_windows(b[0], size)
-	_build_street_props()
 	# вывески и парадоксальная реклама (редакторские надписи вертикального среза)
 	_sign("ПОГУЛЯЙ", Vector3(0, 24, -66.9), 260, Color(1, 0.3, 0.6), 0.0)
 	_sign("ЛОМБАРД «ВЕЧНОСТЬ»", Vector3(-12.9, 5, 6), 90, Color(0.3, 1, 0.8), 90.0)
@@ -185,23 +215,6 @@ func _build_city() -> void:
 		var a := TAU * i / 16.0
 		Kit.sphere(ufo, 1.0, Vector3(cos(a) * 30, -1, sin(a) * 30), Color(0.4, 1, 0.6), 4.0)
 	ufo.create_tween().set_loops().tween_property(ufo, "rotation:y", TAU, 60.0).from(0.0)
-
-
-## Фонари вдоль тротуаров, мусорки у подъездов, лавки и билборд с местной рекламой.
-func _build_street_props() -> void:
-	for z in range(0, -62, -12):
-		Props.place(self, "streetlamp", Vector3(-8.6, 0, z), 90.0)
-		Props.place(self, "streetlamp", Vector3(8.6, 0, z - 6), -90.0)
-	for p in [Vector3(-11.5, 0, -4), Vector3(11.5, 0, -10), Vector3(-11.5, 0, -28), Vector3(11.5, 0, -34)]:
-		Props.collider(self, Vector3(1.7, 1.2, 1.1), p + Vector3(0, 0.6, 0))
-		Props.place(self, "dumpster", p, 90.0 if p.x < 0 else -90.0)
-	for p in [Vector3(-11.8, 0, -9), Vector3(11.8, 0, -16)]:
-		Props.place(self, "bench", p, 90.0 if p.x < 0 else -90.0)
-	if Props.place(self, "billboard", Vector3(10.5, 0, -52), -90.0):
-		var t := Kit.label(self, "МИКРОЗАЙМ «ВТОРОЙ ШАНС»\nзалог — почка, можно чужая", Vector3(10.1, 6.2, -52), 70,
-				Color(1, 1, 1), false)
-		t.rotation_degrees.y = -90.0
-		t.outline_size = 0
 
 
 func _sign(text: String, pos: Vector3, size: int, color: Color, yaw_deg: float) -> void:
@@ -309,6 +322,8 @@ func _add_pickup(item_id: String, pos: Vector3) -> void:
 	Kit.label(n, GameData.item_name(item_id), Vector3(0, 0.8, 0), 32, Color(1, 0.9, 0.5))
 	n.create_tween().set_loops().tween_property(n, "position:y", pos.y + 0.3, 0.6).from(pos.y) \
 			.set_trans(Tween.TRANS_SINE)
+	var beam := Kit.cylinder(n, 0.12, 3.0, Vector3(0, 1.5 - pos.y, 0), Color(1, 0.85, 0.3, 0.35), 2.0, 0.02)
+	beam.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	_pickups[item_id] = n
 	_zones.append({"pos": pos, "radius": 1.6, "cb": func(): _collect(item_id),
 			"when": func(): return QuestService.is_on_stage(QID, "MAIN_001_S01") and GameState.item_count(item_id) == 0})
@@ -343,6 +358,7 @@ func _build_queue() -> void:
 		tw.tween_property(p, "rotation_degrees:z", 3.0, 1.2 + i * 0.1)
 		tw.tween_property(p, "rotation_degrees:z", -3.0, 1.2 + i * 0.1)
 	var passer := _person(Vector3(-2, 0, 10), Color(0.6, 0.5, 0.35), "Прохожий")
+	_npc_mark(passer, "PASSER")
 	_interactables.append({"pos": passer.position, "radius": 2.5, "label": "Говорить", "cb": func():
 		hud.run_dialogue("PASSER"), "enabled": func(): return true})
 
@@ -357,10 +373,25 @@ func _build_checkpoint() -> void:
 	Kit.cylinder(term, 0.2, 2.6, Vector3(0, 1.3, 0), Color(0.3, 0.3, 0.35))
 	Kit.box(term, Vector3(1.4, 1.0, 0.1), Vector3(0, 2.6, 0.15), Color(0.1, 0.9, 0.5), 1.5)
 	Kit.label(term, "ВЫРАЖЕНИЕ ЛИЦА:\nНЕДОСТАТОЧНО", Vector3(0, 2.6, 0.25), 22, Color(0.05, 0.2, 0.1), false)
-	# луч биометрии с тарелки
-	var beam := Kit.cylinder(self, 2.5, 60, CHECKPOINT_POS + Vector3(-4.5, 30, 0), Color(0.4, 1, 0.6, 0.12), 1.0)
-	beam.material_override = Kit.mat(Color(0.4, 1, 0.6, 0.12), 1.0)
-	beam.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	# пункт приёма благодарности: арка поперёк улицы, сканер ходит вверх-вниз
+	for side in [-1, 1]:
+		Props.collider(self, Vector3(0.6, 5, 0.6), CHECKPOINT_POS + Vector3(side * 6.5, 2.5, 0))
+		Kit.box(self, Vector3(0.6, 5, 0.6), CHECKPOINT_POS + Vector3(side * 6.5, 2.5, 0), Color(0.3, 0.32, 0.38))
+		Kit.box(self, Vector3(0.1, 4.2, 0.1), CHECKPOINT_POS + Vector3(side * 6.15, 2.4, 0), Color(0.3, 1, 0.6), 2.5)
+	Kit.box(self, Vector3(13.6, 0.8, 0.6), CHECKPOINT_POS + Vector3(0, 5.2, 0), Color(0.25, 0.27, 0.32))
+	var gate_sign := Kit.label(self, "ПУНКТ ПРИЁМА БЛАГОДАРНОСТИ", CHECKPOINT_POS + Vector3(0, 5.2, 0.32), 64,
+			Color(0.4, 1, 0.7), false)
+	gate_sign.outline_size = 0
+	var scan := Kit.box(self, Vector3(12.4, 0.05, 0.05), CHECKPOINT_POS + Vector3(0, 0.3, 0), Color(0.4, 1, 0.6), 4.0)
+	var scan_tw := scan.create_tween().set_loops()
+	scan_tw.tween_property(scan, "position:y", 4.4, 1.4).set_trans(Tween.TRANS_SINE)
+	scan_tw.tween_property(scan, "position:y", 0.3, 1.4).set_trans(Tween.TRANS_SINE)
+	var gate_light := OmniLight3D.new()
+	gate_light.position = CHECKPOINT_POS + Vector3(0, 4, 0)
+	gate_light.light_color = Color(0.4, 1, 0.65)
+	gate_light.omni_range = 9.0
+	gate_light.light_energy = 2.0
+	add_child(gate_light)
 	_zones.append({"pos": CHECKPOINT_POS, "radius": 9.0, "once": true, "cb": _talk_terminal,
 			"when": func(): return QuestService.is_on_stage(QID, "MAIN_001_S02")})
 	_interactables.append({"pos": term.position, "radius": 3.5, "label": "Терминал", "cb": _talk_terminal,
@@ -400,12 +431,11 @@ func _spawn_drones() -> void:
 
 func _on_drone_defeated(d: EnemyDrone) -> void:
 	_drones.erase(d)
-	var loot := {"babki": d.loot_babki, "xp": 20}
+	var key := "loot:drone:%d:%d" % [Time.get_ticks_usec(), randi()]
+	GameState.grant(key, "Сборщик благодарности", {"xp": 20})
+	LootDrop.drop(self, d.global_position + Vector3(0, 1, 0), key + ":babki", "", d.loot_babki)
 	if randf() < 0.45:
-		var drop := GameState.roll_loot("drone", randf())
-		loot.items = {drop: 1}
-		EventBus.toast.emit("Трофей: %s" % GameData.item_name(drop))
-	GameState.grant("loot:drone:%d:%d" % [Time.get_ticks_usec(), randi()], "Сборщик благодарности", loot)
+		LootDrop.drop(self, d.global_position + Vector3(0, 1, 0), key + ":item", GameState.roll_loot("drone", randf()))
 	if _drones.is_empty():
 		_drone_respawn = 25.0
 		if QuestService.is_on_stage(QID, "MAIN_001_S02"):
@@ -491,6 +521,7 @@ func _build_locals() -> void:
 		Kit.sphere(glorp, 0.06, Vector3(side * 0.12, 2.12, 0), Color(0.9, 1, 0.4), 3.0)
 	Kit.box(glorp, Vector3(0.08, 0.35, 0.02), Vector3(0, 1.0, 0.28), Color(0.8, 0.1, 0.15))
 	Kit.label(glorp, "Гл'орп", Vector3(0, 2.5, 0), 36, Color(0.7, 1, 0.6))
+	_npc_mark(glorp, "GLORP")
 	var shake := glorp.create_tween().set_loops()
 	shake.tween_property(glorp, "rotation_degrees:z", 4.0, 0.15)
 	shake.tween_property(glorp, "rotation_degrees:z", -4.0, 0.15)
@@ -502,6 +533,7 @@ func _build_locals() -> void:
 	Kit.box(self, Vector3(0.08, 1.0, 3), balcony + Vector3(0.7, 0.55, 0), Color(0.4, 0.3, 0.3))
 	var zina := _person(balcony + Vector3(0, 0.08, 0), Color(0.7, 0.2, 0.3), "Тётя Зина")
 	zina.rotation_degrees.y = 90
+	_npc_mark(zina, "ZINA")
 	for i in 5:
 		Kit.sphere(zina, 0.06, Vector3(-0.2 + i * 0.1, 2.0, 0), Color(0.95, 0.4, 0.6))
 	_interactables.append({"pos": Vector3(-9.5, 0, 1.5), "radius": 3.0, "label": "Зина", "cb": func():
@@ -530,7 +562,7 @@ func _scene_line(i: int) -> Dictionary:
 func _intro() -> void:
 	QuestService.accept(QID)
 	hud.run_dialogue("MAIN_001_INTRO", Callable(), func():
-		hud.show_toast("Найди телефон, второй ботинок и уведомление о долге"))
+		hud.show_banner("Проснись, тебя уже посчитали", "Найди телефон, второй ботинок и уведомление о долге.\nИди за золотой стрелкой."))
 
 
 func _restore_progress() -> void:
@@ -553,12 +585,100 @@ func _restore_progress() -> void:
 	_spawn_drones()
 
 
+# ---------- куда идти ----------
+
+func _build_marker() -> void:
+	_marker = Node3D.new()
+	add_child(_marker)
+	var gem := Kit.box(_marker, Vector3(0.45, 0.45, 0.45), Vector3(0, 3.2, 0), Color(1, 0.8, 0.25), 3.0)
+	gem.rotation_degrees = Vector3(45, 0, 45)
+	gem.create_tween().set_loops().tween_property(gem, "rotation:y", TAU, 2.0).from(0.0)
+	var bob := _marker.create_tween().set_loops()
+	bob.tween_property(gem, "position:y", 3.5, 0.6).set_trans(Tween.TRANS_SINE)
+	bob.tween_property(gem, "position:y", 3.2, 0.6).set_trans(Tween.TRANS_SINE)
+	# кольцо на земле — тонкий обод, а не блин: цель видно, асфальт под ней тоже
+	var ring := MeshInstance3D.new()
+	var torus := TorusMesh.new()
+	torus.inner_radius = 1.15
+	torus.outer_radius = 1.3
+	ring.mesh = torus
+	ring.position.y = 0.05
+	ring.scale.y = 0.15
+	var rm := StandardMaterial3D.new()
+	rm.albedo_color = Color(1, 0.8, 0.25)
+	rm.emission_enabled = true
+	rm.emission = Color(1, 0.75, 0.2)
+	rm.emission_energy_multiplier = 1.5
+	rm.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	ring.material_override = rm
+	ring.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_marker.add_child(ring)
+	var pulse := ring.create_tween().set_loops()
+	pulse.tween_property(ring, "scale", Vector3(1.25, 0.15, 1.25), 0.7)
+	pulse.tween_property(ring, "scale", Vector3(0.85, 0.15, 0.85), 0.7)
+	var l := OmniLight3D.new()
+	l.position = Vector3(0, 2.5, 0)
+	l.light_color = Color(1, 0.8, 0.3)
+	l.omni_range = 5.0
+	l.light_energy = 1.5
+	_marker.add_child(l)
+
+
+func _npc_mark(npc: Node3D, dialogue_id: String) -> void:
+	var m := Kit.label(npc, "!", Vector3(0, 3.0, 0), 110, Color(1, 0.82, 0.2))
+	m.outline_size = 14
+	var tw := m.create_tween().set_loops()
+	tw.tween_property(m, "position:y", 3.25, 0.5).set_trans(Tween.TRANS_SINE)
+	tw.tween_property(m, "position:y", 3.0, 0.5).set_trans(Tween.TRANS_SINE)
+	_npc_marks.append([m, dialogue_id])
+
+
+## Текущая цель отслеживаемого задания: [позиция, подпись, прогресс]. INF — цели нет.
+func objective() -> Array:
+	var state := QuestService.state_of(QID)
+	if state == QuestService.COMPLETED:
+		return [Vector3(10, 0, -60), "В Деловой", ""]
+	if state != QuestService.ACTIVE and state != QuestService.TURN_IN_READY:
+		return [Vector3.INF, "", ""]
+	if QuestService.is_on_stage(QID, "MAIN_001_S01"):
+		var found := ["ITEM_P1_PHONE", "ITEM_P1_SHOE", "ITEM_P1_DEBT_NOTICE"].filter(func(i): return GameState.item_count(i) > 0).size()
+		var best := Vector3.INF
+		var best_id := ""
+		for id in _pickups:
+			var p: Vector3 = _pickups[id].position * Vector3(1, 0, 1)
+			if best == Vector3.INF or p.distance_to(player.global_position) < best.distance_to(player.global_position):
+				best = p
+				best_id = id
+		return [best, GameData.item_name(best_id), "Найдено %d из 3" % found]
+	if QuestService.is_on_stage(QID, "MAIN_001_S02"):
+		if not GameState.has_flag("talked:TERMINAL"):
+			return [CHECKPOINT_POS + Vector3(-4.5, 0, 0), "Пункт приёма", "Пройди пункт приёма благодарности"]
+		return [EXIT_POS, "Переулок", "Беги в переулок или разбери дронов"]
+	if QuestService.is_on_stage(QID, "MAIN_001_S03"):
+		return [KIOSK_POS + Vector3(0, 0, 2), "Киоск", ""]
+	return [KIOSK_POS + Vector3(0, 0, 2), "Киоскёр", "Поговори с киоскёром и реши"]
+
+
+func _update_objective() -> void:
+	var o := objective()
+	hud.set_objective(o[0], o[1], o[2])
+	_marker.visible = o[0] != Vector3.INF
+	if _marker.visible:
+		_marker.global_position = o[0]
+	for pair in _npc_marks:
+		pair[0].visible = not GameState.has_flag("talked:%s" % pair[1])
+
+
 # ---------- кадр ----------
 
 func _physics_process(delta: float) -> void:
 	if hud == null or get_tree().paused:
 		return
 	GameState.playtime += delta
+	_objective_tick -= delta
+	if _objective_tick <= 0.0:
+		_objective_tick = 0.2
+		_update_objective()
 	var pp := player.global_position
 	for z in _zones:
 		if z.get("done", false) or not z.when.call():

@@ -114,8 +114,8 @@ static func perform(p: Player, a: Dictionary, s: Dictionary) -> void:
 
 
 ## Всплывающая надпись над головой.
-static func pop(world: Node, pos: Vector3, text: String, color: Color) -> void:
-	var l := Kit.label(world, text, pos, 56, color)
+static func pop(world: Node, pos: Vector3, text: String, color: Color, size := 56) -> void:
+	var l := Kit.label(world, text, pos, size, color)
 	l.no_depth_test = true
 	var tw := l.create_tween()
 	tw.tween_property(l, "position:y", pos.y + 1.2, 1.1)
@@ -220,3 +220,28 @@ static func _router(p: Player, s: Dictionary) -> void:
 						Color(0.3, 1, 0.4), 0.1)
 				e.take_hit(p.attack_damage(float(s.damage)), r.global_position))
 	tw.tween_callback(r.queue_free)
+
+
+## Цифра урона: вылетает в сторону и падает, крупнее при сильном ударе.
+static func damage_number(world: Node, pos: Vector3, amount: float, crit := false) -> void:
+	var l := Kit.label(world, str(roundi(amount)), pos + Vector3(randf_range(-0.3, 0.3), 0, 0), 64 if crit else 44,
+			Color(1, 0.85, 0.2) if crit else Color(1, 1, 1))
+	l.no_depth_test = true
+	l.outline_size = 10
+	var side := randf_range(-0.8, 0.8)
+	var tw := l.create_tween()
+	tw.tween_property(l, "position", pos + Vector3(side, 1.4, 0), 0.35).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
+	tw.tween_property(l, "position", pos + Vector3(side * 1.4, 0.6, 0), 0.4).set_ease(Tween.EASE_IN)
+	tw.parallel().tween_property(l, "modulate:a", 0.0, 0.4)
+	tw.tween_callback(l.queue_free)
+
+
+## Искры при попадании.
+static func sparks(world: Node, pos: Vector3, color := Color(1, 0.8, 0.3), count := 8) -> void:
+	for i in count:
+		var s := Kit.box(world, Vector3(0.06, 0.06, 0.06), pos, color, 4.0)
+		var dir := Vector3(randf_range(-1, 1), randf_range(0.2, 1.2), randf_range(-1, 1)).normalized()
+		var tw := s.create_tween()
+		tw.tween_property(s, "position", pos + dir * randf_range(0.6, 1.4), 0.25).set_ease(Tween.EASE_OUT)
+		tw.parallel().tween_property(s, "scale", Vector3.ZERO, 0.3)
+		tw.tween_callback(s.queue_free)

@@ -1,7 +1,7 @@
 class_name InventoryPanel
 extends PanelContainer
-## Инвентарь героя: вкладки «Герой» (характеристики и надетое), «Сумки» (карточки предметов),
-## «Способности» (что открыто, когда откроется остальное) и «Сундук» на базе.
+## Инвентарь героя: вкладки «Снаряжение» (кукла героя со слотами, карманы и ранец сеткой
+## с иконками, карточка выбранной вещи), «Характер», «Способности» и «Сундук» на базе.
 ## Все изменения идут через GameState, панель только перерисовывается по inventory_changed.
 
 signal closed
@@ -9,14 +9,20 @@ signal closed
 const RARITY := {"common": Color(0.8, 0.8, 0.78), "uncommon": Color(0.4, 0.9, 0.45), "rare": Color(0.35, 0.65, 1),
 		"epic": Color(0.8, 0.45, 1)}
 const SLOTS := {"weapon": "Оружие", "head": "Голова", "body": "Тело"}
+## Где слот стоит вокруг куклы (левый верхний угол клетки в рамке куклы 380x400).
+const SLOT_POS := {"head": Vector2(10, 30), "body": Vector2(10, 160), "weapon": Vector2(290, 160)}
+const CELL := 80.0
+const ICONS := "res://assets/icons/%s.png"
 const TYPES := {"quest": "квестовый", "key": "ключ", "material": "материал", "weapon": "оружие", "armor": "одежда",
 		"consumable": "расходник"}
 
 var player: Player
 var _tabs: HBoxContainer
 var _body: Control
-var _tab := "hero"
+var _tab := "gear"
 var _storage_mode := false
+## Выбранная вещь: {"id", "from": pockets|backpack|equip|storage, "slot"}.
+var _sel: Dictionary = {}
 var _toast: Callable
 
 
@@ -52,10 +58,24 @@ func set_toast(cb: Callable) -> void:
 	_toast = cb
 
 
-func open(tab := "hero") -> void:
+## tab: gear|self|abilities. Старые имена hero и bags ведут в «Снаряжение».
+func open(tab := "gear") -> void:
 	_storage_mode = false
-	_tab = tab
+	_tab = "gear" if tab in ["hero", "bags"] else tab
+	_sel = {}
 	visible = true
+	_render()
+
+
+## Выбрать вещь из сумок (или надетую) и показать её карточку.
+func select(item_id: String) -> void:
+	for slot in GameState.equipment:
+		if GameState.equipment[slot] == item_id:
+			_sel = {"id": item_id, "from": "equip", "slot": slot}
+	if GameState.pockets.has(item_id):
+		_sel = {"id": item_id, "from": "pockets"}
+	elif GameState.backpack.has(item_id):
+		_sel = {"id": item_id, "from": "backpack"}
 	_render()
 
 
@@ -63,6 +83,7 @@ func open(tab := "hero") -> void:
 func open_storage() -> void:
 	_storage_mode = true
 	_tab = "storage"
+	_sel = {}
 	visible = true
 	_render()
 
@@ -76,22 +97,23 @@ func close_panel() -> void:
 func _render() -> void:
 	for c in _tabs.get_children():
 		c.queue_free()
-	var tabs := [["hero", "Герой"], ["bags", "Сумки"], ["abilities", "Способности"]]
+	var tabs := [["gear", "Снаряжение"], ["self", "Характер"], ["abilities", "Способности"]]
 	if _storage_mode:
 		tabs.push_front(["storage", "Сундук"])
 	for t in tabs:
 		var b := _btn(_tabs, "  %s  " % t[1], func():
 			_tab = t[0]
+			_sel = {}
 			_render(), 24)
 		b.toggle_mode = true
 		b.button_pressed = _tab == t[0]
 	for c in _body.get_children():
 		c.queue_free()
 	match _tab:
-		"hero":
+		"gear":
+			_render_gear()
+		"self":
 			_render_hero()
-		"bags":
-			_render_bags()
 		"abilities":
 			_render_abilities()
 		"storage":
@@ -142,52 +164,198 @@ func _render_hero() -> void:
 		bar.add_theme_stylebox_override("background", back)
 		bar.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		row.add_child(bar)
-	var right := VBoxContainer.new()
-	right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	right.add_theme_constant_override("separation", 10)
-	h.add_child(right)
-	_lbl(right, "Надето", 24, Color(1, 0.85, 0.55))
+
+
+# ---------- Снаряжение ----------
+
+func _render_gear() -> void:
+	var h := HBoxContainer.new()
+	h.add_theme_constant_override("separation", 18)
+	h.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_body.add_child(h)
+	var left := VBoxContainer.new()
+	left.add_theme_constant_override("separation", 8)
+	h.add_child(left)
+	var frame := _panel(left, Color(0.1, 0.08, 0.11))
+	var stage := Control.new()
+	stage.custom_minimum_size = Vector2(380, 400)
+	frame.add_child(stage)
+	var doll := HeroDoll.new()
+	doll.position = Vector2(90, 0)
+	doll.size = Vector2(200, 400)
+	stage.add_child(doll)
 	for slot in SLOTS:
 		var id: String = GameState.equipment.get(slot, "")
-		var card := _card(right, id, SLOTS[slot])
+		var cell := _cell(stage, id, 0, {"id": id, "from": "equip", "slot": slot}, SLOTS[slot])
+		cell.position = SLOT_POS[slot]
+		_lbl(stage, SLOTS[slot], 15, Color(0.75, 0.68, 0.55)).position = SLOT_POS[slot] + Vector2(0, CELL + 2)
+	var dmg := Player.ATTACK_DAMAGE + GameState.stat("damage")
+	var cls: Dictionary = GameData.class_by_id.get(GameState.class_id, {})
+	var who := _lbl(stage, "%s\nУр. %d" % [cls.get("name", "Герой"), GameState.level], 20, Color(1, 0.85, 0.55))
+	who.position = Vector2(270, 24)
+	who.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	who.size.x = 100
+	var st := _lbl(left, "❤ %d/%d    урон %d    броня %d    бабки %d" % [GameState.hp, GameState.max_hp,
+			roundi(AbilityBook.scaled(dmg, GameState.level, false)), roundi(GameState.stat("armor")), GameState.babki], 20)
+	st.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	var right := VBoxContainer.new()
+	right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	right.add_theme_constant_override("separation", 6)
+	h.add_child(right)
+	_lbl(right, "Карманы  %d/%d  ·  квестовое всегда при себе" % [GameState.pockets.size(), GameState.POCKET_SLOTS], 17,
+			Color(0.85, 0.72, 0.5))
+	_bag_grid(right, GameState.pockets, GameState.POCKET_SLOTS, "pockets", 8)
+	_lbl(right, "Ранец  %d/%d" % [GameState.backpack.size(), GameState.BACKPACK_SLOTS], 17, Color(0.85, 0.72, 0.5))
+	_bag_grid(right, GameState.backpack, GameState.BACKPACK_SLOTS, "backpack", 8)
+	_detail(right)
+
+
+func _bag_grid(parent: Node, bag: Dictionary, slots: int, from: String, columns: int) -> GridContainer:
+	var grid := GridContainer.new()
+	grid.columns = columns
+	grid.add_theme_constant_override("h_separation", 6)
+	grid.add_theme_constant_override("v_separation", 6)
+	parent.add_child(grid)
+	_fill(grid, bag, slots, from)
+	return grid
+
+
+func _fill(grid: GridContainer, bag: Dictionary, slots: int, from: String) -> void:
+	var ids := bag.keys()
+	for i in maxi(slots, ids.size()):
+		var id: String = ids[i] if i < ids.size() else ""
+		_cell(grid, id, int(bag.get(id, 0)), {"id": id, "from": from}, "карман" if from == "pockets" else "")
+
+
+## Клетка с иконкой: рамка цвета редкости, количество в углу, выбранная — золотая.
+func _cell(parent: Node, id: String, count: int, sel: Dictionary, hint := "") -> Button:
+	var it: Dictionary = GameData.item_by_id.get(id, {})
+	var b := Button.new()
+	b.focus_mode = Control.FOCUS_NONE
+	b.custom_minimum_size = Vector2(CELL, CELL)
+	b.size = Vector2(CELL, CELL)
+	var picked: bool = id != "" and _sel.get("id", "") == id and _sel.get("from", "") == sel.from
+	var edge: Color = RARITY.get(it.get("rarity", "common"), Color.WHITE) if id != "" else Color(0.3, 0.27, 0.24)
+	for st in ["normal", "hover", "pressed"]:
+		var sb := StyleBoxFlat.new()
+		sb.bg_color = Color(0.15, 0.13, 0.12) if id != "" else Color(0.09, 0.085, 0.08)
+		if st != "normal" and id != "":
+			sb.bg_color = sb.bg_color.lightened(0.08)
+		sb.border_color = Color(1, 0.8, 0.25) if picked else edge.darkened(0.25)
+		sb.set_border_width_all(3 if picked else 2)
+		sb.set_corner_radius_all(8)
 		if id != "":
-			_btn(card, "Снять", func(): GameState.unequip(slot), 20)
+			sb.shadow_color = Color(edge, 0.25)
+			sb.shadow_size = 4
+		b.add_theme_stylebox_override(st, sb)
+	parent.add_child(b)
+	if id == "":
+		if hint != "":
+			var l := _lbl(b, hint, 13, Color(0.4, 0.37, 0.33))
+			l.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+			l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			l.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		return b
+	var path := ICONS % id
+	if ResourceLoader.exists(path):
+		var icon := TextureRect.new()
+		icon.texture = load(path)
+		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		icon.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		icon.offset_left = 5
+		icon.offset_top = 5
+		icon.offset_right = -5
+		icon.offset_bottom = -5
+		icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		b.add_child(icon)
+	else:
+		var l := _lbl(b, String(it.get("name", id)).left(2), 26, edge)
+		l.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		l.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	if count > 1:
+		var c := _lbl(b, "%d" % count, 18, Color(1, 0.95, 0.8))
+		c.add_theme_constant_override("outline_size", 5)
+		c.add_theme_color_override("font_outline_color", Color.BLACK)
+		c.position = Vector2(CELL - 26, CELL - 28)
+	for n in b.get_children():
+		if n is Control:
+			n.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	b.pressed.connect(func():
+		_sel = {} if picked else sel
+		_render())
+	return b
 
 
-# ---------- Сумки ----------
-
-func _render_bags() -> void:
+## Карточка выбранной вещи с действиями. Без выбора — подсказка.
+func _detail(parent: Node) -> void:
+	var p := _panel(parent, Color(0.12, 0.1, 0.09))
+	p.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	var id: String = _sel.get("id", "")
+	if id == "":
+		var hint := _lbl(p, "Нажми на вещь, чтобы рассмотреть. Свет тут хороший — в отличие от жизни.", 18,
+				Color(0.6, 0.57, 0.52))
+		hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		return
+	var it: Dictionary = GameData.item_by_id.get(id, {})
+	var h := HBoxContainer.new()
+	h.add_theme_constant_override("separation", 14)
+	p.add_child(h)
 	var v := VBoxContainer.new()
 	v.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_body.add_child(v)
-	_lbl(v, "Карманы %d/%d   ·   Ранец %d/%d" % [GameState.pockets.size(), GameState.POCKET_SLOTS,
-			GameState.backpack.size(), GameState.BACKPACK_SLOTS], 20, Color(0.75, 0.72, 0.65))
-	var grid := GridContainer.new()
-	grid.columns = 3
-	grid.add_theme_constant_override("h_separation", 10)
-	grid.add_theme_constant_override("v_separation", 10)
-	v.add_child(grid)
-	var all := {}
-	for bag in [GameState.pockets, GameState.backpack]:
-		for id in bag:
-			all[id] = int(all.get(id, 0)) + int(bag[id])
-	if all.is_empty():
-		_lbl(v, "Пусто. Даже мелочи нет — как у всего Погуляя.", 22)
-	for id in all:
-		var it: Dictionary = GameData.item_by_id.get(id, {})
-		var card := _card(grid, id, "×%d%s" % [all[id], "  · в кармане" if GameState.pockets.has(id) else ""])
-		card.custom_minimum_size.x = 370
-		if it.has("slot"):
-			_btn(card, "Надеть", func():
-				if GameState.equip(id):
-					_say("Надето: %s" % it.name), 20)
-		if it.has("use"):
-			_btn(card, "Использовать", func():
-				var msg := GameState.use_item(id)
-				if msg != "":
-					_say(msg)
-					if player:
-						player.play_action("Flex", 0.8), 20)
+	v.add_theme_constant_override("separation", 2)
+	h.add_child(v)
+	var rarity: Color = RARITY.get(it.get("rarity", "common"), Color.WHITE)
+	_lbl(v, it.get("name", id), 24, rarity)
+	var meta: PackedStringArray = [TYPES.get(it.get("type", ""), it.get("type", ""))]
+	for k in it.get("stats", {}):
+		meta.append({"damage": "урон +%d", "armor": "броня +%d", "max_hp": "здоровье +%d"}.get(k, k + " %d") % int(it.stats[k]))
+	var use: Dictionary = it.get("use", {})
+	if use.has("heal"):
+		meta.append("лечит %d" % int(use.heal))
+	_lbl(v, " · ".join(meta), 16, Color(0.6, 0.85, 1))
+	if it.get("desc", "") != "":
+		var d := _lbl(v, it.desc, 16, Color(0.85, 0.82, 0.75))
+		d.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	var acts := VBoxContainer.new()
+	acts.add_theme_constant_override("separation", 6)
+	acts.custom_minimum_size.x = 190
+	h.add_child(acts)
+	match String(_sel.get("from", "")):
+		"equip":
+			_btn(acts, "Снять", func():
+				GameState.unequip(_sel.slot)
+				_sel = {}, 20)
+		"storage":
+			_btn(acts, "← Взять", func():
+				GameState.from_storage(id)
+				if GameState.storage.get(id, 0) == 0:
+					_sel = {}, 20)
+		_:
+			if it.has("slot"):
+				_btn(acts, "Надеть", func():
+					if GameState.equip(id):
+						_say("Надето: %s" % it.name)
+						_sel = {}
+						_render(), 20)
+			if it.has("use"):
+				_btn(acts, "Использовать", func():
+					var msg := GameState.use_item(id)
+					if msg != "":
+						_say(msg)
+						if GameState.item_count(id) == 0:
+							_sel = {}
+						if player:
+							player.play_action("Flex", 0.8), 20)
+			if _storage_mode:
+				if it.get("type", "") == "quest":
+					_lbl(acts, "квестовое, всегда при себе", 15, Color(0.6, 0.6, 0.6))
+				else:
+					_btn(acts, "В сундук →", func():
+						GameState.to_storage(id)
+						if GameState.item_count(id) == 0:
+							_sel = {}, 20)
 
 
 # ---------- Способности ----------
@@ -220,61 +388,35 @@ func _render_abilities() -> void:
 # ---------- Сундук ----------
 
 func _render_storage() -> void:
+	var v := VBoxContainer.new()
+	v.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	v.add_theme_constant_override("separation", 6)
+	_body.add_child(v)
 	var h := HBoxContainer.new()
-	h.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	h.add_theme_constant_override("separation", 20)
-	_body.add_child(h)
+	h.add_theme_constant_override("separation", 24)
+	v.add_child(h)
 	var mine := VBoxContainer.new()
-	mine.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	h.add_child(mine)
 	var chest := VBoxContainer.new()
-	chest.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	h.add_child(chest)
-	_lbl(mine, "При себе", 24, Color(1, 0.85, 0.55))
-	_btn(mine, "Сложить всё в сундук", func():
+	var head := HBoxContainer.new()
+	mine.add_child(head)
+	_lbl(head, "При себе", 20, Color(0.85, 0.72, 0.5))
+	_btn(head, "Сложить ранец в сундук", func():
 		var n := GameState.stash_backpack()
-		_say("В сундук: %d" % n), 20)
-	var carried := {}
-	for bag in [GameState.pockets, GameState.backpack]:
-		for id in bag:
-			carried[id] = int(carried.get(id, 0)) + int(bag[id])
-	for id in carried:
-		var quest: bool = GameData.item_by_id.get(id, {}).get("type", "") == "quest"
-		var card := _card(mine, id, "×%d" % carried[id])
-		if quest:
-			_lbl(card, "квестовый, всегда при себе", 15, Color(0.6, 0.6, 0.6))
-		else:
-			_btn(card, "В сундук →", func(): GameState.to_storage(id), 20)
-	_lbl(chest, "Сундук гаража №13", 24, Color(1, 0.85, 0.55))
+		_sel = {}
+		_say("В сундук: %d" % n), 17).custom_minimum_size.y = 36
+	# карманы и ранец одной сеткой: первые четыре клетки — карманы
+	var g := _bag_grid(mine, GameState.pockets, GameState.POCKET_SLOTS, "pockets", 7)
+	_fill(g, GameState.backpack, GameState.BACKPACK_SLOTS, "backpack")
+	_lbl(chest, "Сундук гаража №13  ·  предметов: %d" % GameState.storage.size(), 20, Color(0.85, 0.72, 0.5))
+	_bag_grid(chest, GameState.storage, 24, "storage", 6)
 	if GameState.storage.is_empty():
-		_lbl(chest, "Пусто. Только запах прошлого хозяина и чья-то вставная челюсть.", 18, Color(0.7, 0.7, 0.7)) \
-				.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	for id in GameState.storage:
-		var card := _card(chest, id, "×%d" % GameState.storage[id])
-		_btn(card, "← Взять", func(): GameState.from_storage(id), 20)
+		_lbl(chest, "Пусто. Только запах прошлого хозяина и чья-то вставная челюсть.", 16, Color(0.6, 0.6, 0.6))
+	_detail(v)
 
 
 # ---------- элементы ----------
-
-func _card(parent: Node, id: String, sub: String) -> VBoxContainer:
-	var it: Dictionary = GameData.item_by_id.get(id, {})
-	var p := _panel(parent, Color(0.13, 0.11, 0.1))
-	var v := VBoxContainer.new()
-	p.add_child(v)
-	if id == "":
-		_lbl(v, "%s: пусто" % sub, 20, Color(0.55, 0.55, 0.55))
-		return v
-	_lbl(v, it.get("name", id), 21, RARITY.get(it.get("rarity", "common"), Color.WHITE))
-	var meta: PackedStringArray = [TYPES.get(it.get("type", ""), it.get("type", "")), sub]
-	for k in it.get("stats", {}):
-		meta.append({"damage": "урон +%d", "armor": "броня +%d", "max_hp": "здоровье +%d"}.get(k, k + " %d") % int(it.stats[k]))
-	_lbl(v, " · ".join(meta), 16, Color(0.6, 0.85, 1))
-	if it.get("desc", "") != "":
-		var d := _lbl(v, it.desc, 16, Color(0.8, 0.77, 0.7))
-		d.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		d.custom_minimum_size.x = 330
-	return v
-
 
 func _panel(parent: Node, bg: Color) -> PanelContainer:
 	var p := PanelContainer.new()

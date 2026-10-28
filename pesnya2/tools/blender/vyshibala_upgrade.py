@@ -1,17 +1,21 @@
 """Доработка модели Вышибалы: одежда и набор анимаций для игры.
 
-    blender -b --python tools/blender/vyshibala_upgrade.py -- <src.glb> <out.glb> [render_dir]
+    blender -b --python tools/blender/vyshibala_upgrade.py -- <src.glb> <out.glb> [render_dir] [--female]
 
 Берёт тестовую модель (риг + Idle) и добавляет:
 - майку-алкоголичку, треники с лампасами и кеды (вес костей копируется с тела);
 - анимации Walk, Run, Attack, Hit, Cast, Dodge, Bow, Flex.
+С --female строится героиня: фигура перекраивается по вершинам (грудь, талия, бёдра,
+тонкие руки и шея), прическа «рубиновый блонд» с хвостом и свой комплект: топ и легинсы.
 Оси костей: у ног и рук отрицательный поворот по локальной X — вперёд,
 у позвоночника (локальная X смотрит в -X) отрицательный — наклон вперёд.
 """
 import bpy, bmesh, sys, os, math
-from mathutils import Vector
+from mathutils import Vector, Matrix
 
 argv = sys.argv[sys.argv.index("--") + 1:]
+FEMALE = "--female" in argv
+argv = [a for a in argv if a != "--female"]
 SRC, OUT = argv[0], argv[1]
 RENDER = argv[2] if len(argv) > 2 else None
 
@@ -24,6 +28,86 @@ for o in list(bpy.data.objects):
 rig = next(o for o in bpy.data.objects if o.type == "ARMATURE")
 body = bpy.data.objects["Body"]
 shorts = bpy.data.objects.get("Shorts")
+
+
+def bump(x, c, w):
+    """Плавный горб: 1 в центре c, 0 дальше w."""
+    t = abs(x - c) / w
+    return (1 - t * t) ** 2 if t < 1 else 0.0
+
+
+def feminize():
+    arm = rig.data.bones
+    groups = {g.index: g.name for g in body.vertex_groups}
+    segs = {}
+    for side in ("Left", "Right"):
+        segs[side + "UpperArm"] = (arm[side + "UpperArm"].head_local, arm[side + "LowerArm"].head_local)
+        segs[side + "LowerArm"] = (arm[side + "LowerArm"].head_local, arm[side + "Hand"].head_local)
+    for v in body.data.vertices:
+        co = v.co.copy()
+        main = max(v.groups, key=lambda g: g.weight) if len(v.groups) else None
+        gname = groups.get(main.group, "") if main else ""
+        if gname in segs:                                   # тоньше руки: к оси кости
+            a, b = segs[gname]
+            ab = b - a
+            t = max(0.0, min(1.0, (co - a).dot(ab) / ab.length_squared))
+            p = a + ab * t
+            co = p + (co - p) * 0.84
+        elif abs(co.x) < 0.22 or co.z < 0.98:
+            # грудь
+            for sx in (-1, 1):
+                c = Vector((sx * 0.085, -0.10, 1.275))
+                d = Vector((co.x - c.x, 0, co.z - c.z)).length
+                if co.y < -0.02 and d < 0.115:
+                    k = (1 - (d / 0.115) ** 2) ** 2
+                    co.y -= 0.065 * k
+                    co.z -= 0.012 * k
+            # талия уже, бёдра шире, ягодицы круглее
+            w = bump(co.z, 1.06, 0.1)
+            co.x *= 1 - 0.13 * w
+            co.y = co.y * (1 - 0.1 * w)
+            h = bump(co.z, 0.9, 0.12)
+            co.x *= 1 + 0.1 * h
+            if co.y > 0:
+                co.y += 0.025 * bump(co.z, 0.88, 0.1)
+            # плечи и шея
+            if 1.36 < co.z < 1.56:
+                co.x *= 1 - 0.1 * bump(co.z, 1.46, 0.1)
+                if abs(co.x) < 0.1:
+                    co.y *= 0.88
+                    co.x *= 0.88
+        v.co = co
+    old_hair = bpy.data.objects.get("Hair")
+    if old_hair:
+        bpy.data.objects.remove(old_hair)
+    # причёска: шапка волос, чёлка и высокий хвост с резинкой, всё на кости головы
+    me = bpy.data.meshes.new("HairF")
+    bm = bmesh.new()
+    bmesh.ops.create_uvsphere(bm, u_segments=20, v_segments=14, radius=0.118,
+                              matrix=Matrix.Translation((0, 0.012, 1.712)))
+    drop = [f for f in bm.faces if (lambda c: c.y < -0.035 and c.z < 1.745)(f.calc_center_median())]
+    bmesh.ops.delete(bm, geom=drop, context="FACES")
+    roots = len(bm.faces)
+    for i, (y, z, r) in enumerate(((0.13, 1.77, 0.045), (0.17, 1.72, 0.05), (0.19, 1.64, 0.046),
+                                   (0.19, 1.56, 0.04), (0.18, 1.49, 0.03))):
+        bmesh.ops.create_uvsphere(bm, u_segments=10, v_segments=8, radius=r,
+                                  matrix=Matrix.Translation((0, y, z)) @ Matrix.Scale(1.0, 4))
+    bmesh.ops.create_uvsphere(bm, u_segments=10, v_segments=6, radius=0.028,
+                              matrix=Matrix.Translation((0, 0.115, 1.775)))
+    bm.to_mesh(me)
+    bm.free()
+    hair = bpy.data.objects.new("HairF", me)
+    scene.collection.objects.link(hair)
+    hair.data.materials.append(material("HairBlond", (0.95, 0.82, 0.55), 0.6))
+    hair.data.materials.append(material("Scrunchie", (1.0, 0.1, 0.45), 0.5))
+    for i, p in enumerate(hair.data.polygons):
+        p.use_smooth = True
+        p.material_index = 1 if p.center.z > 1.75 and p.center.y > 0.09 and p.center.y < 0.14 else 0
+    vg = hair.vertex_groups.new(name="Head")
+    vg.add(list(range(len(me.vertices))), 1.0, "REPLACE")
+    hair.parent = rig
+    mod = hair.modifiers.new("Armature", "ARMATURE")
+    mod.object = rig
 
 
 def material(name, color, rough=0.8):
@@ -61,20 +145,35 @@ def garment(name, keep_face, offset, mats, pick_mat=None):
     return ob
 
 
-tank = garment("TankTop",
-               lambda c, n: (0.98 < c.z < 1.36 and abs(c.x) < 0.185
-                             and not (c.z > 1.29 and abs(c.x) < 0.065 and n.y < 0))  # вырез спереди
-               or (1.36 <= c.z < 1.47 and 0.06 < abs(c.x) < 0.12),  # лямки
-               0.009, [material("Tank", (0.86, 0.84, 0.74), 0.9)])
-pants = garment("TrackPants",
-                lambda c, n: 0.14 < c.z < 1.02 and abs(c.x) < 0.27,
-                0.013, [material("Pants", (0.05, 0.07, 0.2), 0.7), material("Stripe", (0.92, 0.92, 0.92), 0.6)],
-                lambda c, n: 1 if c.z < 0.97 and abs(c.x) > 0.07 and n.x * math.copysign(1, c.x) > 0.55
-                and abs(n.y) < 0.18 else 0)
-shoes = garment("Sneakers",
-                lambda c, n: c.z < 0.15,
-                0.012, [material("Shoes", (0.08, 0.08, 0.09), 0.5), material("Sole", (0.9, 0.9, 0.88), 0.6)],
-                lambda c, n: 1 if c.z < 0.03 else 0)
+if FEMALE:
+    feminize()
+    top = garment("CropTop",
+                  lambda c, n: 1.14 < c.z < 1.345 and abs(c.x) < 0.205,
+                  0.008, [material("Top", (1.0, 0.18, 0.5), 0.5)])
+    legs = garment("Leggings",
+                   lambda c, n: 0.14 < c.z < 1.0 and abs(c.x) < 0.27,
+                   0.006, [material("Leggings", (0.04, 0.04, 0.05), 0.35), material("LegStripe", (1.0, 0.18, 0.5), 0.5)],
+                   lambda c, n: 1 if c.z < 0.95 and abs(c.x) > 0.07 and n.x * math.copysign(1, c.x) > 0.6
+                   and abs(n.y) < 0.15 else 0)
+    shoes = garment("Sneakers",
+                    lambda c, n: c.z < 0.15,
+                    0.012, [material("Shoes", (0.95, 0.95, 0.95), 0.5), material("Sole", (1.0, 0.18, 0.5), 0.6)],
+                    lambda c, n: 1 if c.z < 0.03 else 0)
+else:
+    tank = garment("TankTop",
+                   lambda c, n: (0.98 < c.z < 1.36 and abs(c.x) < 0.185
+                                 and not (c.z > 1.29 and abs(c.x) < 0.065 and n.y < 0))  # вырез спереди
+                   or (1.36 <= c.z < 1.47 and 0.06 < abs(c.x) < 0.12),  # лямки
+                   0.009, [material("Tank", (0.86, 0.84, 0.74), 0.9)])
+    pants = garment("TrackPants",
+                    lambda c, n: 0.14 < c.z < 1.02 and abs(c.x) < 0.27,
+                    0.013, [material("Pants", (0.05, 0.07, 0.2), 0.7), material("Stripe", (0.92, 0.92, 0.92), 0.6)],
+                    lambda c, n: 1 if c.z < 0.97 and abs(c.x) > 0.07 and n.x * math.copysign(1, c.x) > 0.55
+                    and abs(n.y) < 0.18 else 0)
+    shoes = garment("Sneakers",
+                    lambda c, n: c.z < 0.15,
+                    0.012, [material("Shoes", (0.08, 0.08, 0.09), 0.5), material("Sole", (0.9, 0.9, 0.88), 0.6)],
+                    lambda c, n: 1 if c.z < 0.03 else 0)
 if shorts:
     bpy.data.objects.remove(shorts)
 

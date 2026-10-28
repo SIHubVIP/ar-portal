@@ -9,6 +9,7 @@ signal interact
 signal ability(index: int)
 signal camera_rotate(radians: float)
 signal camera_zoom(amount: float)
+signal camera_tilt(radians: float)
 
 const STICK_RADIUS := 90.0
 
@@ -90,7 +91,9 @@ func _input(event: InputEvent) -> void:
 				var other: Vector2 = _cam_fingers[_cam_fingers.keys().filter(func(k): return k != event.index)[0]]
 				camera_zoom.emit((prev.distance_to(other) - event.position.distance_to(other)) * 0.04)
 			else:
+				# один палец: по горизонтали — поворот, по вертикали — наклон камеры
 				camera_rotate.emit(-(event.position.x - prev.x) * 0.008)
+				camera_tilt.emit((event.position.y - prev.y) * 0.006)
 			_cam_fingers[event.index] = event.position
 			get_viewport().set_input_as_handled()
 

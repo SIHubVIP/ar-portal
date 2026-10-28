@@ -4,13 +4,16 @@ extends Camera3D
 ## (свайп по свободной части экрана или кнопки ⟲ ⟳). Здания между камерой
 ## и героем становятся полупрозрачными. Ввод стика всегда относительно камеры.
 
-const PITCH := deg_to_rad(55.0)
+const PITCH_MIN := deg_to_rad(28.0)
+const PITCH_MAX := deg_to_rad(80.0)
 const ZOOM_MIN := 10.0
 const ZOOM_MAX := 26.0
 
 var target: Node3D
 var distance := 14.0
 var yaw := deg_to_rad(45.0)
+var pitch := deg_to_rad(52.0)
+var _pitch_target := deg_to_rad(52.0)
 var _yaw_target := deg_to_rad(45.0)
 var _faded: Array = []
 
@@ -32,6 +35,11 @@ func rotate_by(radians: float) -> void:
 	_yaw_target += radians
 
 
+## Наклон камеры: свайп вверх-вниз. Ниже — видно фасады и небо, выше — почти карта.
+func tilt_by(radians: float) -> void:
+	_pitch_target = clampf(_pitch_target + radians, PITCH_MIN, PITCH_MAX)
+
+
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.pressed:
 		if event.button_index == MOUSE_BUTTON_WHEEL_UP:
@@ -43,17 +51,22 @@ func _unhandled_input(event: InputEvent) -> void:
 			rotate_by(deg_to_rad(-45.0))
 		elif event.physical_keycode == KEY_X:
 			rotate_by(deg_to_rad(45.0))
+		elif event.physical_keycode == KEY_R:
+			tilt_by(deg_to_rad(-8.0))
+		elif event.physical_keycode == KEY_F:
+			tilt_by(deg_to_rad(8.0))
 
 
 func _desired() -> Vector3:
-	var back := Vector3(sin(yaw), 0, cos(yaw)) * cos(PITCH)
-	return target.global_position + (back + Vector3(0, sin(PITCH), 0)) * distance
+	var back := Vector3(sin(yaw), 0, cos(yaw)) * cos(pitch)
+	return target.global_position + (back + Vector3(0, sin(pitch), 0)) * distance
 
 
 func _physics_process(delta: float) -> void:
 	if target == null:
 		return
 	yaw = lerp_angle(yaw, _yaw_target, clampf(12.0 * delta, 0.0, 1.0))
+	pitch = lerpf(pitch, _pitch_target, clampf(12.0 * delta, 0.0, 1.0))
 	if "camera_yaw" in target:
 		target.camera_yaw = yaw
 	global_position = global_position.lerp(_desired(), clampf(10.0 * delta, 0.0, 1.0))

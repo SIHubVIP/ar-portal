@@ -10,12 +10,21 @@ var _hp_bar: ProgressBar
 var _xp_bar: ProgressBar
 var _level: Label
 var _resources: Label
-var _quest: Label
+var _tracker: PanelContainer
+var _tr_head: Label
+var _tr_title: Label
+var _tr_goal: Label
+var _tr_detail: Label
+var _banner: VBoxContainer
+var _banner_title: Label
+var _banner_sub: Label
+var pointer: ObjectivePointer
+var quest_log: QuestLog
+var _objective_detail := ""
 var _toast: Label
 var dialog: DialogView
 var inventory: InventoryPanel
 var _pause: PanelContainer
-var _journal: Label
 var _death: PanelContainer
 
 
@@ -27,6 +36,8 @@ func _ready() -> void:
 	add_child(root)
 	root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 
+	pointer = ObjectivePointer.new()
+	root.add_child(pointer)
 	controls = TouchControls.new()
 	root.add_child(controls)
 
@@ -40,10 +51,7 @@ func _ready() -> void:
 	_hp_bar = _bar(row, Color(0.85, 0.2, 0.2), Vector2(240, 22))
 	_xp_bar = _bar(top, Color(0.95, 0.75, 0.2), Vector2(310, 8))
 	_resources = _label(top, "", 20)
-	_quest = _label(top, "", 19)
-	_quest.custom_minimum_size.x = 430
-	_quest.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_quest.add_theme_color_override("font_color", Color(1, 0.95, 0.8))
+	_build_tracker(top)
 
 	var pause_btn := Button.new()
 	pause_btn.text = "  ☰  "
@@ -59,6 +67,26 @@ func _ready() -> void:
 	bag_btn.pressed.connect(func(): open_inventory("bags"))
 	root.add_child(bag_btn)
 	_place(bag_btn, Vector2(1, 0), Vector2(-250, 14), Vector2(-120, 74))
+	var quests_btn := Button.new()
+	quests_btn.text = " Задания "
+	quests_btn.add_theme_font_size_override("font_size", 24)
+	quests_btn.focus_mode = Control.FOCUS_NONE
+	quests_btn.pressed.connect(open_quests)
+	root.add_child(quests_btn)
+	_place(quests_btn, Vector2(1, 0), Vector2(-405, 14), Vector2(-260, 74))
+
+	_banner = VBoxContainer.new()
+	_banner.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	root.add_child(_banner)
+	_place(_banner, Vector2(0.5, 0), Vector2(-450, 150), Vector2(450, 260))
+	_banner_title = _label(_banner, "", 34)
+	_banner_title.add_theme_font_override("font", load("res://assets/fonts/RussoOne-Regular.ttf"))
+	_banner_title.add_theme_color_override("font_color", Color(1, 0.82, 0.3))
+	_banner_sub = _label(_banner, "", 22)
+	for l in [_banner_title, _banner_sub]:
+		l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_banner.modulate.a = 0.0
 
 	_toast = _label(root, "", 24)
 	_place(_toast, Vector2(0.5, 0), Vector2(-400, 90), Vector2(400, 160))
@@ -69,9 +97,13 @@ func _ready() -> void:
 	_build_pause(root)
 	inventory = InventoryPanel.new()
 	root.add_child(inventory)
-	_place(inventory, Vector2(0.5, 0.5), Vector2(-600, -340), Vector2(600, 340))
+	_place(inventory, Vector2(0.5, 0.5), Vector2(-600, -300), Vector2(600, 300))
 	inventory.set_toast(show_toast)
 	inventory.closed.connect(func(): _set_controls(true))
+	quest_log = QuestLog.new()
+	root.add_child(quest_log)
+	_place(quest_log, Vector2(0.5, 0.5), Vector2(-600, -340), Vector2(600, 340))
+	quest_log.closed.connect(func(): _set_controls(true))
 	dialog = DialogView.new()
 	root.add_child(dialog)
 	dialog.closed.connect(func(): _set_controls(true))
@@ -80,8 +112,15 @@ func _ready() -> void:
 	EventBus.resources_changed.connect(func(_b, _r, _k): _refresh_resources())
 	EventBus.xp_changed.connect(_on_xp)
 	EventBus.player_hp_changed.connect(_on_hp)
-	EventBus.quest_stage_changed.connect(func(_q, _s): refresh_quest())
-	EventBus.quest_state_changed.connect(func(_q, _s): refresh_quest())
+	EventBus.quest_stage_changed.connect(func(q, _s):
+		refresh_quest()
+		var st := QuestService.current_stage(q)
+		if not st.is_empty():
+			show_banner("Задание обновлено", st.text))
+	EventBus.quest_state_changed.connect(func(q, s):
+		refresh_quest()
+		if s == QuestService.COMPLETED:
+			show_banner("Задание выполнено", "«%s»" % GameData.quest(q).title))
 	EventBus.toast.connect(show_toast)
 	EventBus.level_up.connect(_on_level_up)
 	EventBus.item_added.connect(func(id, n): show_toast("+ %s%s" % [GameData.item_name(id), " ×%d" % n if n > 1 else ""]))
@@ -94,6 +133,7 @@ func _ready() -> void:
 
 func set_player(p: Player) -> void:
 	controls.player = p
+	pointer.player = p
 	inventory.player = p
 	var names := PackedStringArray()
 	for a in p.book.abilities:
@@ -198,23 +238,86 @@ func _on_xp(_xp: int, level: int, into: int, need: int) -> void:
 	_xp_bar.value = into
 
 
+func _build_tracker(parent: Node) -> void:
+	_tracker = PanelContainer.new()
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color(0.05, 0.04, 0.06, 0.62)
+	sb.border_color = Color(1, 0.8, 0.3, 0.8)
+	sb.border_width_left = 4
+	sb.set_corner_radius_all(8)
+	sb.content_margin_left = 14
+	sb.content_margin_right = 14
+	sb.content_margin_top = 6
+	sb.content_margin_bottom = 8
+	_tracker.add_theme_stylebox_override("panel", sb)
+	_tracker.custom_minimum_size.x = 420
+	_tracker.gui_input.connect(func(e: InputEvent):
+		if (e is InputEventMouseButton or e is InputEventScreenTouch) and e.pressed:
+			open_quests())
+	parent.add_child(_tracker)
+	var v := VBoxContainer.new()
+	v.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	v.add_theme_constant_override("separation", 0)
+	_tracker.add_child(v)
+	_tr_head = _label(v, "", 14)
+	_tr_head.add_theme_color_override("font_color", Color(1, 0.8, 0.35))
+	_tr_title = _label(v, "", 18)
+	_tr_goal = _label(v, "", 21)
+	_tr_goal.add_theme_color_override("font_color", Color(1, 0.92, 0.55))
+	_tr_goal.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_tr_goal.custom_minimum_size.x = 390
+	_tr_detail = _label(v, "", 16)
+	_tr_detail.add_theme_color_override("font_color", Color(0.75, 0.9, 1))
+
+
+## Трекер показывает одно отслеживаемое задание: что это и что делать прямо сейчас.
 func refresh_quest() -> void:
-	var lines: PackedStringArray = []
-	for q in QuestService.active_quests():
-		var st := QuestService.current_stage(q.id)
-		var state := QuestService.state_of(q.id)
-		var line := "◆ %s\n   " % q.title
-		if state == QuestService.TURN_IN_READY:
-			line += "Сдать задание"
-		elif st.is_empty():
-			line += state
-		else:
-			line += st.text
-			var r: Dictionary = QuestService.records[q.id]
-			if int(st.target) > 1:
-				line += " (%d/%d)" % [r.progress, st.target]
-		lines.append(line)
-	_quest.text = "\n".join(lines)
+	var act := QuestService.active_quests()
+	if act.is_empty():
+		var next := GameData.quests.filter(func(q): return QuestService.state_of(q.id) == QuestService.AVAILABLE)
+		_tracker.visible = not next.is_empty()
+		if _tracker.visible:
+			_tr_head.text = "НОВОЕ ЗАДАНИЕ"
+			_tr_title.text = next[0].title
+			_tr_goal.text = "Где: %s" % next[0].location
+			_tr_detail.text = "Нажми, чтобы открыть журнал"
+		return
+	_tracker.visible = true
+	var q: Dictionary = act[0]
+	var st := QuestService.current_stage(q.id)
+	var state := QuestService.state_of(q.id)
+	_tr_head.text = "%s · %s" % ["СЮЖЕТ" if q.kind == "main" else "ПОРУЧЕНИЕ", String(q.district).to_upper()]
+	_tr_title.text = q.title
+	if state == QuestService.TURN_IN_READY:
+		_tr_goal.text = "● Сдать задание"
+	elif st.is_empty():
+		_tr_goal.text = "● %s" % state
+	else:
+		_tr_goal.text = "● %s" % QuestLog._stage_text(st)
+	var r: Dictionary = QuestService.records[q.id]
+	var detail := _objective_detail
+	if not st.is_empty() and int(st.target) > 1:
+		detail = "%d из %d" % [r.progress, st.target]
+	_tr_detail.text = detail
+	_tr_detail.visible = detail != ""
+
+
+## Цель в мире: стрелка на экране и подпись. detail — строка прогресса в трекере.
+func set_objective(pos: Vector3, label := "", detail := "") -> void:
+	pointer.target = pos
+	pointer.label = label
+	if detail != _objective_detail:
+		_objective_detail = detail
+		refresh_quest()
+
+
+func show_banner(title: String, sub: String) -> void:
+	_banner_title.text = title
+	_banner_sub.text = sub
+	var tw := _banner.create_tween()
+	tw.tween_property(_banner, "modulate:a", 1.0, 0.25)
+	tw.tween_interval(2.8)
+	tw.tween_property(_banner, "modulate:a", 0.0, 0.5)
 
 
 func show_toast(text: String) -> void:
@@ -228,7 +331,7 @@ func show_toast(text: String) -> void:
 # ---------- диалог и выбор ----------
 
 func is_busy() -> bool:
-	return dialog.visible or inventory.visible or _pause.visible or _death.visible
+	return dialog.visible or inventory.visible or quest_log.visible or _pause.visible or _death.visible
 
 
 ## lines: [{speaker, text}]; on_done вызывается и при пропуске (с теми же последствиями).
@@ -239,6 +342,7 @@ func play_dialog(lines: Array, on_done := Callable()) -> void:
 
 ## Разговор по графу data/dialogues.json. on_event получает сюжетные события (choose_A, bribe, ...).
 func run_dialogue(id: String, on_event := Callable(), on_done := Callable()) -> void:
+	GameState.set_flag("talked:%s" % id)
 	_set_controls(false)
 	dialog.run(id, on_event, on_done)
 
@@ -260,7 +364,7 @@ func _finish_dialog() -> void:
 	dialog.skip()
 
 
-func open_inventory(tab := "hero") -> void:
+func open_inventory(tab := "gear") -> void:
 	if is_busy():
 		return
 	_set_controls(false)
@@ -288,67 +392,35 @@ func _on_level_up(l: int) -> void:
 
 func _build_pause(root: Control) -> void:
 	_pause = _panel(root)
-	_place(_pause, Vector2(0.5, 0.5), Vector2(-460, -300), Vector2(460, 300))
-	var h := HBoxContainer.new()
-	h.add_theme_constant_override("separation", 24)
-	_pause.add_child(h)
+	_place(_pause, Vector2(0.5, 0.5), Vector2(-200, -290), Vector2(200, 290))
 	var menu := VBoxContainer.new()
-	menu.custom_minimum_size.x = 280
 	menu.add_theme_constant_override("separation", 10)
-	h.add_child(menu)
+	_pause.add_child(menu)
 	_label(menu, "Пауза", 30)
 	_button(menu, "Продолжить", toggle_pause)
+	_button(menu, "Задания", func():
+		toggle_pause()
+		open_quests())
+	_button(menu, "Сумка", func():
+		toggle_pause()
+		open_inventory("hero"))
 	_button(menu, "На базу", func(): pause_action.emit("base"))
 	_button(menu, "Сохранить", func(): pause_action.emit("save"))
-	_button(menu, "Приблизить", func(): pause_action.emit("zoom_in"))
-	_button(menu, "Отдалить", func(): pause_action.emit("zoom_out"))
 	_button(menu, "В главное меню", func(): pause_action.emit("title"))
-	var scroll := ScrollContainer.new()
-	scroll.custom_minimum_size = Vector2(560, 520)
-	h.add_child(scroll)
-	_journal = _label(scroll, "", 19)
-	_journal.custom_minimum_size.x = 540
-	_journal.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 
 
 func toggle_pause() -> void:
-	if dialog.visible or inventory.visible:
+	if dialog.visible or inventory.visible or quest_log.visible:
 		return
 	_pause.visible = not _pause.visible
 	_set_controls(not _pause.visible)
-	if _pause.visible:
-		_journal.text = _journal_text()
 
 
-func _journal_text() -> String:
-	var out: PackedStringArray = ["ЖУРНАЛ"]
-	for q in GameData.quests:
-		var s := QuestService.state_of(q.id)
-		if s == QuestService.LOCKED:
-			continue
-		var mark: String = {"AVAILABLE": "○", "COMPLETED": "✓"}.get(s, "◆")
-		out.append("%s %s «%s» — %s, %s (рек. ур. %d)" % [mark, q.id, q.title, q.district, q.location, q.min_level])
-		if s == QuestService.COMPLETED and QuestService.records[q.id].choice != "":
-			var c: Dictionary = q.choices[QuestService.records[q.id].choice]
-			out.append("    Выбор: %s → %s" % [c.text, c.result])
-			out.append("    %s" % q.twist)
-		elif s == QuestService.AVAILABLE:
-			out.append("    %s" % q.setup)
-	out.append("")
-	out.append("СУМКИ")
-	out.append("Карманы: %s" % _bag(GameState.pockets))
-	out.append("Ранец: %s" % _bag(GameState.backpack))
-	out.append("Хранилище базы: %s" % _bag(GameState.storage))
-	return "\n".join(out)
-
-
-func _bag(d: Dictionary) -> String:
-	if d.is_empty():
-		return "пусто"
-	var parts: PackedStringArray = []
-	for id in d:
-		parts.append("%s ×%d" % [GameData.item_name(id), d[id]])
-	return ", ".join(parts)
+func open_quests() -> void:
+	if is_busy():
+		return
+	_set_controls(false)
+	quest_log.open()
 
 
 # ---------- смерть ----------

@@ -71,6 +71,7 @@ func _ready() -> void:
 	hud.pause_action.connect(_on_pause_action)
 	hud.controls.camera_rotate.connect(camera.rotate_by)
 	hud.controls.camera_zoom.connect(camera.zoom_by)
+	hud.controls.camera_tilt.connect(camera.tilt_by)
 	hud.inventory.closed.connect(func(): SaveService.save_game())
 	GameState.heal(GameState.max_hp)
 	hud.show_toast("База: здесь безопасно, здоровье восстановлено")

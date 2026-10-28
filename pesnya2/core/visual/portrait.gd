@@ -23,6 +23,16 @@ func set_spec(s: Dictionary) -> void:
 
 
 static func _hero_spec() -> Dictionary:
+	if GameState.gender == "f":
+		match GameState.class_id:
+			"CLASS_2":
+				return {"kind": "face", "skin": "#efc0a0", "hair": "bob", "hair_color": "#1e1612", "eyes": "narrow",
+						"mouth": "grin", "extra": ["lipstick", "gold_chain", "lashes"], "bg": "#203a2c"}
+			"CLASS_3":
+				return {"kind": "face", "skin": "#efc8ae", "hair": "mohawk", "hair_color": "#ff4fa8", "eyes": "crazy",
+						"mouth": "grin", "extra": ["glasses", "lipstick", "lashes"], "bg": "#2c2050"}
+		return {"kind": "face", "skin": "#e2a98a", "hair": "ponytail", "hair_color": "#f2d18c", "eyes": "narrow",
+				"mouth": "frown", "extra": ["lipstick", "scar", "tube", "lashes"], "bg": "#4a1c1a"}
 	match GameState.class_id:
 		"CLASS_2":
 			return {"kind": "face", "skin": "#e8b896", "hair": "comb", "hair_color": "#2b2018", "eyes": "narrow",
@@ -78,8 +88,10 @@ func _draw_face(s: Vector2) -> void:
 		body_col = Color(0.55, 0.45, 0.6)
 	elif extra.has("tank"):
 		body_col = Color(0.88, 0.86, 0.78)
+	elif extra.has("tube"):
+		body_col = Color(1.0, 0.25, 0.55)
 	draw_circle(Vector2(s.x * 0.5, s.y + r * 0.55 + breathe), r * 1.55, body_col)
-	if extra.has("tank"):
+	if extra.has("tank") or extra.has("tube"):
 		draw_circle(Vector2(s.x * 0.5, s.y + r * 0.2 + breathe), r * 0.7, skin)
 	if extra.has("tie"):
 		draw_colored_polygon(PackedVector2Array([c + Vector2(-10, r * 1.15), c + Vector2(10, r * 1.15),
@@ -109,6 +121,15 @@ func _draw_face(s: Vector2) -> void:
 			for i in 6:
 				draw_colored_polygon(PackedVector2Array([c + Vector2(-12 + i * 2, -r * 0.6 + i * 6),
 						c + Vector2(12 - i * 2, -r * 0.6 + i * 6), c + Vector2(0, -r * 1.55 + i * 6)]), hair)
+		"ponytail":
+			draw_circle(c + Vector2(0, -r * 0.45), r * 0.85, hair)
+			var tail := c + Vector2(r * 0.95, -r * 0.6)
+			for i in 4:
+				draw_circle(tail + Vector2(i * 4.0 + sin(_t * 3.0 + i) * 3.0, i * r * 0.28), r * (0.26 - i * 0.04), hair.darkened(i * 0.05))
+			draw_circle(c + Vector2(r * 0.8, -r * 0.72), r * 0.12, Color(1, 0.1, 0.45))
+		"bob":
+			draw_circle(c + Vector2(0, -r * 0.3), r * 1.0, hair)
+			draw_rect(Rect2(c + Vector2(-r * 1.05, -r * 0.3), Vector2(r * 2.1, r * 0.9)), hair)
 		"cap":
 			draw_circle(c + Vector2(0, -r * 0.35), r * 0.85, hair)
 			draw_rect(Rect2(c + Vector2(-r * 0.95, -r * 0.4), Vector2(r * 2.2, r * 0.22)), hair.darkened(0.3))
@@ -149,6 +170,11 @@ func _draw_face(s: Vector2) -> void:
 				draw_arc(e + Vector2(0, r * 0.14), r * 0.14, 0.2, PI - 0.2, 8, skin.darkened(0.35), 3.0)
 		if blink:
 			draw_line(e + Vector2(-r * 0.14, 0), e + Vector2(r * 0.14, 0), Color(0.1, 0.08, 0.06), 4.0)
+	if extra.has("lashes"):
+		for side in [-1, 1]:
+			var e2 := c + Vector2(side * r * 0.36, -r * 0.02)
+			for k in 3:
+				draw_line(e2 + Vector2(side * (r * 0.06 + k * r * 0.06), -r * 0.1), e2 + Vector2(side * (r * 0.1 + k * r * 0.08), -r * 0.22), Color(0.05, 0.05, 0.05), 3.0)
 	if extra.has("glasses"):
 		for side in [-1, 1]:
 			draw_arc(c + Vector2(side * r * 0.36, -r * 0.02), r * 0.22, 0, TAU, 20, Color(0.1, 0.1, 0.1), 4.0)

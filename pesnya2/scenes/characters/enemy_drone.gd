@@ -21,12 +21,13 @@ var _attack_cd := 0.0
 var _telegraph: MeshInstance3D
 var _telegraph_left := 0.0
 var _body: Node3D
-var _bar: Label3D
+var _bar: HealthBar3D
 var _t := 0.0
 
 
 func _ready() -> void:
 	add_to_group("enemies")
+	add_to_group("drones")
 	hp = max_hp
 	home = global_position
 	collision_layer = 4
@@ -44,8 +45,9 @@ func _ready() -> void:
 	Kit.cylinder(_body, 0.85, 0.08, Vector3(0, 0, 0), Color(0.3, 0.3, 0.35))
 	Kit.sphere(_body, 0.16, Vector3(0, 0.05, 0.42), Color(1, 0.15, 0.3), 3.0)
 	Kit.box(_body, Vector3(0.6, 0.12, 0.02), Vector3(0, 0.3, 0.45), Color(0.1, 0.9, 0.5), 1.5)
-	_bar = Kit.label(self, "", Vector3(0, 2.4, 0), 40, Color(1, 0.85, 0.85))
-	_update_bar()
+	_bar = HealthBar3D.new()
+	_bar.position = Vector3(0, 2.3, 0)
+	add_child(_bar)
 
 
 func is_alive() -> bool:
@@ -61,6 +63,8 @@ func take_hit(damage: float, from: Vector3) -> void:
 	if not is_alive():
 		return
 	hp -= damage
+	AbilityFx.damage_number(get_parent(), global_position + Vector3(0, 2.0, 0), damage, damage >= 30.0)
+	AbilityFx.sparks(get_parent(), global_position + Vector3(0, 1.2, 0), Color(0.6, 1, 0.9))
 	var push := (global_position - from) * Vector3(1, 0, 1)
 	if push.length() > 0.01:
 		global_position += push.normalized() * 0.4
@@ -74,6 +78,7 @@ func take_hit(damage: float, from: Vector3) -> void:
 func _die() -> void:
 	_cancel_telegraph()
 	remove_from_group("enemies")
+	remove_from_group("drones")
 	defeated.emit(self)
 	var tw := create_tween()
 	tw.tween_property(_body, "position:y", 0.2, 0.3)
@@ -112,12 +117,19 @@ func _physics_process(delta: float) -> void:
 	var dir := target - global_position
 	dir.y = 0.0
 	var stop := attack_radius * 0.6 if target != home else 0.8
+	# дроны расталкивают друг друга, чтобы не слипаться в одну кучу
+	var sep := Vector3.ZERO
+	for other in get_tree().get_nodes_in_group("drones"):
+		if other != self:
+			var away: Vector3 = (global_position - other.global_position) * Vector3(1, 0, 1)
+			if away.length() < 1.8 and away.length() > 0.01:
+				sep += away.normalized() * (1.8 - away.length())
 	if dir.length() > stop:
-		velocity = dir.normalized() * speed
+		velocity = dir.normalized() * speed + sep * 2.0
 		look_at(global_position + dir, Vector3.UP)
 		_body.rotation.y = 0.0
 	else:
-		velocity = Vector3.ZERO
+		velocity = sep * 2.0
 	move_and_slide()
 
 
@@ -147,5 +159,4 @@ func _cancel_telegraph() -> void:
 
 
 func _update_bar() -> void:
-	var filled := int(ceil(10.0 * maxf(hp, 0.0) / max_hp))
-	_bar.text = "%s\n%s" % [display_name, "▮".repeat(filled) + "▯".repeat(10 - filled)]
+	_bar.set_ratio(hp / max_hp)

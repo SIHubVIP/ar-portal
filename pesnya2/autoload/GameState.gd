@@ -6,6 +6,8 @@ const POCKET_SLOTS := 4
 const BACKPACK_SLOTS := 24
 
 var class_id := ""
+## Пол героя: "m" или "f". Меняет модель, портрет и обращения в разговорах.
+var gender := "m"
 var level := 1
 var xp := 0
 var babki := 0
@@ -33,6 +35,7 @@ var playtime := 0.0
 
 func reset(new_class := "") -> void:
 	class_id = new_class
+	gender = "m"
 	level = 1
 	xp = 0
 	babki = 0
@@ -278,7 +281,7 @@ func heal(amount: float) -> void:
 
 
 func to_dict() -> Dictionary:
-	return {"class_id": class_id, "level": level, "xp": xp, "babki": babki, "reputation": reputation,
+	return {"class_id": class_id, "gender": gender, "level": level, "xp": xp, "babki": babki, "reputation": reputation,
 			"kukukha": kukukha, "hp": hp, "flags": flags.keys(), "granted": granted.keys(), "ledger": ledger,
 			"pockets": pockets, "backpack": backpack, "equipment": equipment, "storage": storage, "tones": tones,
 			"world_scene": world_scene, "world_position": [world_position.x, world_position.y, world_position.z],
@@ -287,6 +290,7 @@ func to_dict() -> Dictionary:
 
 func from_dict(d: Dictionary) -> void:
 	class_id = d.get("class_id", "")
+	gender = d.get("gender", "m")
 	level = int(d.get("level", 1))
 	xp = int(d.get("xp", 0))
 	babki = int(d.get("babki", 0))

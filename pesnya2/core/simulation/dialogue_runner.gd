@@ -21,8 +21,13 @@ static func speaker(id: String) -> Dictionary:
 	return GameData.dialogues_speakers.get(id, {"name": id, "portrait": {}})
 
 
+## Узел с подстановкой женского варианта текста (text_f), если героиня — женщина.
 func node() -> Dictionary:
-	return GameData.dialogues.get(dialogue_id, {}).get("nodes", {}).get(node_id, {})
+	var n: Dictionary = GameData.dialogues.get(dialogue_id, {}).get("nodes", {}).get(node_id, {})
+	if GameState.gender == "f" and n.has("text_f"):
+		n = n.duplicate()
+		n.text = n.text_f
+	return n
 
 
 func finished() -> bool:
@@ -36,7 +41,8 @@ func options() -> Array:
 	for i in opts.size():
 		var o: Dictionary = opts[i]
 		var why := blocked_reason(o.get("requires", {}))
-		out.append({"index": i, "text": o.text, "tone": o.get("tone", "plain"), "locked": why != "", "why": why})
+		var text: String = o.get("text_f", o.text) if GameState.gender == "f" else o.text
+		out.append({"index": i, "text": text, "tone": o.get("tone", "plain"), "locked": why != "", "why": why})
 	return out
 
 

@@ -323,3 +323,67 @@ func test_character_title_follows_tones() -> void:
 		GameState.add_tone("purple")
 	GameState.add_tone("green")
 	check(GameState.character_title() == "Отморозок", "чаще хамит — отморозок")
+
+
+# ---------- 0.3: пол, журнал без спойлеров, добыча ----------
+
+func test_gender_is_saved_and_reset() -> void:
+	GameState.gender = "f"
+	var d := GameState.to_dict()
+	GameState.reset("CLASS_1")
+	check(GameState.gender == "m", "новая игра начинается с мужского героя по умолчанию")
+	GameState.from_dict(d)
+	check(GameState.gender == "f", "пол восстанавливается из сохранения")
+
+
+func test_female_hero_gets_female_lines() -> void:
+	var male: String = DialogueRunner.new("PASSER").node().text
+	GameState.gender = "f"
+	var female: String = DialogueRunner.new("PASSER").node().text
+	check(male != female and female.begins_with("Девушка"), "прохожий обращается к героине по-женски")
+
+
+func test_quest_log_hides_locked_and_unheard_quests() -> void:
+	QuestService.accept("MAIN_001")
+	check(QuestLog._shown(GameData.quest("MAIN_001")), "активный сюжет виден")
+	check(not QuestLog._shown(GameData.quest("MAIN_002")), "закрытый сюжет не спойлерится")
+	var side := GameData.quest("NPC_07_1")
+	check(QuestService.state_of(side.id) == QuestService.AVAILABLE and not QuestLog._shown(side),
+			"доступное, но не услышанное поручение скрыто")
+	GameState.set_flag("offered:NPC_07_1")
+	check(QuestLog._shown(side), "после разговора с заказчиком поручение видно")
+	var far := GameData.quest("NPC_05_1")
+	GameState.set_flag("offered:NPC_05_1")
+	check(not QuestLog._shown(far), "поручение не по силам пока скрыто")
+
+
+func test_trash_loot_table_rolls_known_items() -> void:
+	for i in 20:
+		var id := GameState.roll_loot("trash", i / 20.0)
+		check(GameData.item_by_id.has(id), "мусор даёт существующий предмет: %s" % id)
+
+
+func test_loot_drop_grants_once() -> void:
+	var world := Node3D.new()
+	add_child(world)
+	var a := LootDrop.drop(world, Vector3.ZERO, "test:loot", "ITEM_P2_BEER", 5)
+	a.pick()
+	var b := LootDrop.drop(world, Vector3.ZERO, "test:loot", "ITEM_P2_BEER", 5)
+	b.pick()
+	check(GameState.babki == 5 and GameState.item_count("ITEM_P2_BEER") == 1, "одна и та же добыча начисляется один раз")
+	world.queue_free()
+
+
+func test_breakable_drops_loot_once() -> void:
+	var world := Node3D.new()
+	add_child(world)
+	var box := Breakable.spawn(world, "boxes", Vector3(1, 0, 1))
+	box.take_hit(100.0, Vector3.ZERO)
+	var drops := world.get_children().filter(func(n): return n is LootDrop).size()
+	check(drops >= 1 and not box.is_alive(), "разбитый ящик роняет бабки")
+	box.take_hit(100.0, Vector3.ZERO)
+	check(world.get_children().filter(func(n): return n is LootDrop).size() == drops, "второй удар не роняет ещё")
+	var again := Breakable.spawn(world, "boxes", Vector3(1, 0, 1))
+	again.take_hit(100.0, Vector3.ZERO)
+	check(world.get_children().filter(func(n): return n is LootDrop).size() == drops, "тот же ящик после перезахода пуст")
+	world.queue_free()

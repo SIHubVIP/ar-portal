@@ -14,7 +14,8 @@ const ATTACK_COOLDOWN := 0.45
 const ATTACK_DAMAGE := 12.0
 const CLASS_COLORS := {"CLASS_1": Color(0.75, 0.16, 0.14), "CLASS_2": Color(0.2, 0.55, 0.3),
 		"CLASS_3": Color(0.45, 0.25, 0.7)}
-const MODELS := {"CLASS_1": "res://assets/characters/vyshibala/vyshibala.glb"}
+const MODELS := {"CLASS_1": "res://assets/characters/vyshibala/vyshibala.glb",
+		"CLASS_1_f": "res://assets/characters/vyshibala/vyshibala_f.glb"}
 const LOOPED := ["Idle", "Walk", "Run"]
 
 ## Азимут камеры: ввод стика поворачивается на него (камера обновляет каждый кадр).
@@ -52,7 +53,8 @@ func _ready() -> void:
 	book = AbilityBook.new(GameState.class_id if GameState.class_id != "" else "CLASS_1")
 	_rig = Node3D.new()
 	add_child(_rig)
-	var model_path: String = MODELS.get(GameState.class_id if GameState.class_id != "" else "CLASS_1", "")
+	var cid := GameState.class_id if GameState.class_id != "" else "CLASS_1"
+	var model_path: String = MODELS.get(cid + ("_f" if GameState.gender == "f" else ""), MODELS.get(cid, ""))
 	if model_path != "" and ResourceLoader.exists(model_path):
 		_build_model(model_path)
 	else:
@@ -76,6 +78,9 @@ func _build_blocks() -> void:
 	Kit.capsule(_rig, 0.33, 0.95, Vector3(0, 1.2, 0), jacket)
 	Kit.sphere(_rig, 0.24, Vector3(0, 1.88, 0), skin)
 	Kit.box(_rig, Vector3(0.4, 0.12, 0.3), Vector3(0, 2.07, -0.02), Color(0.2, 0.15, 0.1))
+	if GameState.gender == "f":
+		Kit.sphere(_rig, 0.13, Vector3(0, 1.98, -0.25), Color(0.95, 0.82, 0.55))
+		Kit.sphere(_rig, 0.1, Vector3(0, 1.8, -0.3), Color(0.95, 0.82, 0.55))
 	Kit.box(_rig, Vector3(0.3, 0.06, 0.05), Vector3(0, 1.9, 0.23), Color(0.1, 0.1, 0.1))
 	for side in [-1, 1]:
 		var leg := Node3D.new()
@@ -266,7 +271,12 @@ func nearest_enemy(radius: float, from := Vector3.INF) -> Node3D:
 		if not e.is_alive():
 			continue
 		var d: float = e.global_position.distance_to(c)
-		if d <= best_d:
+		if d > radius:
+			continue
+		# мусор и ящики — только если рядом нет живых врагов
+		if "is_prop" in e:
+			d += radius
+		if d <= best_d or best == null:
 			best_d = d
 			best = e
 	return best
