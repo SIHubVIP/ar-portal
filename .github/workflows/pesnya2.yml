@@ -6,6 +6,10 @@ on:
     paths:
       - "pesnya2/**"
       - ".github/workflows/pesnya2.yml"
+  pull_request:
+    paths:
+      - "pesnya2/**"
+      - ".github/workflows/pesnya2.yml"
   workflow_dispatch:
 
 permissions:
