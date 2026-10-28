@@ -74,6 +74,11 @@ func _ready() -> void:
 	hud.inventory.closed.connect(func(): SaveService.save_game())
 	GameState.heal(GameState.max_hp)
 	hud.show_toast("База: здесь безопасно, здоровье восстановлено")
+	if OS.get_cmdline_user_args().has("--open=storage"):
+		GameState.add_item("ITEM_P1_SCRAP", 2)
+		GameState.add_item("ITEM_P2_BEER")
+		GameState.storage["ITEM_P2_PIPE"] = 1
+		hud.open_storage.call_deferred()
 	if OS.get_cmdline_user_args().has("--autotest"):
 		_autotest.call_deferred()
 

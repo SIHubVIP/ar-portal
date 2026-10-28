@@ -72,6 +72,10 @@ func _ready() -> void:
 	elif QuestService.state_of(QID) == QuestService.AVAILABLE:
 		_intro.call_deferred()
 	for arg in args:
+		if arg.begins_with("--cam="):
+			var dy := arg.trim_prefix("--cam=").split(",")
+			camera.distance = float(dy[0])
+			camera.rotate_by(deg_to_rad(float(dy[1])))
 		if arg.begins_with("--open="):
 			_dev_open.call_deferred(arg.trim_prefix("--open="))
 		if arg.begins_with("--spawn="):
@@ -151,8 +155,17 @@ func _build_city() -> void:
 	]
 	for b in blocks:
 		var size: Vector3 = b[1]
-		Kit.solid_box(self, size, b[0] + Vector3(0, size.y / 2, 0), b[2], 0.0, true)
-		_queue_windows(b[0], size)
+		var floors := roundi(size.y / 3.0)
+		var model := "panel_%d" % floors
+		if Props.exists(model) and absf(b[0].x) > 1.0:
+			# панелька из Blender: подъезды смотрят на улицу, окна и балконы уже в модели
+			var body := Props.collider(self, size, b[0] + Vector3(0, size.y / 2, 0), true)
+			Props.place(body, model, Vector3(0, -size.y / 2, 0), 0.0 if b[0].x < 0 else 180.0,
+					Vector3(size.x / 12.0, 1, size.z / 20.0))
+		else:
+			Kit.solid_box(self, size, b[0] + Vector3(0, size.y / 2, 0), b[2], 0.0, true)
+			_queue_windows(b[0], size)
+	_build_street_props()
 	# вывески и парадоксальная реклама (редакторские надписи вертикального среза)
 	_sign("ПОГУЛЯЙ", Vector3(0, 24, -66.9), 260, Color(1, 0.3, 0.6), 0.0)
 	_sign("ЛОМБАРД «ВЕЧНОСТЬ»", Vector3(-12.9, 5, 6), 90, Color(0.3, 1, 0.8), 90.0)
@@ -172,6 +185,23 @@ func _build_city() -> void:
 		var a := TAU * i / 16.0
 		Kit.sphere(ufo, 1.0, Vector3(cos(a) * 30, -1, sin(a) * 30), Color(0.4, 1, 0.6), 4.0)
 	ufo.create_tween().set_loops().tween_property(ufo, "rotation:y", TAU, 60.0).from(0.0)
+
+
+## Фонари вдоль тротуаров, мусорки у подъездов, лавки и билборд с местной рекламой.
+func _build_street_props() -> void:
+	for z in range(0, -62, -12):
+		Props.place(self, "streetlamp", Vector3(-8.6, 0, z), 90.0)
+		Props.place(self, "streetlamp", Vector3(8.6, 0, z - 6), -90.0)
+	for p in [Vector3(-11.5, 0, -4), Vector3(11.5, 0, -10), Vector3(-11.5, 0, -28), Vector3(11.5, 0, -34)]:
+		Props.collider(self, Vector3(1.7, 1.2, 1.1), p + Vector3(0, 0.6, 0))
+		Props.place(self, "dumpster", p, 90.0 if p.x < 0 else -90.0)
+	for p in [Vector3(-11.8, 0, -9), Vector3(11.8, 0, -16)]:
+		Props.place(self, "bench", p, 90.0 if p.x < 0 else -90.0)
+	if Props.place(self, "billboard", Vector3(10.5, 0, -52), -90.0):
+		var t := Kit.label(self, "МИКРОЗАЙМ «ВТОРОЙ ШАНС»\nзалог — почка, можно чужая", Vector3(10.1, 6.2, -52), 70,
+				Color(1, 1, 1), false)
+		t.rotation_degrees.y = -90.0
+		t.outline_size = 0
 
 
 func _sign(text: String, pos: Vector3, size: int, color: Color, yaw_deg: float) -> void:
@@ -249,17 +279,12 @@ func _build_parking() -> void:
 	cs.shape = bs
 	cs.position.y = 0.6
 	body.add_child(cs)
-	Kit.box(car, Vector3(2, 0.7, 4.4), Vector3(0, 0.65, 0), Color(0.8, 0.1, 0.12))
-	Kit.box(car, Vector3(1.8, 0.35, 1.0), Vector3(0, 1.15, -0.6), Color(0.15, 0.1, 0.1))
-	Kit.box(car, Vector3(1.8, 0.45, 0.9), Vector3(0, 1.15, 1.2), Color(0.25, 0.15, 0.1))
-	Kit.box(car, Vector3(1.8, 0.5, 0.06), Vector3(0, 1.25, -1.3), Color(0.6, 0.8, 0.9, 0.5))
-	for wx in [-1, 1]:
-		for wz in [-1.4, 1.4]:
-			var w := Kit.cylinder(car, 0.38, 0.3, Vector3(wx * 1.0, 0.38, wz), Color(0.08, 0.08, 0.08))
-			w.rotation_degrees.z = 90
+	if Props.place(car, "convertible", Vector3.ZERO, 180.0) == null:
+		Kit.box(car, Vector3(2, 0.7, 4.4), Vector3(0, 0.65, 0), Color(0.8, 0.1, 0.12))
 	Kit.label(car, "ИМУЩЕСТВО ФЛОТА №0001", Vector3(0, 1.0, 2.21), 28, Color(0.4, 1, 0.6), false)
 	# скамейка, урны, автомат
-	Kit.solid_box(self, Vector3(2.4, 0.5, 0.7), Vector3(6, 0.25, -3), Color(0.45, 0.3, 0.2))
+	Props.collider(self, Vector3(2.4, 0.5, 0.7), Vector3(6, 0.25, -3))
+	Props.place(self, "bench", Vector3(6, 0, -3), 180.0)
 	Kit.solid_box(self, Vector3(0.7, 1.0, 0.7), Vector3(-5, 0.5, 5), Color(0.25, 0.35, 0.3))
 	Kit.solid_box(self, Vector3(1.2, 2.0, 0.8), Vector3(-3, 1.0, -7), Color(0.3, 0.3, 0.6), 0.2)
 	_add_pickup("ITEM_P1_PHONE", Vector3(6.2, 0.6, -2.2))
@@ -268,8 +293,9 @@ func _build_parking() -> void:
 	# гараж №13 — вход на личную базу
 	for i in 6:
 		var gx := -10.0 + i * 4.2
-		Kit.solid_box(self, Vector3(4, 3, 4), Vector3(gx, 1.5, 16), Color(0.42, 0.4, 0.38), 0.0, true)
-		Kit.box(self, Vector3(3, 2.4, 0.05), Vector3(gx, 1.2, 13.98), Color(0.3, 0.45, 0.35) if i != 4 else Color(0.85, 0.6, 0.15))
+		var g := Props.collider(self, Vector3(4, 3, 4), Vector3(gx, 1.5, 16), true)
+		if Props.place(g, "garage_13" if i == 4 else "garage", Vector3(0, -1.5, 0), 180.0) == null:
+			Kit.box(g, Vector3(4, 3, 4), Vector3.ZERO, Color(0.42, 0.4, 0.38))
 	Kit.label(self, "ГАРАЖ №13", GARAGE_POS + Vector3(0, 3.4, 0), 44, Color(1, 0.8, 0.3))
 	_interactables.append({"pos": GARAGE_POS, "radius": 3.0, "label": "База", "cb": _enter_base,
 			"enabled": func(): return true})
@@ -399,9 +425,9 @@ func _build_kiosk() -> void:
 	k.name = "Kiosk"
 	k.position = KIOSK_POS
 	add_child(k)
-	Kit.solid_box(k, Vector3(4, 3, 3), Vector3(0, 1.5, 0), Color(0.85, 0.85, 0.8))
-	Kit.box(k, Vector3(2.6, 1.0, 0.05), Vector3(0, 1.6, 1.52), Color(1, 0.9, 0.6), 1.2)
-	Kit.box(k, Vector3(4.4, 0.6, 3.4), Vector3(0, 3.3, 0), Color(0.1, 0.4, 0.8))
+	Props.collider(k, Vector3(4, 3, 3), Vector3(0, 1.5, 0))
+	if Props.place(k, "kiosk", Vector3.ZERO) == null:
+		Kit.box(k, Vector3(4, 3, 3), Vector3(0, 1.5, 0), Color(0.85, 0.85, 0.8))
 	_sign("КИОСК 24/7 · РАССРОЧКА НА ВСЁ", KIOSK_POS + Vector3(0, 3.3, 1.75), 40, Color(1, 1, 1), 0.0)
 	_kiosk_owner = _person(KIOSK_POS + Vector3(0.6, 0, 0.6), Color(0.5, 0.35, 0.3), "Киоскёр")
 	# разбитый дрон, привалившийся к двери, и батарея на месте аварии
