@@ -1,0 +1,238 @@
+{
+ "schema_version": 1,
+ "source": "01_TZ_PROMPT_GODOT.pdf",
+ "source_sha256": "c91effa477b9f32356076443886e7acc74891aa5489a5ecfbd8a00316fae24de",
+ "max_level": 55,
+ "classes": [
+  {
+   "id": "CLASS_1",
+   "name": "Вышибала",
+   "abilities": [
+    "ABL_1_1",
+    "ABL_1_2",
+    "ABL_1_3",
+    "ABL_1_4",
+    "ABL_1_5",
+    "ABL_1_6",
+    "ABL_1_7"
+   ]
+  },
+  {
+   "id": "CLASS_2",
+   "name": "Проныра",
+   "abilities": [
+    "ABL_2_1",
+    "ABL_2_2",
+    "ABL_2_3",
+    "ABL_2_4",
+    "ABL_2_5",
+    "ABL_2_6",
+    "ABL_2_7"
+   ]
+  },
+  {
+   "id": "CLASS_3",
+   "name": "Техношаман",
+   "abilities": [
+    "ABL_3_1",
+    "ABL_3_2",
+    "ABL_3_3",
+    "ABL_3_4",
+    "ABL_3_5",
+    "ABL_3_6",
+    "ABL_3_7"
+   ]
+  }
+ ],
+ "abilities": [
+  {
+   "id": "ABL_1_1",
+   "class_id": "CLASS_1",
+   "name": "Квитанция в лоб",
+   "kind": "удар",
+   "cooldown_s": 5.0,
+   "range_m": 2.5,
+   "balance_status": "source_only"
+  },
+  {
+   "id": "ABL_1_2",
+   "class_id": "CLASS_1",
+   "name": "Рывок по знакомству",
+   "kind": "рывок",
+   "cooldown_s": 11.0,
+   "range_m": 8.0,
+   "balance_status": "source_only"
+  },
+  {
+   "id": "ABL_1_3",
+   "class_id": "CLASS_1",
+   "name": "Стол — это щит",
+   "kind": "блок",
+   "cooldown_s": 15.0,
+   "range_m": 0.0,
+   "balance_status": "source_only"
+  },
+  {
+   "id": "ABL_1_4",
+   "class_id": "CLASS_1",
+   "name": "Групповая жалоба",
+   "kind": "таунт",
+   "cooldown_s": 19.0,
+   "range_m": 7.0,
+   "balance_status": "source_only"
+  },
+  {
+   "id": "ABL_1_5",
+   "class_id": "CLASS_1",
+   "name": "Ой, простите",
+   "kind": "контрудар",
+   "cooldown_s": 13.0,
+   "range_m": 3.5,
+   "balance_status": "source_only"
+  },
+  {
+   "id": "ABL_1_6",
+   "class_id": "CLASS_1",
+   "name": "По регламенту",
+   "kind": "удар по площади",
+   "cooldown_s": 23.0,
+   "range_m": 5.0,
+   "balance_status": "source_only"
+  },
+  {
+   "id": "ABL_1_7",
+   "class_id": "CLASS_1",
+   "name": "Финальная разборка",
+   "kind": "ультимейт",
+   "cooldown_s": 80.0,
+   "range_m": 6.0,
+   "balance_status": "source_only"
+  },
+  {
+   "id": "ABL_2_1",
+   "class_id": "CLASS_2",
+   "name": "Карманная правда",
+   "kind": "выстрел",
+   "cooldown_s": 5.0,
+   "range_m": 11.0,
+   "balance_status": "source_only"
+  },
+  {
+   "id": "ABL_2_2",
+   "class_id": "CLASS_2",
+   "name": "Не моя смена",
+   "kind": "уклонение",
+   "cooldown_s": 10.0,
+   "range_m": 7.0,
+   "balance_status": "source_only"
+  },
+  {
+   "id": "ABL_2_3",
+   "class_id": "CLASS_2",
+   "name": "Скидка за спину",
+   "kind": "критический удар",
+   "cooldown_s": 13.0,
+   "range_m": 3.0,
+   "balance_status": "source_only"
+  },
+  {
+   "id": "ABL_2_4",
+   "class_id": "CLASS_2",
+   "name": "Ложный талон",
+   "kind": "приманка",
+   "cooldown_s": 18.0,
+   "range_m": 9.0,
+   "balance_status": "source_only"
+  },
+  {
+   "id": "ABL_2_5",
+   "class_id": "CLASS_2",
+   "name": "Тихий скандал",
+   "kind": "дебафф",
+   "cooldown_s": 22.0,
+   "range_m": 10.0,
+   "balance_status": "source_only"
+  },
+  {
+   "id": "ABL_2_6",
+   "class_id": "CLASS_2",
+   "name": "Штраф без подписи",
+   "kind": "залп",
+   "cooldown_s": 24.0,
+   "range_m": 12.0,
+   "balance_status": "source_only"
+  },
+  {
+   "id": "ABL_2_7",
+   "class_id": "CLASS_2",
+   "name": "Испарился из чата",
+   "kind": "ультимейт",
+   "cooldown_s": 75.0,
+   "range_m": 0.0,
+   "balance_status": "source_only"
+  },
+  {
+   "id": "ABL_3_1",
+   "class_id": "CLASS_3",
+   "name": "Пинг Вселенной",
+   "kind": "энерголуч",
+   "cooldown_s": 5.0,
+   "range_m": 13.0,
+   "balance_status": "source_only"
+  },
+  {
+   "id": "ABL_3_2",
+   "class_id": "CLASS_3",
+   "name": "Роутер в сердцах",
+   "kind": "турель",
+   "cooldown_s": 18.0,
+   "range_m": 9.0,
+   "balance_status": "source_only"
+  },
+  {
+   "id": "ABL_3_3",
+   "class_id": "CLASS_3",
+   "name": "Кукуха в облаке",
+   "kind": "контроль",
+   "cooldown_s": 22.0,
+   "range_m": 8.0,
+   "balance_status": "source_only"
+  },
+  {
+   "id": "ABL_3_4",
+   "class_id": "CLASS_3",
+   "name": "Перенос розетки",
+   "kind": "короткий телепорт",
+   "cooldown_s": 16.0,
+   "range_m": 7.0,
+   "balance_status": "source_only"
+  },
+  {
+   "id": "ABL_3_5",
+   "class_id": "CLASS_3",
+   "name": "Файрвол по-братски",
+   "kind": "барьер",
+   "cooldown_s": 20.0,
+   "range_m": 6.0,
+   "balance_status": "source_only"
+  },
+  {
+   "id": "ABL_3_6",
+   "class_id": "CLASS_3",
+   "name": "Бесплатная молодость",
+   "kind": "усиление",
+   "cooldown_s": 30.0,
+   "range_m": 0.0,
+   "balance_status": "source_only"
+  },
+  {
+   "id": "ABL_3_7",
+   "class_id": "CLASS_3",
+   "name": "Обновление без согласия",
+   "kind": "ультимейт",
+   "cooldown_s": 88.0,
+   "range_m": 12.0,
+   "balance_status": "source_only"
+  }
+ ]
+}

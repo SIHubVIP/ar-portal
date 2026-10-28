@@ -1,0 +1,29 @@
+{
+ "generated_by": "tools/importers/import_sources.py",
+ "sources": [
+  {
+   "file": "docs/source/01_TZ_PROMPT_GODOT.pdf",
+   "sha256": "c91effa477b9f32356076443886e7acc74891aa5489a5ecfbd8a00316fae24de",
+   "bytes": 88621
+  },
+  {
+   "file": "docs/source/02_SYUZHET_PESNYA.pdf",
+   "sha256": "24eff1dd713f56164e42266f37fa5836cf02907c00c0bc8c60f6d3ab80e61769",
+   "bytes": 100822
+  },
+  {
+   "file": "docs/source/03_SCENARIY_127_KVESTOV.pdf",
+   "sha256": "e71b8f634fe2191abf9acb9dd0ca89acd1a3c378b003d9687d059312d713eedf",
+   "bytes": 362240
+  }
+ ],
+ "counts": {
+  "quests": 127,
+  "stages": 543,
+  "npcs": 33,
+  "bosses": 15,
+  "abilities": 21,
+  "scenes": 8
+ },
+ "v4_archive": "NOT_AVAILABLE"
+}

@@ -1,0 +1,14 @@
+{
+ "schema_version": 1,
+ "source": "editorial",
+ "note": "Предметы вертикального среза. Это новая редакторская работа, а не данные из исходной базы предметов: у каждого origin=editorial_P1.",
+ "items": [
+  {"id": "ITEM_P1_PHONE", "name": "Разряженный телефон", "type": "quest", "rarity": "common", "origin": "editorial_P1", "quest_id": "MAIN_001"},
+  {"id": "ITEM_P1_SHOE", "name": "Второй ботинок", "type": "quest", "rarity": "common", "origin": "editorial_P1", "quest_id": "MAIN_001"},
+  {"id": "ITEM_P1_DEBT_NOTICE", "name": "Уведомление о долге ЖКХ", "type": "quest", "rarity": "common", "origin": "editorial_P1", "quest_id": "MAIN_001"},
+  {"id": "ITEM_P1_ALIEN_BATTERY", "name": "Инопланетная батарея", "type": "material", "rarity": "rare", "origin": "editorial_P1", "quest_id": "MAIN_001"},
+  {"id": "ITEM_P1_KIOSK_DISCOUNT", "name": "Скидочная карта киоска", "type": "key", "rarity": "uncommon", "origin": "editorial_P1", "quest_id": "MAIN_001"},
+  {"id": "ITEM_P1_SCRAP", "name": "Обломок дрона-сборщика", "type": "material", "rarity": "common", "origin": "editorial_P1"},
+  {"id": "ITEM_P1_GRATITUDE_CHIP", "name": "Чип обязательной благодарности", "type": "material", "rarity": "uncommon", "origin": "editorial_P1"}
+ ]
+}
