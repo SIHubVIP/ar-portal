@@ -30,14 +30,13 @@ static func build(w: Node3D) -> void:
 	_arch(w)
 	_string_lights(w)
 	_ac_units(w)
+	_posters(w)
 
 
-static func _sign(w: Node3D, text: String, pos: Vector3, yaw_deg: float, size: int, color: Color) -> Label3D:
-	var l := Kit.label(w, text, pos, size, color, false)
-	l.rotation_degrees.y = yaw_deg
-	l.outline_size = 0
-	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	return l
+## Вывеска как на эталоне (0.10): короб, неон, щит или плакат — см. Signboard.
+static func _sign(w: Node3D, text: String, pos: Vector3, yaw_deg: float, size: int, color: Color, kind := "neon",
+		opts := {}) -> Signboard:
+	return Signboard.make(w, text, kind, color, pos, yaw_deg, size * 0.0105, opts)
 
 
 ## Точка на модели: смещение в осях модели (лицо +Z) с поворотом yaw.
@@ -49,8 +48,12 @@ static func _booth_and_gate(w: Node3D) -> void:
 	var yaw := 90.0
 	Props.collider(w, Vector3(2.4, 2.8, 3.4), BOOTH_POS + Vector3(0, 1.4, 0))
 	Props.place(w, "parking_booth", BOOTH_POS, yaw)
-	_sign(w, "ПАРКОВКА ПЛАТНАЯ.\nСОН ТОЖЕ.", _at(BOOTH_POS, Vector3(0, 3.35, 1.56), yaw), yaw, 56, NEON_WARM) \
-			.modulate = Color(1.5, 1.2, 0.8)
+	_sign(w, "ПАРКОВКА ПЛАТНАЯ.\nСОН ТОЖЕ.", _at(BOOTH_POS, Vector3(0, 3.35, 1.4), yaw), yaw, 44, Color.WHITE, "lightbox",
+			{"bg": Color(1.0, 0.88, 0.62)})
+	# знак «P» и надпись баллончиком на будке, как на эталоне
+	_sign(w, "P", _at(BOOTH_POS, Vector3(-0.9, 1.6, 1.72), yaw), yaw, 60, Color.WHITE, "board", {"bg": Color(0.1, 0.3, 0.75)})
+	_sign(w, "ПОГУЛЯЙ\nНЕ СПИТ", _at(BOOTH_POS, Vector3(-1.75, 1.3, 0.2), yaw - 90.0), yaw - 90.0, 40,
+			Color(0.95, 0.95, 0.95), "graffiti")
 	var lamp := OmniLight3D.new()
 	lamp.position = _at(BOOTH_POS, Vector3(1.3, 4.0, 1.7), yaw)
 	lamp.light_color = NEON_WARM
@@ -66,9 +69,8 @@ static func _ufo_kiosk(w: Node3D) -> void:
 	var yaw := 90.0
 	Props.collider(w, Vector3(2.6, 2.8, 4.0), UFO_KIOSK_POS + Vector3(0, 1.4, 0))
 	Props.place(w, "ufo_kiosk", UFO_KIOSK_POS, yaw)
-	var neon := _sign(w, "НЛО\nнапрокат", _at(UFO_KIOSK_POS, Vector3(0, 3.15, 1.5), yaw), yaw, 64, NEON_PINK)
-	neon.modulate = Color(1.6, 0.8, 1.6)
-	PogulyayDressing._blink(neon)
+	_sign(w, "НЛО\nНАПРОКАТ", _at(UFO_KIOSK_POS, Vector3(0.3, 3.15, 1.5), yaw), yaw, 50, NEON_PINK, "neon",
+			{"icon": "ufo", "flicker": true})
 	var l := OmniLight3D.new()
 	l.position = _at(UFO_KIOSK_POS, Vector3(0, 3.0, 2.0), yaw)
 	l.light_color = Color(1.0, 0.5, 0.8)
@@ -83,8 +85,10 @@ static func _taxi_stop(w: Node3D) -> void:
 	var pole := TAXI_POS + Vector3(-1.4, 0, 3.3)
 	Props.collider(w, Vector3(0.2, 2.8, 0.2), pole + Vector3(0, 1.4, 0))
 	Props.place(w, "taxi_sign", pole, 90.0)
-	_sign(w, "ТАКСИ", _at(pole, Vector3(0, 2.62, 0.09), 90.0), 90.0, 40, Color(0.1, 0.08, 0.05))
-	_sign(w, "ТАКСИ", Vector3(-12.9, 4.2, 6.5), 90.0, 110, NEON_WARM).modulate = Color(1.4, 1.1, 0.6)
+	_sign(w, "ТАКСИ", _at(pole, Vector3(0, 2.62, 0.09), 90.0), 90.0, 26, Color(0.1, 0.08, 0.05), "board",
+			{"bg": Color(0.98, 0.8, 0.15)})
+	_sign(w, "ТАКСИ", Vector3(-12.95, 4.2, 9.5), 90.0, 90, Color(0.98, 0.78, 0.2), "board",
+			{"bg": Color(0.2, 0.17, 0.15), "lamp": true})
 
 
 ## Технический канал вдоль восточного дома: вода течёт к решётке, из трубы льётся слив.
@@ -105,14 +109,17 @@ static func _canal(w: Node3D) -> void:
 	ripples.noise = noise
 	ripples.seamless = true
 	ripples.as_normal_map = true
-	ripples.bump_strength = 6.0
+	ripples.bump_strength = 1.5
 	var mat := StandardMaterial3D.new()
-	mat.albedo_color = Color(0.04, 0.07, 0.08)
-	mat.metallic = 0.4
-	mat.roughness = 0.04
+	# без металла: иначе вода отражает звёздное небо и канал выглядит дырой в космос
+	mat.albedo_color = Color(0.05, 0.09, 0.1)
+	mat.metallic = 0.0
+	mat.roughness = 0.12
+	mat.metallic_specular = 0.9
 	mat.normal_enabled = true
 	mat.normal_texture = ripples
-	mat.uv1_scale = Vector3(1.5, 4.0, 1)
+	mat.uv1_scale = Vector3(0.6, 1.6, 1)
+	mat.normal_scale = 0.5
 	water.material_override = mat
 	water.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	water.set_meta("map_skip", true)
@@ -161,8 +168,12 @@ static func _market(w: Node3D) -> void:
 	var board := Vector3(9.3, 0, -14.6)
 	Props.collider(w, Vector3(0.9, 1.4, 0.4), board + Vector3(0, 0.7, 0))
 	Props.place(w, "chalk_board", board, 45.0)
-	_sign(w, "СВЕЖЕЕ\nДЕШЕВЛЕ,\nЧЕМ\nЗАВТРА", _at(board, Vector3(0, 1.08, 0.06), 45.0), 45.0, 30,
-			Color(0.75, 0.12, 0.1))
+	_sign(w, "СВЕЖЕЕ\nДЕШЕВЛЕ,\nЧЕМ\nЗАВТРА", _at(board, Vector3(0, 1.08, 0.06), 45.0), 45.0, 18,
+			Color(0.75, 0.12, 0.1), "poster", {"tilt": 0.0, "font": "hand"})
+	# над рынком — красные буквы, как на эталоне, и плакат с лицом «Больше, чем люди»
+	_sign(w, "РЫНОК\nСЫТЫЙ КОНЕЦ", Vector3(12.95, 5.6, -1.0), -90.0, 80, Color(1.0, 0.22, 0.18), "letters")
+	_sign(w, "БОЛЬШЕ,\nЧЕМ ЛЮДИ", Vector3(12.95, 2.3, -10.5), -90.0, 34, Color(0.8, 0.1, 0.08), "poster",
+			{"bg": Color(0.86, 0.82, 0.72)})
 
 
 ## Боковой двор в просвете между западными домами: мусорка, бельё, своя лампа.
@@ -181,7 +192,8 @@ static func _side_yard(w: Node3D) -> void:
 	l.light_energy = 1.4
 	l.omni_range = 5.0
 	w.add_child(l)
-	_sign(w, "ДВОР · ПРОХОДА НЕТ\nДАЖЕ ДЛЯ ТАРЕЛОК", c + Vector3(1.6, 2.2, 2.0), 90.0, 24, Color(0.95, 0.9, 0.8))
+	_sign(w, "ДВОР · ПРОХОДА НЕТ\nДАЖЕ ДЛЯ ТАРЕЛОК", c + Vector3(1.6, 2.2, 2.0), 90.0, 22, Color(0.7, 0.1, 0.08), "board",
+			{"bg": Color(0.9, 0.88, 0.82), "lamp": true})
 
 
 ## Кирпичная арка на выходе: модель на фасаде, дом над ней и соседние торцы — в кирпич.
@@ -233,3 +245,16 @@ static func _ac_units(w: Node3D) -> void:
 			[Vector3(12.75, 3.6, 7.5), -90.0], [Vector3(12.75, 6.5, -9.0), -90.0], [Vector3(12.75, 3.4, -24.0), -90.0],
 			[Vector3(12.75, 9.5, -40.0), -90.0], [Vector3(-12.75, 6.2, -42.0), 90.0]]:
 		Props.place(w, "ac_unit", a[0], a[1])
+
+
+## Плакаты и объявления на стенах двора (0.10): эталон весь в бумажках, двор не должен быть голым.
+static func _posters(w: Node3D) -> void:
+	var paper := Color(0.92, 0.9, 0.84)
+	for p in [["ВНИМАНИЕ!\nУЛЫБКА\nОБЯЗАТЕЛЬНА", Vector3(-12.95, 1.9, -9.5), 90.0, Color(0.1, 0.25, 0.6), paper],
+			["ПРОПАЛ КОТ\nзовут Протокол\nвернуть за\nвознаграждение", Vector3(-12.95, 1.6, 2.6), 90.0, Color(0.1, 0.1, 0.1), paper],
+			["МИКРОЗАЙМ\nЗА 5 МИНУТ\nДОЛГ НАВСЕГДА", Vector3(12.95, 1.9, -17.0), -90.0, Color(1, 1, 1), Color(0.8, 0.12, 0.1)],
+			["СДАМ КОМНАТУ\nПРИШЕЛЬЦАМ\nбез детей", Vector3(12.95, 1.7, -31.0), -90.0, Color(0.1, 0.1, 0.1), Color(0.95, 0.9, 0.5)],
+			["РОЗЫСК\nПЕСНЯ\nзапрещена\nдо написания", Vector3(-12.95, 2.0, -30.5), 90.0, Color(0.6, 0.08, 0.06), paper],
+			["КОНЦЕРТ\nОТМЕНЁН\nНАВСЕГДА", Vector3(12.95, 2.1, -51.0), -90.0, Color(1, 0.9, 0.3), Color(0.15, 0.12, 0.35)],
+			["СДАЙ ДРОНА —\nПОЛУЧИ\nСПАСИБО", Vector3(-12.95, 1.8, -48.0), 90.0, Color(0.05, 0.3, 0.15), paper]]:
+		_sign(w, p[0], p[1], p[2], 20, p[3], "poster", {"bg": p[4]})

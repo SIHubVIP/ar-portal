@@ -38,6 +38,7 @@ var mobs: DistrictMobs
 var street_life: StreetLife
 var _pavel: Node3D
 var _safe_tick := 0.0
+var physics_props: PhysicsProps
 var _cine_hidden: Array = []
 var _cine_turned: Array = []
 
@@ -57,6 +58,7 @@ func _ready() -> void:
 	_build_windows()
 	PogulyayDressing.build(self)
 	ParkingReference.build(self)
+	_trim_shadows(self)
 	_build_pavel()
 
 	if OS.get_cmdline_user_args().has("--gender=f"):
@@ -110,6 +112,23 @@ func _ready() -> void:
 	chunks.name = "District"
 	chunks.player = player
 	add_child(chunks)
+	var lamp_lights := LampLights.new()
+	lamp_lights.player = player
+	add_child(lamp_lights)
+	physics_props = PhysicsProps.new()
+	physics_props.player = player
+	# двор: конусы у шлагбаума, урны у скамеек и парковки, коробки у ларька
+	physics_props.extra = [[Vector3(-6.5, 0, -10.2), "cone"], [Vector3(-5.7, 0, -10.6), "cone"], [Vector3(-4.9, 0, -10.2), "cone"],
+			[Vector3(7.6, 0, -2.4), "bin"], [Vector3(-9.6, 0, 1.5), "bin"], [Vector3(-9.8, 0, -22.0), "bin"],
+			[Vector3(9.2, 0, -30.0), "bin"], [Vector3(-11.2, 0, -51.0), "box"], [Vector3(-10.4, 0, -51.6), "box"],
+			[Vector3(5.4, 0, 11.0), "tire"], [Vector3(3.0, 0, -40.0), "cone"], [Vector3(-3.0, 0, -40.0), "cone"]]
+	add_child(physics_props)
+	var pigeons := Pigeons.new()
+	pigeons.player = player
+	add_child(pigeons)
+	var rain := Rain.new()
+	rain.target = player
+	add_child(rain)
 	mobs = DistrictMobs.new()
 	mobs.player = player
 	add_child(mobs)
@@ -123,6 +142,7 @@ func _ready() -> void:
 		warm.append(chunks._mat("house_%d" % k))
 		warm.append(IsoCamera.cut_material(chunks._mat("house_%d" % k)))
 	ShaderWarmup.run(self, player.global_position, warm)
+	DistrictDressing.warm()
 	var args := OS.get_cmdline_user_args()
 	if _autotest:
 		_run_autotest.call_deferred()
@@ -196,6 +216,27 @@ func _dev_open(what: String) -> void:
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_APPLICATION_PAUSED or what == NOTIFICATION_WM_CLOSE_REQUEST:
 		_save_now()
+
+
+## Тень от луны дают только дома и персонажи (0.10): каждый предмет с тенью рисуется ещё
+## раз в карту теней, и двор с вывесками и мелочью вдвое увеличивал число вызовов отрисовки.
+static func _trim_shadows(root: Node) -> void:
+	for gi in root.find_children("*", "GeometryInstance3D", true, false):
+		var g := gi as GeometryInstance3D
+		if g is Label3D:
+			g.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		elif not _is_building(g):
+			g.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+
+
+## Дом двора: тело-«окклюдер» или его модель. Тень от дома держит объём двора.
+static func _is_building(n: Node) -> bool:
+	var p := n.get_parent()
+	while p != null:
+		if p.is_in_group("occluders"):
+			return true
+		p = p.get_parent()
+	return false
 
 
 # ---------- окружение ----------
@@ -289,12 +330,15 @@ func _build_city() -> void:
 	Kit.solid_box(self, Vector3(10, 24, 10), Vector3(0, 18, -72), Color(0.5, 0.5, 0.56), 0.0, true)
 	_queue_windows(Vector3(0, 6, -72), Vector3(10, 24, 10))
 	# вывески и парадоксальная реклама (редакторские надписи вертикального среза)
-	_sign("ПОГУЛЯЙ", Vector3(0, 24, -66.9), 260, Color(1, 0.3, 0.6), 0.0)
-	_sign("ЛОМБАРД «ВЕЧНОСТЬ»", Vector3(-12.9, 5, 6), 90, Color(0.3, 1, 0.8), 90.0)
-	_sign("ШАУРМА 24 · ДАЖЕ ПОСЛЕ КОНЦА СВЕТА", Vector3(12.9, 4, -22), 80, Color(1, 0.8, 0.2), -90.0)
-	_sign("КЛУБ «ТРИДЦАТЬ ЛАЙКОВ»", Vector3(12.9, 6, -46), 90, Color(0.9, 0.3, 1), -90.0)
-	_sign("КЛАНЯЙТЕСЬ ТАРЕЛКЕ — ЭТО БЕСПЛАТНО*", Vector3(-12.9, 12, -16), 80, Color(0.4, 0.9, 1), 90.0)
-	_sign("*при наличии согласия", Vector3(-12.9, 10.8, -16), 40, Color(0.7, 0.85, 1), 90.0)
+	_sign("ПОГУЛЯЙ", Vector3(0, 24, -66.95), 260, Color(1, 0.3, 0.6), 0.0, "letters")
+	_sign("ЛОМБАРД\n«ВЕЧНОСТЬ»", Vector3(-12.95, 5, 6), 70, Color(0.3, 1, 0.8), 90.0, "neon", {"flicker": true})
+	_sign("ШАУРМА 24\nДАЖЕ ПОСЛЕ КОНЦА СВЕТА", Vector3(12.95, 4, -22), 50, Color.WHITE, -90.0, "lightbox",
+			{"bg": Color(1.0, 0.82, 0.25), "ink": Color(0.6, 0.08, 0.05)})
+	_sign("КЛУБ\n«ТРИДЦАТЬ ЛАЙКОВ»", Vector3(12.95, 6, -46), 70, Color(0.9, 0.3, 1), -90.0, "neon", {"flicker": true})
+	_sign("КЛАНЯЙТЕСЬ ТАРЕЛКЕ —\nЭТО БЕСПЛАТНО*", Vector3(-12.95, 12, -16), 80, Color.WHITE, 90.0, "lightbox",
+			{"bg": Color(0.25, 0.55, 0.95), "ink": Color(1, 1, 1)})
+	_sign("*при наличии согласия", Vector3(-12.95, 10.3, -16), 32, Color(0.1, 0.12, 0.2), 90.0, "board",
+			{"bg": Color(0.85, 0.88, 0.95)})
 	# тарелка: огромная, видна в начальной сцене
 	var ufo := Node3D.new()
 	ufo.name = "UFO"
@@ -309,10 +353,11 @@ func _build_city() -> void:
 	ufo.create_tween().set_loops().tween_property(ufo, "rotation:y", TAU, 60.0).from(0.0)
 
 
-func _sign(text: String, pos: Vector3, size: int, color: Color, yaw_deg: float) -> void:
-	var l := Kit.label(self, text, pos, size, color.lightened(0.3), false)
-	l.rotation_degrees.y = yaw_deg
-	l.outline_size = 0
+## Вывеска на стене (0.10): стиль — Signboard (короб, неон, щит, плакат…). size — прежний
+## размер шрифта надписи, из него берётся высота строки.
+func _sign(text: String, pos: Vector3, size: int, color: Color, yaw_deg: float, kind := "neon",
+		opts := {}) -> Signboard:
+	return Signboard.make(self, text, kind, color, pos, yaw_deg, size * 0.0105, opts)
 
 
 ## Окна на гранях, обращённых к улице и к камере. Все окна города — два MultiMesh (горит / не горит).
@@ -447,7 +492,9 @@ func _collect(item_id: String) -> void:
 
 func _build_queue() -> void:
 	Kit.solid_box(self, Vector3(0.3, 3, 3.5), Vector3(-11.5, 1.5, 10), Color(0.2, 0.3, 0.6), 0.3)
-	_sign("ОЧЕРЕДЬ ЗА БЕСПЛАТНОЙ КВАРТИРОЙ", Vector3(-11.3, 2.6, 10), 34, Color(0.9, 0.95, 1), 90.0)
+	_sign("ОЧЕРЕДЬ ЗА БЕСПЛАТНОЙ\nКВАРТИРОЙ", Vector3(-11.33, 2.4, 10), 30, Color(0.15, 0.2, 0.55), 90.0, "board",
+			{"bg": Color(0.93, 0.94, 0.97), "lamp": true})
+	_sign("ВЫ 4 718-Й", Vector3(-11.33, 1.3, 9.2), 22, Color(0.75, 0.1, 0.1), 90.0, "poster", {"tilt": -5.0})
 	var colors := [Color(0.4, 0.3, 0.5), Color(0.3, 0.45, 0.4), Color(0.55, 0.4, 0.25), Color(0.35, 0.35, 0.5),
 			Color(0.5, 0.25, 0.3), Color(0.3, 0.3, 0.3), Color(0.45, 0.45, 0.2)]
 	for i in colors.size():
@@ -471,16 +518,16 @@ func _build_checkpoint() -> void:
 	add_child(term)
 	Kit.cylinder(term, 0.2, 2.6, Vector3(0, 1.3, 0), Color(0.3, 0.3, 0.35))
 	Kit.box(term, Vector3(1.4, 1.0, 0.1), Vector3(0, 2.6, 0.15), Color(0.1, 0.9, 0.5), 1.5)
-	Kit.label(term, "ВЫРАЖЕНИЕ ЛИЦА:\nНЕДОСТАТОЧНО", Vector3(0, 2.6, 0.25), 22, Color(0.05, 0.2, 0.1), false)
+	Signboard.make(term, "ВЫРАЖЕНИЕ ЛИЦА:\nНЕДОСТАТОЧНО", "graffiti", Color(0.05, 0.2, 0.1), Vector3(0, 2.6, 0.2), 0.0, 0.2,
+			{"font": "block", "tilt": 0.0}).text_node.outline_size = 0
 	# пункт приёма благодарности: арка поперёк улицы, сканер ходит вверх-вниз
 	for side in [-1, 1]:
 		Props.collider(self, Vector3(0.6, 5, 0.6), CHECKPOINT_POS + Vector3(side * 6.5, 2.5, 0))
 		Kit.box(self, Vector3(0.6, 5, 0.6), CHECKPOINT_POS + Vector3(side * 6.5, 2.5, 0), Color(0.3, 0.32, 0.38))
 		Kit.box(self, Vector3(0.1, 4.2, 0.1), CHECKPOINT_POS + Vector3(side * 6.15, 2.4, 0), Color(0.3, 1, 0.6), 2.5)
 	Kit.box(self, Vector3(13.6, 0.8, 0.6), CHECKPOINT_POS + Vector3(0, 5.2, 0), Color(0.25, 0.27, 0.32))
-	var gate_sign := Kit.label(self, "ПУНКТ ПРИЁМА БЛАГОДАРНОСТИ", CHECKPOINT_POS + Vector3(0, 5.2, 0.32), 64,
-			Color(0.4, 1, 0.7), false)
-	gate_sign.outline_size = 0
+	Signboard.make(self, "ПУНКТ ПРИЁМА БЛАГОДАРНОСТИ", "neon", Color(0.4, 1, 0.7), CHECKPOINT_POS + Vector3(0, 5.2, 0.3),
+			0.0, 0.55)
 	var scan := Kit.box(self, Vector3(12.4, 0.05, 0.05), CHECKPOINT_POS + Vector3(0, 0.3, 0), Color(0.4, 1, 0.6), 4.0)
 	var scan_tw := scan.create_tween().set_loops()
 	scan_tw.tween_property(scan, "position:y", 4.4, 1.4).set_trans(Tween.TRANS_SINE)
@@ -557,7 +604,8 @@ func _build_kiosk() -> void:
 	Props.collider(k, Vector3(4, 3, 3), Vector3(0, 1.5, 0))
 	if Props.place(k, "kiosk", Vector3.ZERO) == null:
 		Kit.box(k, Vector3(4, 3, 3), Vector3(0, 1.5, 0), Color(0.85, 0.85, 0.8))
-	_sign("КИОСК 24/7 · РАССРОЧКА НА ВСЁ", KIOSK_POS + Vector3(0, 3.3, 1.75), 40, Color(1, 1, 1), 0.0)
+	_sign("КИОСК 24/7 · РАССРОЧКА НА ВСЁ", KIOSK_POS + Vector3(0, 3.3, 1.55), 36, Color.WHITE, 0.0, "lightbox",
+			{"bg": Color(0.95, 0.25, 0.2), "ink": Color(1, 1, 0.9)})
 	_kiosk_owner = _person(KIOSK_POS + Vector3(0.6, 0, 0.6), Color(0.5, 0.35, 0.3), "Киоскёр")
 	# разбитый дрон, привалившийся к двери, и батарея на месте аварии
 	_kiosk_wreck = Node3D.new()
@@ -670,7 +718,7 @@ func _update_pavel() -> void:
 
 func _build_exit_to_delovoy() -> void:
 	# выход со двора — арка в торцевом доме на севере; ворота открываются после MAIN_001
-	Kit.label(self, "АРКА · ВЫХОД В ПОГУЛЯЙ", EXIT_ARCH + Vector3(0, 6.6, 1.2), 54, Color(1, 0.85, 0.5), false).outline_size = 0
+	Signboard.make(self, "ВЫХОД В ПОГУЛЯЙ", "letters", Color(1, 0.75, 0.35), EXIT_ARCH + Vector3(0, 6.6, 0.1), 0.0, 0.6)
 	_interactables.append({"pos": EXIT_ARCH + Vector3(0, 0, 3), "radius": 3.0, "label": "Ворота", "cb": func():
 		hud.show_toast("Ворота откроются, когда разберёшься с киоском."),
 		"enabled": func(): return QuestService.state_of(QID) != QuestService.COMPLETED})

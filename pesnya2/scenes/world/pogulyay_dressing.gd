@@ -97,10 +97,9 @@ static func _neon(w: Node3D) -> void:
 		l.omni_range = n[2]
 		l.light_energy = n[3]
 		w.add_child(l)
-	var shop := Kit.label(w, "ИНТИМ 24/7\nтеперь с щупальцами", Vector3(-12.85, 5.2, -20), 90, Color(1, 0.4, 0.75), false)
-	shop.rotation_degrees.y = 90.0
-	shop.outline_size = 0
-	_blink(shop)
+	Signboard.make(w, "ИНТИМ 24/7", "neon", Color(1, 0.35, 0.75), Vector3(-12.95, 5.6, -20), 90.0, 0.85, {"flicker": true})
+	Signboard.make(w, "теперь с щупальцами", "letters", Color(0.5, 1, 0.8), Vector3(-12.95, 4.5, -20), 90.0, 0.45,
+			{"font": "script"})
 
 
 static func _blink(n: Node3D) -> void:
@@ -233,10 +232,7 @@ static func _graffiti(w: Node3D) -> void:
 			["Сдам почку. Свою. Недорого\n8-900-ПОЧКА-00", Vector3(12.95, 1.6, -15), -90.0, Color(0.95, 0.95, 0.95)],
 			["КУПЛЮ ПОЧКУ ПРИШЕЛЬЦА · ЛЮБУЮ", Vector3(-12.95, 2.0, 11), 90.0, Color(0.95, 0.95, 0.95)],
 			["ТУТ БЫЛ ВАСЯ И ПРИШЕЛЕЦ\nОБА ПЬЯНЫЕ", Vector3(-15.3, 1.2, -58), 90.0, Color(1, 0.6, 0.2)]]:
-		var l := Kit.label(w, g[0], g[1], 48, g[3], false)
-		l.rotation_degrees.y = g[2]
-		l.outline_size = 0
-		l.modulate.a = 0.9
+		Signboard.make(w, g[0], "graffiti", g[3], g[1] + Vector3(0.03 if g[2] > 0.0 else -0.03, 0, 0), g[2], 0.5)
 
 
 static func _ground_text(w: Node3D, text: String, pos: Vector3, color: Color, size: int) -> void:

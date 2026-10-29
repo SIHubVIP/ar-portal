@@ -626,6 +626,100 @@ func test_humanoid_mobs_use_npc_model() -> void:
 	drone.queue_free()
 
 
+func test_signboard_styles_build_real_objects() -> void:
+	var root := Node3D.new()
+	add_child(root)
+	for kind in Signboard.STYLES:
+		var sb := Signboard.make(root, "ШАУРМА 25/8", kind, Color(1, 0.5, 0.2), Vector3.ZERO, 0.0, 0.4, {"far": 50.0})
+		check(sb.text_node != null and sb.text_node.text == "ШАУРМА 25/8", "%s: надпись на месте" % kind)
+		check(sb.panel_size.x >= sb.text_size.x and sb.text_size.x > 1.0, "%s: размер по тексту" % kind)
+		var meshes := sb.find_children("*", "MeshInstance3D", true, false)
+		check(kind == "graffiti" or kind == "letters" or meshes.size() >= 1, "%s: не голая надпись, есть щит" % kind)
+		for gi in sb.find_children("*", "GeometryInstance3D", true, false):
+			check((gi as GeometryInstance3D).cast_shadow == GeometryInstance3D.SHADOW_CASTING_SETTING_OFF,
+					"%s: вывеска не рисуется в карту теней" % kind)
+			check(is_equal_approx((gi as GeometryInstance3D).visibility_range_end, 50.0), "%s: дальние не рисуются" % kind)
+			break
+	var lb := Signboard.make(root, "А", "lightbox", Color.WHITE, Vector3.ZERO, 0.0, 0.4)
+	check(lb.find_children("*", "MeshInstance3D", true, false).size() <= 2, "короб — одна сетка рамки и поля плюс отсвет")
+	root.queue_free()
+
+
+func test_district_chunk_is_dressed() -> void:
+	var root := Node3D.new()
+	add_child(root)
+	var c := District.chunk_of(Vector2(1220, 1220))
+	var b := DistrictDressing.Batch.new()
+	DistrictDressing.streets(root, c, District.road_segments(), b)
+	var rng := RandomNumberGenerator.new()
+	for h in District.houses():
+		if District.chunk_rect(c).has_point(h.get_center()):
+			DistrictDressing.facades(root, h, 18.0, District.road_segments(), b, rng)
+	var guard := 0
+	while not b.jobs.is_empty() and guard < 2000:
+		var job: Callable = b.jobs.pop_front()
+		job.call()
+		guard += 1
+	check(b.items.has("sidewalk") and b.items.has("model:streetlamp") and b.items.has("plain"),
+			"на участке тротуары, фонари и мелочь")
+	check(b.lamps.size() >= 10, "фонари зарегистрированы для настоящего света: %d" % b.lamps.size())
+	check(root.find_children("*", "Signboard", true, false).size() >= 5, "на участке есть вывески")
+	DistrictDressing.flush(root, c, b)
+	check(DistrictDressing.lamp_points.has(c), "участок отдал фонари LampLights")
+	var mms := root.find_children("*", "MultiMeshInstance3D", true, false)
+	check(mms.size() < 40, "мелочь участка собрана в MultiMesh по видам: %d" % mms.size())
+	root.free()
+	check(not DistrictDressing.lamp_points.has(c), "выгруженный участок забирает свои фонари")
+
+
+func test_lamp_lights_follow_nearest_lamps() -> void:
+	var hero := Node3D.new()
+	add_child(hero)
+	DistrictDressing.lamp_points[Vector2i(-9, -9)] = PackedVector3Array([Vector3(3, 5.7, 0), Vector3(100, 5.7, 0),
+			Vector3(-6, 5.7, 2)])
+	var ll := LampLights.new()
+	ll.player = hero
+	add_child(ll)
+	ll._pick()
+	var targets := ll._targets.filter(func(v: Vector3) -> bool: return v != Vector3.INF)
+	check(targets.size() == 2 and targets.has(Vector3(3, 5.7, 0)), "свет у двух ближних фонарей, дальний без света")
+	DistrictDressing.lamp_points.erase(Vector2i(-9, -9))
+	ll.queue_free()
+	hero.queue_free()
+
+
+func test_phys_props_blast_and_push() -> void:
+	var root := Node3D.new()
+	add_child(root)
+	var cone := PhysProp.make("cone", Vector3(1, 0, 0))
+	root.add_child(cone)
+	var far := PhysProp.make("bin", Vector3(20, 0, 0))
+	root.add_child(far)
+	var n := PhysProp.blast(get_tree(), Vector3.ZERO, 3.0, 6.0)
+	check(n == 1, "удар задевает только ближние предметы")
+	check(not cone.sleeping, "конус проснулся и полетит (импульс применится на шаге физики)")
+	check(far.sleeping, "дальняя урна спит")
+	root.queue_free()
+
+
+func test_physics_props_pool_limits_bodies() -> void:
+	var hero := Node3D.new()
+	add_child(hero)
+	var pool := PhysicsProps.new()
+	pool.player = hero
+	for i in 60:
+		pool.extra.append([Vector3(i % 10, 0, i / 10), "box"])
+	pool.extra.append([Vector3(200, 0, 0), "bin"])
+	add_child(pool)
+	pool.update_now()
+	check(pool.alive_count() == PhysicsProps.MAX_BODIES, "живых тел не больше %d" % PhysicsProps.MAX_BODIES)
+	hero.position = Vector3(200, 0, 0)
+	pool.update_now()
+	check(pool.alive_count() == 1, "ушёл — ближние убраны, у новой точки свой предмет")
+	pool.queue_free()
+	hero.queue_free()
+
+
 func test_pavel_single_copy_by_quest_state() -> void:
 	var c := "MAIN_001_started_and_not_completed"
 	check(not District.condition_met(c, QuestService.AVAILABLE), "до MAIN_001 Павла у киоска нет")

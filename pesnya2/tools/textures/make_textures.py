@@ -1,11 +1,15 @@
 #!/usr/bin/env python3
-"""Бесшовные текстуры для эталона парковки: мокрая брусчатка и кирпич.
+"""Бесшовные текстуры: мокрая брусчатка и кирпич (эталон парковки), асфальт, плитка
+тротуара и земля дворов (район, 0.10).
 
     python3 tools/textures/make_textures.py
 
 Пишет assets/textures/<имя>_albedo.png, _normal.png, _rough.png (1024 × 1024).
 Брусчатка: 2 × 2 м на текстуру, камни 25 × 17 см со скруглением, тёмные швы с водой.
 Кирпич: 2 × 2 м, кирпич 25 × 7.7 см, перевязка со смещением в полкирпича.
+Асфальт: 4 × 4 м, зерно, трещины, заплатки и лужи (почти зеркальные).
+Плитка: 2 × 2 м, плиты 50 × 50 см, у каждой свой тон, часть с трещиной.
+Земля: 4 × 4 м, утоптанная земля с пятнами травы и старого асфальта.
 """
 from pathlib import Path
 import numpy as np
@@ -109,7 +113,81 @@ def brick():
     save("brick", albedo, normal_from(h * 0.9 + grit * 0.1, 4.0), rough)
 
 
+def cracks(count, length, width):
+    """Маска трещин 0..1: ломаные из случайных точек, бесшовно (по модулю N)."""
+    m = np.zeros((N, N), np.float32)
+    for _ in range(count):
+        x, y = rng.uniform(0, N, 2)
+        ang = rng.uniform(0, 2 * np.pi)
+        for _ in range(int(length)):
+            ang += rng.normal(0, 0.35)
+            x, y = (x + np.cos(ang) * 2) % N, (y + np.sin(ang) * 2) % N
+            xi, yi = int(x), int(y)
+            for dx in range(-width, width + 1):
+                for dy in range(-width, width + 1):
+                    m[(yi + dy) % N, (xi + dx) % N] = 1.0
+    return m
+
+
+def asphalt():
+    grit = noise(48, 3)
+    coarse = noise(6, 3)
+    wear = noise(2, 2)
+    tone = 0.13 + 0.05 * grit + 0.02 * coarse
+    albedo = np.stack([tone, tone, tone * 1.06], -1)
+    # заплатки: прямоугольники посветлее
+    patch = np.zeros((N, N), np.float32)
+    for _ in range(5):
+        x0, y0 = rng.integers(0, N, 2)
+        w, h = rng.integers(80, 260, 2)
+        yy, xx = np.ogrid[0:N, 0:N]
+        patch = np.maximum(patch, ((((xx - x0) % N) < w) & (((yy - y0) % N) < h)).astype(np.float32))
+    albedo = albedo * (1 - patch[..., None] * 0.35) + patch[..., None] * np.array([0.2, 0.2, 0.21]) * 0.35
+    cr = cracks(26, 140, 1)
+    albedo *= (1 - cr * 0.6)[..., None]
+    albedo *= (0.92 + 0.12 * wear)[..., None]
+    puddle = noise(3, 3)
+    wet = np.clip((puddle - 0.66) * 8.0, 0, 1)
+    albedo *= (1 - wet * 0.15)[..., None]
+    rough = (0.55 + 0.2 * grit) * (1 - wet) + 0.05 * wet
+    rough = np.maximum(rough, cr * 0.9)
+    save("asphalt", albedo, normal_from(grit * 0.6 - cr * 0.8 - wet * 0.2, 3.0), rough)
+
+
+def slabs():
+    px = N / 2.0
+    h, ids, d = rounded_cells(0.5 * px, 0.5 * px, 0.006 * px, 0.01 * px, 0.0)
+    tone = per_id(ids, 0.8, 1.12)
+    grit = noise(20, 3)
+    base = np.stack([0.5, 0.48, 0.45], -1) * tone[..., None] * (0.82 + 0.3 * grit)[..., None]
+    joint = np.clip(d / 2.0 + 0.5, 0, 1)
+    cr = cracks(18, 90, 1)
+    dirt = noise(4, 2)
+    albedo = base * (1 - joint[..., None] * 0.7) * (1 - cr * 0.5)[..., None] * (0.8 + 0.25 * dirt)[..., None]
+    wet = np.clip((noise(3, 2) - 0.62) * 6.0, 0, 1)
+    rough = (0.7 + 0.15 * grit) * (1 - wet) + 0.12 * wet
+    rough = rough * (1 - joint) + 0.3 * joint
+    save("slabs", albedo, normal_from(h * 0.6 + grit * 0.2 - cr * 0.5, 4.0), rough)
+
+
+def dirt():
+    grit = noise(40, 3)
+    blotch = noise(5, 3)
+    grass = np.clip((noise(10, 3) - 0.45) * 2.2, 0, 1) * 0.85
+    old = np.clip((noise(3, 2) - 0.74) * 6.0, 0, 1)
+    earth = np.stack([0.24, 0.2, 0.16], -1) * (0.75 + 0.4 * grit)[..., None] * (0.9 + 0.15 * blotch)[..., None]
+    green = np.stack([0.12, 0.17, 0.08], -1) * (0.7 + 0.5 * grit)[..., None]
+    tar = np.stack([0.13, 0.13, 0.14], -1) * (0.85 + 0.2 * grit)[..., None]
+    albedo = earth * (1 - grass[..., None]) + green * grass[..., None]
+    albedo = albedo * (1 - old[..., None]) + tar * old[..., None]
+    rough = 0.9 - 0.25 * old
+    save("dirt", albedo, normal_from(grit * 0.5 + grass * 0.2, 3.0), rough)
+
+
 if __name__ == "__main__":
     OUT.mkdir(parents=True, exist_ok=True)
     cobble()
     brick()
+    asphalt()
+    slabs()
+    dirt()

@@ -69,6 +69,7 @@ static func label(parent: Node, text: String, pos: Vector3, size := 64, color :=
 	l.outline_size = 12
 	l.outline_modulate = Color(0, 0, 0, 0.85)
 	l.position = pos
+	l.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	if billboard:
 		l.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	l.no_depth_test = false

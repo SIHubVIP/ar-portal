@@ -54,6 +54,9 @@ VERIFIED — только с доказательством (тест, лог CI
 | Стик после диалога (герой застывал после боя, 0.9) | VERIFIED тестами | test_stick_survives_hidden_release, шаг автопрохождения «герой идёт после боя с дроном» |
 | Фризы: стройка района по кусочкам, прогрев шейдеров (0.9) | DRAFT | автопрохождение; FPS на телефоне не замерялся |
 | Модели людей: NPC, прохожие, шесть мобов-людей (0.9) | DRAFT | tests npc_model_parts_and_styles, humanoid_mobs_use_npc_model, витрина tools/checks/mob_gallery.tscn |
+| Вывески по эталону: короб, неон, буквы, доски, плакаты, граффити (0.10) | DRAFT | test_signboard_styles_build_real_objects, витрина tools/checks/sign_gallery.tscn, скриншоты |
+| Обстановка района: тротуары, фонари, витрины, дворы (0.10) | DRAFT | test_district_chunk_is_dressed, test_lamp_lights_follow_nearest_lamps, tools/checks/dressing_bench.tscn (шаг ≤ 3 мс) |
+| Физика предметов, дождь, голуби (0.10) | DRAFT | test_phys_props_blast_and_push, test_physics_props_pool_limits_bodies; на телефоне не проверялось |
 | Живая улица: прохожие, машины, окна домов | DRAFT | автопрохождение (видно ≥ 5 фигур), скриншоты |
 | Этапы 4–6: 15 NPC на точках, 3 арены боссов, арт кварталов, Android-маршрут | NOT_STARTED | — |
 

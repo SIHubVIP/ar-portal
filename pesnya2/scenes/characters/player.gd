@@ -144,6 +144,7 @@ func _physics_process(delta: float) -> void:
 		velocity.z = dir.z * SPEED
 	velocity.y = 0.0 if is_on_floor() else velocity.y - 20.0 * delta
 	move_and_slide()
+	_push_props()
 	if dir.length() > 0.05:
 		facing = dir.normalized()
 	_rig.rotation.y = lerp_angle(_rig.rotation.y, atan2(facing.x, facing.z), 12.0 * delta)
@@ -193,10 +194,22 @@ func take_hit(damage: float) -> void:
 		died.emit()
 
 
+## Урны, конусы и коробки отлетают от героя на ходу (0.10), а не стоят стеной.
+func _push_props() -> void:
+	for i in get_slide_collision_count():
+		var c := get_slide_collision(i)
+		var body := c.get_collider() as RigidBody3D
+		if body != null:
+			var push := -c.get_normal() * Vector3(1, 0, 1)
+			body.apply_central_impulse(push.normalized() * velocity.length() * 0.35 * body.mass + Vector3(0, 0.4, 0))
+
+
 func basic_attack() -> void:
 	if t < _attack_ready_at or not controls_enabled:
 		return
 	_attack_ready_at = t + ATTACK_COOLDOWN
+	# удар разбрасывает мелочь перед героем, даже если врага рядом нет
+	PhysProp.blast(get_tree(), global_position + facing * 1.2, 2.4, 5.5)
 	var ranged := GameState.class_id == "CLASS_2" or GameState.class_id == "CLASS_3"
 	var target := nearest_enemy(ATTACK_RANGE + (6.0 if ranged else 0.0))
 	if target:
@@ -258,6 +271,7 @@ func use_ability(index: int) -> void:
 		return
 	EventBus.ability_cast.emit(a.id, float(a.cooldown_s))
 	AbilityFx.perform(self, a, book.spec(a))
+	PhysProp.blast(get_tree(), global_position + facing * 1.5, 4.0, 8.0)
 
 
 func enemies_in(radius: float, from := Vector3.INF) -> Array:

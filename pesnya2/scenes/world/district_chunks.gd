@@ -103,7 +103,9 @@ func _build_floor_and_edges() -> void:
 
 func _build_chunk(c: Vector2i) -> Node3D:
 	var root := _chunk_root(c)
-	for step in _chunk_steps(root, c):
+	var steps := _chunk_steps(root, c)
+	while not steps.is_empty():
+		var step: Callable = steps.pop_front()
 		step.call()
 	return root
 
@@ -133,22 +135,46 @@ func _chunk_steps(root: Node3D, c: Vector2i) -> Array[Callable]:
 		root.add_child(ground)
 		for s in _segments:
 			_road_piece(root, s, rect, start))
+	# 0.10: улица — тротуары, фонари, ларьки, разметка; дома — витрины и вывески. Тяжёлое
+	# (каждая улица, каждая вывеска) копится в batch.jobs и сразу уходит отдельными шагами.
+	var batch := DistrictDressing.Batch.new()
+	var drain := func() -> void:
+		var jobs := batch.jobs.duplicate()
+		batch.jobs.clear()
+		for i in jobs.size():
+			steps.insert(i, jobs[i])
+	steps.append(func() -> void:
+		if is_instance_valid(root):
+			DistrictDressing.streets(root, c, _segments, batch)
+			drain.call())
 	for h in District.houses():
 		var hc := h.get_center()
 		if rect.has_point(hc):
-			steps.append(_house.bind(root, h))
+			steps.append(func() -> void:
+				_house(root, h, batch)
+				drain.call())
 	for p in District.data().get("points", []):
 		var pm2 := District.pos(p)
 		# одна копия NPC: пока Павел у киоска во дворе, метки в парке нет
 		if rect.has_point(pm2) and not start.has_point(pm2) and District.override_for(p.id).is_empty():
 			steps.append(_point_marker.bind(root, p))
+	# flush ждёт, пока все отложенные улицы допишут свои мелочи
+	var flush_step := func(self_ref: Callable) -> void:
+		if not batch.jobs.is_empty():
+			drain.call()
+			steps.append(self_ref.bind(self_ref))
+			return
+		var fs := DistrictDressing.flush_steps(root, c, batch)
+		for i in fs.size():
+			steps.insert(i, fs[i])
+	steps.append(flush_step.bind(flush_step))
 	return steps
 
 
 static var _unit_box: BoxMesh
 
 
-func _house(root: Node3D, h: Rect2) -> void:
+func _house(root: Node3D, h: Rect2, batch: DistrictDressing.Batch = null) -> void:
 	if not is_instance_valid(root):
 		return
 	var rng := RandomNumberGenerator.new()
@@ -165,6 +191,8 @@ func _house(root: Node3D, h: Rect2) -> void:
 	mi.scale = size
 	mi.material_override = _mat("house_%d" % (rng.randi() % 4))
 	body.add_child(mi)
+	if batch != null:
+		DistrictDressing.facades(root, h, height, _segments, batch, rng)
 
 
 ## Кусок дороги внутри участка: отрезок обрезается по участку и двору старта.
@@ -258,20 +286,17 @@ func _point_marker(root: Node3D, p: Dictionary) -> void:
 func _mat(kind: String) -> Material:
 	if _mats.has(kind):
 		return _mats[kind]
-	var m := StandardMaterial3D.new()
+	var m: Material
 	match kind:
+		# 0.10: текстуры вместо ровной заливки — земля дворов, мокрый асфальт, переулки
 		"ground":
-			m.albedo_color = Color(0.2, 0.2, 0.21)
-			m.roughness = 0.9
+			m = Surfaces.dirt()
 		"road":
-			m.albedo_color = Color(0.13, 0.13, 0.15)
-			m.roughness = 0.35
+			m = Surfaces.asphalt()
 		"street":
-			m.albedo_color = Color(0.16, 0.16, 0.17)
-			m.roughness = 0.45
+			m = Surfaces.asphalt(Color(1.12, 1.1, 1.1))
 		"lane":
-			m.albedo_color = Color(0.24, 0.22, 0.2)
-			m.roughness = 0.8
+			m = Surfaces.asphalt(Color(1.45, 1.35, 1.25))
 		_:
 			# дома: окна и витрины шейдером по мировым координатам (этажи по HOUSE_FLOOR_M)
 			var palette := [Color(0.55, 0.36, 0.3), Color(0.6, 0.58, 0.54), Color(0.48, 0.5, 0.55), Color(0.62, 0.5, 0.4)]

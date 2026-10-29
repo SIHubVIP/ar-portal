@@ -17,9 +17,24 @@ static func brick() -> StandardMaterial3D:
 	return _material("brick", 1.0)
 
 
-static func _material(name: String, normal_scale: float) -> StandardMaterial3D:
-	if _cache.has(name):
-		return _cache[name]
+## Район (0.10): мокрый асфальт, плитка тротуаров, земля дворов. tint — оттенок поверх
+## текстуры (дорога темнее проезда во дворе), у каждого оттенка свой материал в кэше.
+static func asphalt(tint := Color.WHITE) -> StandardMaterial3D:
+	return _material("asphalt", 1.0, 4.0, tint)
+
+
+static func slabs(tint := Color.WHITE) -> StandardMaterial3D:
+	return _material("slabs", 1.0, 2.0, tint)
+
+
+static func dirt(tint := Color.WHITE) -> StandardMaterial3D:
+	return _material("dirt", 1.0, 4.0, tint)
+
+
+static func _material(name: String, normal_scale: float, tile := TILE_M, tint := Color.WHITE) -> StandardMaterial3D:
+	var key := "%s|%s" % [name, tint.to_html()]
+	if _cache.has(key):
+		return _cache[key]
 	var m := StandardMaterial3D.new()
 	m.albedo_texture = load("res://assets/textures/%s_albedo.png" % name)
 	m.normal_enabled = true
@@ -30,9 +45,10 @@ static func _material(name: String, normal_scale: float) -> StandardMaterial3D:
 	m.roughness = 1.0
 	m.uv1_triplanar = true
 	m.uv1_world_triplanar = true
-	m.uv1_scale = Vector3.ONE / TILE_M
+	m.uv1_scale = Vector3.ONE / tile
+	m.albedo_color = tint
 	m.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
-	_cache[name] = m
+	_cache[key] = m
 	return m
 
 
