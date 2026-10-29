@@ -505,6 +505,50 @@ func test_safe_zone_blocks_hits() -> void:
 	pl.queue_free()
 
 
+func test_every_manifest_mob_type_has_a_profile() -> void:
+	var ok := true
+	for t in District.data().get("mob_types", []):
+		var p := MobTypes.profile(t.id)
+		ok = ok and not p.is_empty() and p.name == t.name and p.kind in ["melee", "ranged", "lunge"]
+	check(ok and MobTypes.PROFILES.size() == 10, "у всех 10 типов мобов манифеста есть профиль с тем же именем")
+
+
+func test_mob_group_spawns_by_manifest_rules() -> void:
+	var pl := Node3D.new()
+	add_child(pl)
+	var dm := DistrictMobs.new()
+	dm.player = pl
+	add_child(dm)
+	var p := District.point("M10-1")
+	pl.global_position = District.to_world(District.pos(p) + Vector2(0, 40))
+	dm.update_now()
+	var n := dm.alive_count("M10-1")
+	check(n >= 4 and n <= 6, "группа M10-1: 4–6 дорожных паразитов (%d)" % n)
+	var far_enough := true
+	for m in dm.get_children():
+		if m is EnemyDrone:
+			far_enough = far_enough and District.to_plan(m.global_position).distance_to(District.to_plan(pl.global_position)) >= 25.0
+			far_enough = far_enough and District.walkable(District.to_plan(m.global_position))
+	check(far_enough, "мобы появились не ближе 25 м к герою и не в доме")
+	for m in dm.get_children():
+		if m is EnemyDrone:
+			m.take_hit(999.0, m.global_position + Vector3.LEFT)
+	Engine.time_scale = 1.0
+	check(dm.alive_count("M10-1") == 0 and dm._groups["M10-1"].respawn_at >= 179.0, "перебитая группа вернётся через 180 с")
+	pl.global_position = District.to_world(District.pos(p) + Vector2(0, 1000))
+	dm.update_now()
+	check(dm.alive_count() == 0, "далеко от зон никого нет")
+	dm.queue_free()
+	pl.queue_free()
+
+
+func test_no_mob_spawn_in_safe_zones() -> void:
+	var ok := true
+	for p in District.points("mob"):
+		ok = ok and District.safe_zone_at(District.pos(p)).is_empty()
+	check(ok, "ни одна точка спавна не стоит в безопасной зоне")
+
+
 func test_pavel_single_copy_by_quest_state() -> void:
 	var c := "MAIN_001_started_and_not_completed"
 	check(not District.condition_met(c, QuestService.AVAILABLE), "до MAIN_001 Павла у киоска нет")

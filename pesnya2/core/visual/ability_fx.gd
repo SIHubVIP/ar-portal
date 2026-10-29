@@ -245,3 +245,9 @@ static func sparks(world: Node, pos: Vector3, color := Color(1, 0.8, 0.3), count
 		tw.tween_property(s, "position", pos + dir * randf_range(0.6, 1.4), 0.25).set_ease(Tween.EASE_OUT)
 		tw.parallel().tween_property(s, "scale", Vector3.ZERO, 0.3)
 		tw.tween_callback(s.queue_free)
+
+
+## Смерть врага: россыпь осколков и кольцо по земле.
+static func burst(world: Node, pos: Vector3, color := Color(0.6, 1, 0.9)) -> void:
+	sparks(world, pos, color, 14)
+	Kit.ring(world, Vector3(pos.x, 0.1, pos.z), 1.8, color, 0.3)

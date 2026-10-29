@@ -34,6 +34,8 @@ var _npc_marks: Array = []
 var _objective_tick := 0.0
 var _autotest := false
 var chunks: DistrictChunks
+var mobs: DistrictMobs
+var street_life: StreetLife
 var _pavel: Node3D
 var _safe_tick := 0.0
 
@@ -92,6 +94,12 @@ func _ready() -> void:
 	chunks.name = "District"
 	chunks.player = player
 	add_child(chunks)
+	mobs = DistrictMobs.new()
+	mobs.player = player
+	add_child(mobs)
+	street_life = StreetLife.new()
+	street_life.player = player
+	add_child(street_life)
 	_restore_progress()
 	var args := OS.get_cmdline_user_args()
 	if _autotest:
@@ -115,6 +123,11 @@ func _ready() -> void:
 		if arg.begins_with("--plan="):      # точка по плану района в метрах: --plan=1490,1490
 			var xy := arg.trim_prefix("--plan=").split(",")
 			player.position = District.to_world(Vector2(float(xy[0]), float(xy[1])))
+		if arg == "--fight":                # скриншот боя: через секунду герой встаёт рядом с появившейся группой
+			get_tree().create_timer(1.2).timeout.connect(func() -> void:
+				var m := mobs.get_children().filter(func(n: Node) -> bool: return n is EnemyDrone)
+				if not m.is_empty():
+					player.global_position = (m[0] as Node3D).global_position + Vector3(4, 0, 4))
 		if arg == "--free":                 # проверка этапа 1: выход со двора открыт сразу
 			PogulyayDressing.open_exit(self, true)
 	chunks.load_now()
@@ -982,6 +995,24 @@ func _run_autotest() -> void:
 	await _frames(40)
 	if player.safe_zone != "" or not healed or not no_hit:
 		print("AUTOTEST_FAIL")
+	# 0.7: живая улица и группа мобов у M10-1
+	var mp := District.pos(District.point("M10-1"))
+	player.global_position = District.to_world(mp + Vector2(0, 40), 0.5)
+	chunks.load_now()
+	await _frames(40)
+	mobs.update_now()
+	var group := mobs.alive_count("M10-1")
+	var xp_before := GameState.xp
+	for m in mobs.get_children():
+		if m is EnemyDrone:
+			m.take_hit(999.0, player.global_position)
+	await _frames(30)
+	var walkers := street_life.get_children().filter(func(n: Node3D) -> bool: return n.visible).size()
+	log.call("улица: видно %d прохожих и машин; группа M10-1: %d, опыт +%d" % [walkers, group, GameState.xp - xp_before])
+	if group < 4 or GameState.xp <= xp_before or walkers < 5:
+		print("AUTOTEST_FAIL")
+	player.global_position = back
+	await _frames(20)
 	if QuestService.state_of(QID) != QuestService.COMPLETED:
 		print("AUTOTEST_FAIL")
 		get_tree().quit(1)

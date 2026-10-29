@@ -108,6 +108,18 @@ static func sector_at(plan: Vector2) -> Dictionary:
 	return {}
 
 
+## Можно ли стоять в точке плана: внутри района, не в доме и не во дворе старта.
+static func walkable(plan: Vector2) -> bool:
+	if plan.x < 2.0 or plan.y < 2.0 or plan.x > SIZE_M - 2.0 or plan.y > SIZE_M - 2.0:
+		return false
+	if start_area().has_point(plan):
+		return false
+	for h in houses():
+		if h.grow(0.8).has_point(plan):
+			return false
+	return true
+
+
 ## Безопасная зона района, внутри которой лежит точка плана, или {}.
 static func safe_zone_at(plan: Vector2) -> Dictionary:
 	for p in points("safe"):

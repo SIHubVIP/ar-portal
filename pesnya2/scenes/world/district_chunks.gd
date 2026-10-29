@@ -9,6 +9,7 @@ extends Node3D
 const LOAD_RADIUS := 1
 const KEEP_RADIUS := 2
 const HOUSE_FLOOR_M := 3.0
+const HOUSE_SHADER := preload("res://assets/shaders/house_windows.gdshader")
 const POINT_COLORS := {"npc": Color(0.45, 0.9, 0.65), "boss": Color(0.95, 0.38, 0.45), "safe": Color(0.45, 0.78, 0.95),
 		"underground": Color(0.95, 0.72, 0.3), "place": Color(0.93, 0.87, 0.75), "mob": Color(1, 0.5, 0.3)}
 
@@ -225,8 +226,13 @@ func _mat(kind: String) -> Material:
 			m.albedo_color = Color(0.24, 0.22, 0.2)
 			m.roughness = 0.8
 		_:
+			# дома: окна и витрины шейдером по мировым координатам (этажи по HOUSE_FLOOR_M)
 			var palette := [Color(0.55, 0.36, 0.3), Color(0.6, 0.58, 0.54), Color(0.48, 0.5, 0.55), Color(0.62, 0.5, 0.4)]
-			m.albedo_color = palette[int(kind.right(1)) % palette.size()]
-			m.roughness = 0.85
+			var sm := ShaderMaterial.new()
+			sm.shader = HOUSE_SHADER
+			sm.set_shader_parameter("wall", palette[int(kind.right(1)) % palette.size()])
+			sm.set_shader_parameter("floor_h", HOUSE_FLOOR_M)
+			_mats[kind] = sm
+			return sm
 	_mats[kind] = m
 	return m

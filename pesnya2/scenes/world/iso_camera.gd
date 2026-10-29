@@ -20,9 +20,11 @@ var pitch := deg_to_rad(55.0)
 var _pitch_target := deg_to_rad(55.0)
 var _yaw_target := deg_to_rad(45.0)
 var _faded: Array = []
+var _shake := 0.0
 
 
 func _ready() -> void:
+	add_to_group("iso_camera")
 	projection = PROJECTION_ORTHOGONAL
 	size = 18.0
 	near = 1.0
@@ -30,6 +32,11 @@ func _ready() -> void:
 	if target:
 		global_position = _desired()
 		look_at(target.global_position + Vector3(0, 1, 0), Vector3.UP)
+
+
+## Тряска при ударе: смещение кадра гаснет за ~0,3 с.
+func shake(amount: float) -> void:
+	_shake = maxf(_shake, amount)
 
 
 func zoom_by(amount: float) -> void:
@@ -77,6 +84,14 @@ func _physics_process(delta: float) -> void:
 		target.camera_yaw = yaw
 	global_position = global_position.lerp(_desired(), clampf(10.0 * delta, 0.0, 1.0))
 	look_at(target.global_position + Vector3(0, 1, 0), Vector3.UP)
+	if _shake > 0.01:
+		h_offset = randf_range(-_shake, _shake)
+		v_offset = randf_range(-_shake, _shake)
+		_shake = lerpf(_shake, 0.0, clampf(14.0 * delta, 0.0, 1.0))
+	elif h_offset != 0.0 or v_offset != 0.0:
+		h_offset = 0.0
+		v_offset = 0.0
+		_shake = 0.0
 	_update_occluders()
 
 

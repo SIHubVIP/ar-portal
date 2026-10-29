@@ -86,6 +86,11 @@ func grant(key: String, reason: String, delta: Dictionary) -> bool:
 	return true
 
 
+## Опыт за уличный бой: без записи в журнал наград, иначе сохранение пухнет от каждого слизня.
+func add_combat_xp(amount: int) -> void:
+	_add_xp(amount)
+
+
 func _add_xp(amount: int) -> void:
 	if amount <= 0:
 		return
