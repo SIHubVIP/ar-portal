@@ -30,6 +30,7 @@ var _attack_cd := 0.0
 var _telegraph: MeshInstance3D
 var _telegraph_left := 0.0
 var _body: Node3D
+var _model: NpcModel   # у мобов-людей (0.9): руки ходят в такт шагу
 var _bar: HealthBar3D
 var _t := 0.0
 var _knock := Vector3.ZERO
@@ -90,6 +91,7 @@ func _ready() -> void:
 		Kit.box(_body, Vector3(0.6, 0.12, 0.02), Vector3(0, 0.3, 0.45), Color(0.1, 0.9, 0.5), 1.5)
 	else:
 		MobTypes.build_body(_body, mob_type)
+		_model = _body.get_node_or_null("Model") as NpcModel
 		# красный круг под ногами: враг читается ночью и в толпе прохожих
 		var mark := Kit.cylinder(self, 0.75, 0.02, Vector3(0, 0.04, 0), Color(1, 0.15, 0.2, 0.5), 1.2)
 		mark.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
@@ -160,6 +162,8 @@ func _physics_process(delta: float) -> void:
 		var sway := clampf(velocity.length() / 3.0, 0.0, 1.5)
 		_body.position.y = _base_y + absf(sin(_t * 9.0)) * 0.08 * sway
 		_body.rotation.z = sin(_t * 9.0) * 0.08 * sway
+		if _model != null:
+			_model.walk = clampf(sway, 0.0, 1.0)
 	_bark_cd -= delta
 	if _knock.length() > 0.05:
 		velocity = _knock

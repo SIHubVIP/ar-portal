@@ -6,6 +6,9 @@ uniform vec3 wall : source_color = vec3(0.55, 0.36, 0.3);
 uniform float floor_h = 3.0;
 uniform float bay_w = 2.6;
 uniform float lit_share = 0.33;
+// вариант «house_cut»: тот же дом с вырезом вокруг героя (см. see_through.gdshader)
+uniform bool cut = false;
+global uniform vec2 hero_screen;
 
 varying vec3 wpos;
 varying vec3 wnorm;
@@ -19,7 +22,21 @@ void vertex() {
 	wnorm = normalize((MODEL_MATRIX * vec4(NORMAL, 0.0)).xyz);
 }
 
+float bayer4(vec2 p) {
+	int x = int(mod(p.x, 4.0));
+	int y = int(mod(p.y, 4.0));
+	float m[16] = float[](0.0, 8.0, 2.0, 10.0, 12.0, 4.0, 14.0, 6.0, 3.0, 11.0, 1.0, 9.0, 15.0, 7.0, 13.0, 5.0);
+	return (m[x + y * 4] + 0.5) / 16.0;
+}
+
 void fragment() {
+	if (cut) {
+		vec2 d = (SCREEN_UV - hero_screen) * vec2(VIEWPORT_SIZE.x / VIEWPORT_SIZE.y, 1.0);
+		float inside = 1.0 - smoothstep(0.3 * 0.7, 0.3, length(d));
+		if (bayer4(FRAGCOORD.xy) > mix(1.0, 0.12, inside)) {
+			discard;
+		}
+	}
 	ALBEDO = wall;
 	ROUGHNESS = 0.85;
 	if (abs(wnorm.y) < 0.5) {

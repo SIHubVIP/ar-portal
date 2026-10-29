@@ -35,7 +35,9 @@ var _iso_size := DEFAULT_SIZE
 const SEE_THROUGH := Vector2(9.0, 7.0)
 const CINE_TIME := 0.9
 const CINE_FOV := 50.0
-const CINE_MIN_DIST := 1.8
+const CINE_MIN_DIST := 3.4
+const CINE_RISE := 0.35
+const CINE_TILT := 8.0
 ## Свет «как в кино»: тёплая лампа у камеры подсвечивает лицо собеседника ночью.
 var _key_light: OmniLight3D
 
@@ -73,13 +75,19 @@ func cinematic(npc_head: Vector3) -> void:
 	var flat := (npc_head - head) * Vector3(1, 0, 1)
 	var d := flat.normalized() if flat.length() > 0.1 else Vector3.FORWARD
 	var right := d.cross(Vector3.UP).normalized()
-	# глаза героя (его модель на время разговора скрыта), но не ближе CINE_MIN_DIST к собеседнику
-	# собеседник выше (балкон): шаг назад, чтобы перила не закрыли лицо
+	# глаза героя (модель скрыта), чуть выше роста и на шаг дальше: собеседник виден по пояс,
+	# а не одна макушка (владелец, 0.9). Выше собеседник (балкон) — шаг назад, чтобы не мешали перила.
 	var back := maxf(maxf(flat.length() + 0.15, CINE_MIN_DIST), (npc_head.y - head.y) * 1.5)
 	var stand := npc_head * Vector3(1, 0, 1) - d * back
-	_cine_eye = Vector3(stand.x, head.y, stand.z) + right * 0.12
-	# точка взгляда ниже головы: лицо встаёт в верхнюю треть, низ кадра занимает реплика
-	_cine_look = npc_head - Vector3(0, 0.35, 0)
+	_cine_eye = Vector3(stand.x, head.y + CINE_RISE, stand.z) + right * 0.12
+	# низ экрана занимает реплика: смотрим ниже груди собеседника на CINE_TILT, и он встаёт
+	# в верхнюю половину кадра целиком — голова, плечи, руки
+	var chest := npc_head - Vector3(0, 0.5, 0)
+	var to_chest := (chest - _cine_eye).normalized()
+	# собеседник наверху: перила и так внизу кадра, наклон вниз упрёт взгляд в балкон
+	var tilt := CINE_TILT * clampf(1.0 - (npc_head.y - head.y) / 3.0, 0.2, 1.0)
+	var aim := to_chest.rotated(right, -deg_to_rad(tilt)) if absf(to_chest.dot(Vector3.UP)) < 0.95 else to_chest
+	_cine_look = _cine_eye + aim * 3.0
 	if _cine_dir == 0 and _cine <= 0.0:
 		_iso_size = size
 	_cine_dir = 1
@@ -181,6 +189,10 @@ func _physics_process(delta: float) -> void:
 		h_offset = 0.0
 		v_offset = 0.0
 		_shake = 0.0
+	var vp := get_viewport().get_visible_rect().size
+	if vp.x > 0.0:
+		RenderingServer.global_shader_parameter_set("hero_screen",
+				unproject_position(target.global_position + Vector3(0, 1.0, 0)) / vp)
 	_update_occluders()
 
 
@@ -206,13 +218,13 @@ func _update_occluders() -> void:
 		if is_instance_valid(c) and not hits.has(c):
 			_set_alpha(c, 1.0)
 	for c in hits:
-		_set_alpha(c, 0.25)
+		_set_alpha(c, 0.0)
 	_faded = hits
 
 
-## Прозрачность здания. GeometryInstance3D.transparency работает только в Forward+ и Mobile,
-## поэтому стандартные материалы подменяются полупрозрачными копиями: так дом тает и в
-## режиме совместимости (OpenGL), на который телефон переходит без Vulkan.
+## Здание в коридоре: стены в круге вокруг героя вырезаются (D-046). Материалы подменяются
+## копиями с шейдером see_through (непрозрачный проход, без сортировки и наложения слоёв),
+## дома района — вариантом своего шейдера с cut = true. Всё кэшируется: шейдер один.
 func _set_alpha(body: Node, alpha: float) -> void:
 	for gi in body.find_children("*", "GeometryInstance3D", true, false):
 		if not gi is MeshInstance3D:
@@ -226,7 +238,6 @@ func _set_alpha(body: Node, alpha: float) -> void:
 				for k in mi.get_surface_override_material_count():
 					mi.set_surface_override_material(k, orig[1][k] if k < orig[1].size() else null)
 				mi.remove_meta("fade_orig")
-			mi.transparency = 0.0
 			continue
 		if mi.has_meta("fade_orig") or mi.mesh == null:
 			continue
@@ -234,24 +245,41 @@ func _set_alpha(body: Node, alpha: float) -> void:
 		for k in mi.get_surface_override_material_count():
 			surf.append(mi.get_surface_override_material(k))
 		mi.set_meta("fade_orig", [mi.material_override, surf])
-		mi.transparency = 1.0 - alpha
 		if mi.material_override:
-			mi.material_override = _faded_mat(mi.material_override, alpha)
+			mi.material_override = cut_material(mi.material_override)
 		else:
 			for k in mi.get_surface_override_material_count():
-				mi.set_surface_override_material(k, _faded_mat(mi.get_active_material(k), alpha))
+				mi.set_surface_override_material(k, cut_material(mi.get_active_material(k)))
 
 
-static var _fade_cache: Dictionary = {}
+const SEE_THROUGH_SHADER := preload("res://assets/shaders/see_through.gdshader")
+static var _cut_cache: Dictionary = {}
 
 
-static func _faded_mat(m: Material, alpha: float) -> Material:
-	if not m is BaseMaterial3D:
-		return m          # шейдерные дома района тают через transparency
-	if not _fade_cache.has(m):
-		var d := (m as BaseMaterial3D).duplicate() as BaseMaterial3D
-		d.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-		d.albedo_color.a = alpha
-		d.cull_mode = BaseMaterial3D.CULL_BACK
-		_fade_cache[m] = d
-	return _fade_cache[m]
+## Вариант материала с вырезом вокруг героя.
+static func cut_material(m: Material) -> Material:
+	if m == null:
+		return null
+	if _cut_cache.has(m):
+		return _cut_cache[m]
+	var out: Material = m
+	if m is ShaderMaterial and (m as ShaderMaterial).shader and "cut" in str((m as ShaderMaterial).shader.code):
+		out = m.duplicate()
+		(out as ShaderMaterial).set_shader_parameter("cut", true)
+	elif m is BaseMaterial3D:
+		var b := m as BaseMaterial3D
+		var sm := ShaderMaterial.new()
+		sm.shader = SEE_THROUGH_SHADER
+		sm.set_shader_parameter("albedo", b.albedo_color)
+		sm.set_shader_parameter("use_tex", b.albedo_texture != null)
+		if b.albedo_texture:
+			sm.set_shader_parameter("albedo_tex", b.albedo_texture)
+		sm.set_shader_parameter("triplanar", b.uv1_triplanar)
+		sm.set_shader_parameter("uv_scale", b.uv1_scale)
+		sm.set_shader_parameter("roughness", b.roughness)
+		if b.emission_enabled:
+			sm.set_shader_parameter("emission", b.emission)
+			sm.set_shader_parameter("emission_energy", b.emission_energy_multiplier)
+		out = sm
+	_cut_cache[m] = out
+	return out

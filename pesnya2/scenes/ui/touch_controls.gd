@@ -28,6 +28,19 @@ var _cam_fingers: Dictionary = {}
 func _ready() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	# диалог прячет управление посреди движения: отпускание пальца тогда не доходит, и стик
+	# «залипал» за старым пальцем — новое касание уходило в поворот камеры (баг 0.8)
+	visibility_changed.connect(release_all)
+
+
+## Забыть все пальцы и остановить героя.
+func release_all() -> void:
+	_stick_finger = -1
+	_pressed.clear()
+	_cam_fingers.clear()
+	if player:
+		player.move_input = Vector2.ZERO
+	queue_redraw()
 
 
 ## Кнопки: id -> [центр, радиус]. Раскладка считается от правого нижнего угла.
@@ -56,6 +69,8 @@ func _input(event: InputEvent) -> void:
 	if not is_visible_in_tree():
 		return
 	if event is InputEventScreenTouch:
+		if event.pressed and event.index == _stick_finger:
+			_stick_finger = -1      # этот палец уже отпускали, пока управление было скрыто
 		if event.pressed:
 			var hit := _button_at(event.position)
 			if hit != "":

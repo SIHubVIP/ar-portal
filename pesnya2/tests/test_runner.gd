@@ -549,20 +549,81 @@ func test_no_mob_spawn_in_safe_zones() -> void:
 	check(ok, "ни одна точка спавна не стоит в безопасной зоне")
 
 
-func test_camera_fade_works_without_vulkan_and_restores() -> void:
+func test_camera_cutout_works_without_vulkan_and_restores() -> void:
 	var cam := IsoCamera.new()
 	var body := Kit.solid_box(self, Vector3(2, 2, 2), Vector3.ZERO, Color(0.5, 0.5, 0.5), 0.0, true)
 	var mi: MeshInstance3D = body.find_children("*", "MeshInstance3D", true, false)[0]
 	var orig := mi.material_override
-	cam._set_alpha(body, 0.25)
-	var faded := mi.material_override as BaseMaterial3D
-	check(faded != orig and faded.transparency == BaseMaterial3D.TRANSPARENCY_ALPHA and is_equal_approx(faded.albedo_color.a, 0.25),
-			"дом тает подменой материала (работает и в OpenGL)")
+	cam._set_alpha(body, 0.0)
+	var faded := mi.material_override as ShaderMaterial
+	check(faded != null and faded.shader == IsoCamera.SEE_THROUGH_SHADER and faded.get_shader_parameter("albedo") == (orig as BaseMaterial3D).albedo_color,
+			"дом у героя вырезается непрозрачным шейдером (работает и в OpenGL)")
 	cam._set_alpha(body, 1.0)
 	check(mi.material_override == orig and not mi.has_meta("fade_orig"), "после ухода героя материал дома прежний")
 	check(IsoCamera.DEFAULT_SIZE == 12.0, "кадр камеры 12 м")
 	body.queue_free()
 	cam.free()
+
+
+func test_stick_survives_hidden_release() -> void:
+	var tc := TouchControls.new()
+	tc.size = Vector2(1280, 720)
+	add_child(tc)
+	var pl := Player.new()
+	add_child(pl)
+	tc.player = pl
+	var press := InputEventScreenTouch.new()
+	press.index = 0
+	press.pressed = true
+	press.position = Vector2(200, 550)
+	tc._input(press)
+	tc.visible = false          # открылся диалог, палец отпустили, пока управление скрыто
+	tc.visible = true
+	press.index = 1
+	tc._input(press)
+	var drag := InputEventScreenDrag.new()
+	drag.index = 1
+	drag.position = Vector2(260, 550)
+	tc._input(drag)
+	check(pl.move_input.x > 0.5, "после диалога стик снова ведёт героя, а не крутит камеру")
+	tc.queue_free()
+	pl.queue_free()
+
+
+func test_npc_model_parts_and_styles() -> void:
+	var m := NpcModel.make({"style": "curlers", "skirt": true, "height": 1.1, "top": Color(1, 0, 0)})
+	add_child(m)
+	var head := m.find_child("Head", true, false) as Node3D
+	check(head != null and m.find_child("ArmL", true, false) != null and m.find_child("ArmR", true, false) != null,
+			"у человечка есть голова и обе руки")
+	check(head != null and head.get_node_or_null("HairCurlers") != null and (head.get_node("HairCurlers") as Node3D).visible,
+			"бигуди на голове и крутятся вместе с ней")
+	check(head != null and not (head.get_node("HairBun") as Node3D).visible, "видна одна причёска")
+	check(is_equal_approx(m.scale.y, 1.1), "рост из облика")
+	var mi := head as MeshInstance3D
+	check(mi != null and (mi.material_override as ShaderMaterial).get_shader_parameter("top") == Color(1, 0, 0),
+			"цвет одежды — параметр общего шейдера, а не отдельный материал на кусок")
+	m.set_talking(true)
+	check(m.process_mode == Node.PROCESS_MODE_ALWAYS, "в разговоре (игра на паузе) собеседник жестикулирует")
+	m.set_talking(false)
+	check(m.process_mode == Node.PROCESS_MODE_INHERIT and not m.is_in_group("npc_talking"), "после разговора — как все")
+	m.queue_free()
+
+
+func test_humanoid_mobs_use_npc_model() -> void:
+	for id in ["mob_02", "mob_04", "mob_05", "mob_06", "mob_08", "mob_09"]:
+		var body := Node3D.new()
+		add_child(body)
+		MobTypes.build_body(body, id)
+		var model := body.get_node_or_null("Model") as NpcModel
+		check(model != null and is_equal_approx(model.position.y, -MobTypes.HUMAN_BASE_Y),
+				"%s — человек с ногами на земле" % id)
+		body.queue_free()
+	var drone := Node3D.new()
+	add_child(drone)
+	MobTypes.build_body(drone, "mob_01")
+	check(drone.get_node_or_null("Model") == null, "дрон остаётся дроном")
+	drone.queue_free()
 
 
 func test_pavel_single_copy_by_quest_state() -> void:

@@ -103,7 +103,9 @@ func _ready() -> void:
 			_cine_hidden.clear()
 			if not _cine_turned.is_empty() and is_instance_valid(_cine_turned[0]):
 				_cine_turned[0].rotation.y = _cine_turned[1]
-			_cine_turned = [])
+			_cine_turned = []
+			for m: NpcModel in get_tree().get_nodes_in_group("npc_talking"):
+				m.set_talking(false))
 	chunks = DistrictChunks.new()
 	chunks.name = "District"
 	chunks.player = player
@@ -115,6 +117,12 @@ func _ready() -> void:
 	street_life.player = player
 	add_child(street_life)
 	_restore_progress()
+	var warm: Array = [EnemyDrone._FLASH, Kit.mat(Color(1, 0.15, 0.1, 0.45), 1.5), Kit.mat(Color(1, 0.15, 0.2, 0.5), 1.2),
+			Kit.mat(Color(1, 0.3, 0.1, 0.55), 2.0), IsoCamera.cut_material(Kit.mat(Color(0.5, 0.5, 0.55)))]
+	for k in 4:
+		warm.append(chunks._mat("house_%d" % k))
+		warm.append(IsoCamera.cut_material(chunks._mat("house_%d" % k)))
+	ShaderWarmup.run(self, player.global_position, warm)
 	var args := OS.get_cmdline_user_args()
 	if _autotest:
 		_run_autotest.call_deferred()
@@ -344,17 +352,19 @@ func _build_windows() -> void:
 		add_child(mmi)
 
 
-func _person(pos: Vector3, color: Color, name_tag := "") -> Node3D:
+func _person(pos: Vector3, color: Color, name_tag := "", look := {}) -> Node3D:
 	var n := Node3D.new()
 	n.position = pos
 	add_child(n)
-	Kit.capsule(n, 0.3, 1.0, Vector3(0, 1.1, 0), color)
-	Kit.sphere(n, 0.22, Vector3(0, 1.8, 0), Color(0.9, 0.74, 0.6))
-	# лицо: в кинокамере разговора собеседник смотрит прямо на героя
-	for side in [-1.0, 1.0]:
-		Kit.sphere(n, 0.035, Vector3(side * 0.08, 1.85, 0.195), Color(0.08, 0.06, 0.05))
-	Kit.box(n, Vector3(0.1, 0.025, 0.02), Vector3(0, 1.72, 0.205), Color(0.45, 0.15, 0.15))
-	Kit.box(n, Vector3(0.36, 0.8, 0.22), Vector3(0, 0.4, 0), color.darkened(0.5))
+	# облик детерминирован местом: одна и та же очередь при каждом запуске
+	var rng := RandomNumberGenerator.new()
+	rng.seed = hash(Vector3i(pos * 10.0))
+	var l := NpcModel.random_look(rng, color)
+	l.merge(look, true)
+	var m := NpcModel.make(l)
+	m.name = "Model"
+	n.add_child(m)
+	n.set_meta("head_y", 1.73 * float(l.height))
 	if name_tag != "":
 		Kit.label(n, name_tag, Vector3(0, 2.4, 0), 36, Color(1, 0.95, 0.7))
 		n.set_meta("map_label", name_tag)
@@ -601,6 +611,7 @@ func _on_choice(key: String) -> void:
 func _build_locals() -> void:
 	# Гл'орп: стажёр флота, прилетел «в столицу», а попал в Рубин
 	var glorp := Node3D.new()
+	glorp.name = "Glorp"
 	glorp.position = Vector3(5.5, 0, 7)
 	add_child(glorp)
 	Kit.capsule(glorp, 0.28, 0.8, Vector3(0, 0.75, 0), Color(0.25, 0.25, 0.3))
@@ -620,12 +631,13 @@ func _build_locals() -> void:
 	# тётя Зина: балкон второго этажа над ломбардом
 	var balcony := Vector3(-11.8, 3.2, 1.5)   # выступает перед балконами панельки, иначе её не видно снизу
 	Kit.solid_box(self, Vector3(1.4, 0.15, 3), balcony, Color(0.55, 0.52, 0.5))
-	Kit.box(self, Vector3(0.08, 1.0, 3), balcony + Vector3(0.7, 0.55, 0), Color(0.4, 0.3, 0.3))
-	var zina := _person(balcony + Vector3(0, 0.08, 0), Color(0.7, 0.2, 0.3), "Тётя Зина")
+	Kit.box(self, Vector3(0.08, 0.75, 3), balcony + Vector3(0.7, 0.45, 0), Color(0.4, 0.3, 0.3))
+	# у самых перил: снизу видно не только макушку
+	var zina := _person(balcony + Vector3(0.45, 0.08, 0), Color(0.7, 0.2, 0.3), "Тётя Зина",
+			{"style": "curlers", "skirt": true, "hair": Color(0.6, 0.2, 0.15), "height": 0.95, "skin": NpcModel.SKINS[0]})
+	zina.name = "Zina"
 	zina.rotation_degrees.y = 90
 	_npc_mark(zina, "ZINA")
-	for i in 5:
-		Kit.sphere(zina, 0.06, Vector3(-0.2 + i * 0.1, 2.0, 0), Color(0.95, 0.4, 0.6))
 	_interactables.append({"pos": Vector3(-8.2, 0, 1.5), "radius": 3.5, "label": "Зина", "face": zina, "cb": func():
 		hud.run_dialogue("ZINA"), "enabled": func(): return true})
 
@@ -635,11 +647,12 @@ func _build_locals() -> void:
 ## ТЗ п. 5: Павел в начальной сцене стоит у прокатного киоска, пока идёт MAIN_001; потом
 ## уходит в парк (N07). Одна копия: видимость решает переопределение из данных района.
 func _build_pavel() -> void:
-	_pavel = _person(ParkingReference.PAVEL_POS, Color(0.42, 0.3, 0.22), "Павел Тарелкин")
+	_pavel = _person(ParkingReference.PAVEL_POS, Color(0.42, 0.3, 0.22), "Павел Тарелкин",
+			{"style": "short", "skirt": false, "height": 1.04, "hair": Color(0.2, 0.14, 0.1)})
 	_pavel.name = "Pavel"
 	_pavel.rotation_degrees.y = 110.0
-	Kit.box(_pavel, Vector3(0.38, 0.5, 0.05), Vector3(0, 1.25, 0.24), Color(0.92, 0.9, 0.85))   # футболка с пришельцем
-	Kit.sphere(_pavel, 0.09, Vector3(0, 1.3, 0.27), Color(0.45, 0.85, 0.35))
+	Kit.box(_pavel, Vector3(0.3, 0.32, 0.03), Vector3(0, 1.3, 0.16), Color(0.92, 0.9, 0.85))   # футболка с пришельцем
+	Kit.sphere(_pavel, 0.07, Vector3(0, 1.33, 0.18), Color(0.45, 0.85, 0.35))
 	_npc_mark(_pavel, "PAVEL")
 	_interactables.append({"pos": ParkingReference.PAVEL_POS, "radius": 2.6, "label": "Говорить", "face": _pavel,
 			"cb": func(): hud.run_dialogue("PAVEL"), "enabled": func(): return _pavel.visible})
@@ -876,7 +889,10 @@ func _on_interact() -> void:
 		# с собеседником — кинокамера: переезд к герою, взгляд на лицо говорящего
 		if best.has("face") and hud.dialog.is_open():
 			var who: Node3D = best.face
-			camera.cinematic(who.global_position + who.global_transform.basis.y * 1.8)
+			camera.cinematic(who.global_position + who.global_transform.basis.y * float(who.get_meta("head_y", 1.8)))
+			var model := who.get_node_or_null("Model") as NpcModel
+			if model != null:
+				model.set_talking(true)
 			# крупным планом подписи и «!» над головой только мешают
 			for l in who.find_children("*", "Label3D", true, false):
 				if l.visible:
@@ -997,6 +1013,16 @@ func _run_autotest() -> void:
 		player.basic_attack()
 		await _frames(20)
 	log.call("дронов осталось: %d, HP героя %.0f" % [_drones.size(), GameState.hp])
+	# после боя герой должен ходить (0.8: застывал на месте)
+	var before_move := player.global_position
+	player.move_input = Vector2(1, 0)
+	await _frames(30)
+	player.move_input = Vector2.ZERO
+	var moved := player.global_position.distance_to(before_move)
+	log.call("после боя: прошёл %.1f м, пауза %s, управление %s, диалог %s, кино %s, time_scale %.2f" % [moved,
+			get_tree().paused, player.controls_enabled, hud.dialog.is_open(), camera.in_cinematic(), Engine.time_scale])
+	if moved < 1.0:
+		print("AUTOTEST_FAIL")
 	player.global_position = EXIT_POS
 	await _frames(3)
 	log.call("этап 2 -> %s" % QuestService.current_stage(QID).get("id", "-"))

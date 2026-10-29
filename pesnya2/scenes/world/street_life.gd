@@ -26,8 +26,6 @@ const LINES := [
 	"Если что — я тебя не видел. И ты меня. И вообще никто никого.",
 	"Сон платный, бодрствование по подписке.",
 ]
-const CLOTHES := [Color(0.7, 0.2, 0.25), Color(0.2, 0.35, 0.6), Color(0.85, 0.75, 0.3), Color(0.25, 0.25, 0.28),
-		Color(0.4, 0.55, 0.35), Color(0.6, 0.4, 0.65), Color(0.9, 0.9, 0.88), Color(0.55, 0.35, 0.2)]
 const CAR_COLORS := [Color(0.8, 0.12, 0.1), Color(0.95, 0.8, 0.1), Color(0.15, 0.2, 0.35), Color(0.85, 0.85, 0.85),
 		Color(0.1, 0.1, 0.1), Color(0.2, 0.5, 0.35)]
 
@@ -62,14 +60,15 @@ func _make_ped() -> Dictionary:
 	add_child(n)
 	var body := Node3D.new()
 	n.add_child(body)
-	var c: Color = CLOTHES[_rng.randi() % CLOTHES.size()]
-	var h := _rng.randf_range(0.9, 1.08)
-	Kit.capsule(body, 0.28, 1.3 * h, Vector3(0, 0.7 * h, 0), c)
-	Kit.sphere(body, 0.2, Vector3(0, 1.48 * h, 0), Color(0.82, 0.68, 0.58).darkened(_rng.randf() * 0.4))
-	if _rng.randf() < 0.4:   # у каждого второго светится телефон
-		Kit.box(body, Vector3(0.1, 0.16, 0.02), Vector3(0.12, 1.25 * h, 0.25), Color(0.6, 0.85, 1.0), 2.5)
+	var look := NpcModel.random_look(_rng)
+	var model := NpcModel.make(look)
+	model.walk = 1.0
+	body.add_child(model)
+	if _rng.randf() < 0.4:   # у каждого второго светится телефон — уткнулся в экран
+		Kit.box(body, Vector3(0.08, 0.14, 0.02), Vector3(-0.1, 1.22, 0.24) * float(look.height),
+				Color(0.6, 0.85, 1.0), 2.5).rotation_degrees.x = -30.0
 	n.visible = false
-	return {"node": n, "body": body, "a": Vector2.ZERO, "b": Vector2.ZERO, "t": 1.0, "len": 1.0,
+	return {"node": n, "body": body, "model": model, "a": Vector2.ZERO, "b": Vector2.ZERO, "t": 1.0, "len": 1.0,
 			"speed": _rng.randf_range(1.0, 1.6), "side": 0.0, "cd": 0.0, "phase": _rng.randf() * TAU}
 
 
@@ -112,8 +111,8 @@ func _step_ped(p: Dictionary, pp: Vector2, delta: float) -> void:
 	n.rotation.y = atan2(dir.x, dir.y)
 	n.visible = true
 	var body: Node3D = p.body
-	body.position.y = absf(sin(_t * 7.0 + p.phase)) * 0.06
-	body.rotation.z = sin(_t * 7.0 + p.phase) * 0.05
+	body.position.y = absf(sin(_t * 7.0 + p.phase)) * 0.04
+	body.rotation.z = sin(_t * 7.0 + p.phase) * 0.03
 	p.cd -= delta
 	if p.cd <= 0.0 and q.distance_to(pp) < 3.5:
 		p.cd = 25.0

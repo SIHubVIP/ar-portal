@@ -236,10 +236,22 @@ static func damage_number(world: Node, pos: Vector3, amount: float, crit := fals
 	tw.tween_callback(l.queue_free)
 
 
+static var _spark_mesh: BoxMesh
+
+
 ## Искры при попадании.
 static func sparks(world: Node, pos: Vector3, color := Color(1, 0.8, 0.3), count := 8) -> void:
+	if _spark_mesh == null:
+		_spark_mesh = BoxMesh.new()
+		_spark_mesh.size = Vector3(0.06, 0.06, 0.06)
 	for i in count:
-		var s := Kit.box(world, Vector3(0.06, 0.06, 0.06), pos, color, 4.0)
+		# одна сетка на все искры: без новой BoxMesh на каждую
+		var s := MeshInstance3D.new()
+		s.mesh = _spark_mesh
+		s.material_override = Kit.mat(color, 4.0)
+		s.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		s.position = pos
+		world.add_child(s)
 		var dir := Vector3(randf_range(-1, 1), randf_range(0.2, 1.2), randf_range(-1, 1)).normalized()
 		var tw := s.create_tween()
 		tw.tween_property(s, "position", pos + dir * randf_range(0.6, 1.4), 0.25).set_ease(Tween.EASE_OUT)

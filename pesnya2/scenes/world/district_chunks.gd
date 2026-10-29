@@ -7,6 +7,7 @@ extends Node3D
 ## Квартал «Похмельная» строит сам мир: участки в нём не ставят ни домов, ни дорог.
 
 const LOAD_RADIUS := 1
+const BUILD_BUDGET_US := 3000
 const KEEP_RADIUS := 2
 const HOUSE_FLOOR_M := 3.0
 const HOUSE_SHADER := preload("res://assets/shaders/house_windows.gdshader")
@@ -19,6 +20,8 @@ var _queue: Array[Vector2i] = []
 var _tick := 0.0
 var _segments: Array = []
 var _mats: Dictionary = {}
+var _steps: Array[Callable] = []
+var _steps_root: Node3D
 
 
 func _ready() -> void:
@@ -36,10 +39,24 @@ func _physics_process(delta: float) -> void:
 	if _tick >= 0.25:
 		_tick = 0.0
 		_update(false)
-	if not _queue.is_empty():
-		var c: Vector2i = _queue.pop_front()
-		if not loaded.has(c):
-			loaded[c] = _build_chunk(c)
+	# стройка по кусочкам: не больше BUILD_BUDGET_US микросекунд за кадр
+	var t0 := Time.get_ticks_usec()
+	while Time.get_ticks_usec() - t0 < BUILD_BUDGET_US:
+		if _steps.is_empty():
+			if _queue.is_empty():
+				break
+			var c: Vector2i = _queue.pop_front()
+			if loaded.has(c):
+				continue
+			var root := _chunk_root(c)
+			loaded[c] = root
+			_steps = _chunk_steps(root, c)
+			_steps_root = root
+		elif not is_instance_valid(_steps_root) or _steps_root.is_queued_for_deletion():
+			_steps.clear()          # участок выгрузили, пока он строился
+		else:
+			var step: Callable = _steps.pop_front()
+			step.call()
 
 
 func _update(immediate: bool) -> void:
@@ -85,39 +102,69 @@ func _build_floor_and_edges() -> void:
 # ---------- участок ----------
 
 func _build_chunk(c: Vector2i) -> Node3D:
+	var root := _chunk_root(c)
+	for step in _chunk_steps(root, c):
+		step.call()
+	return root
+
+
+func _chunk_root(c: Vector2i) -> Node3D:
 	var root := Node3D.new()
 	root.name = "Chunk_%02d_%02d" % [c.x, c.y]
 	root.set_meta("map_skip", true)
 	add_child(root)
+	return root
+
+
+## Участок как список мелких шагов: в игре они растягиваются на несколько кадров
+## (BUILD_BUDGET_US на кадр), чтобы переход через границу участка не давал фриз (0.9).
+func _chunk_steps(root: Node3D, c: Vector2i) -> Array[Callable]:
+	var steps: Array[Callable] = []
 	var rect := District.chunk_rect(c)
 	var start := District.start_area()
 	# пол участка (вне двора «Похмельной», у него свой)
-	var ground := MeshInstance3D.new()
-	var pm := PlaneMesh.new()
-	pm.size = Vector2(District.CHUNK_M, District.CHUNK_M)
-	ground.mesh = pm
-	ground.position = District.to_world(rect.get_center(), -0.02)
-	ground.material_override = _mat("ground")
-	root.add_child(ground)
-	for s in _segments:
-		_road_piece(root, s, rect, start)
-	var rng := RandomNumberGenerator.new()
+	steps.append(func() -> void:
+		var ground := MeshInstance3D.new()
+		var pm := PlaneMesh.new()
+		pm.size = Vector2(District.CHUNK_M, District.CHUNK_M)
+		ground.mesh = pm
+		ground.position = District.to_world(rect.get_center(), -0.02)
+		ground.material_override = _mat("ground")
+		root.add_child(ground)
+		for s in _segments:
+			_road_piece(root, s, rect, start))
 	for h in District.houses():
 		var hc := h.get_center()
-		if not rect.has_point(hc):
-			continue
-		rng.seed = hash(Vector2i(int(h.position.x), int(h.position.y)))
-		var floors := rng.randi_range(3, 9)
-		var height := floors * HOUSE_FLOOR_M
-		var body := Props.collider(root, Vector3(h.size.x, height, h.size.y), District.to_world(hc, height / 2.0), true)
-		var mi := Kit.box(body, Vector3(h.size.x, height, h.size.y), Vector3.ZERO, Color.WHITE)
-		mi.material_override = _mat("house_%d" % (rng.randi() % 4))
+		if rect.has_point(hc):
+			steps.append(_house.bind(root, h))
 	for p in District.data().get("points", []):
 		var pm2 := District.pos(p)
 		# одна копия NPC: пока Павел у киоска во дворе, метки в парке нет
 		if rect.has_point(pm2) and not start.has_point(pm2) and District.override_for(p.id).is_empty():
-			_point_marker(root, p)
-	return root
+			steps.append(_point_marker.bind(root, p))
+	return steps
+
+
+static var _unit_box: BoxMesh
+
+
+func _house(root: Node3D, h: Rect2) -> void:
+	if not is_instance_valid(root):
+		return
+	var rng := RandomNumberGenerator.new()
+	rng.seed = hash(Vector2i(int(h.position.x), int(h.position.y)))
+	var floors := rng.randi_range(3, 9)
+	var height := floors * HOUSE_FLOOR_M
+	var size := Vector3(h.size.x, height, h.size.y)
+	var body := Props.collider(root, size, District.to_world(h.get_center(), height / 2.0), true)
+	# одна сетка-куб на все дома: окна шейдер рисует в мировых координатах, масштаб им не мешает
+	if _unit_box == null:
+		_unit_box = BoxMesh.new()
+	var mi := MeshInstance3D.new()
+	mi.mesh = _unit_box
+	mi.scale = size
+	mi.material_override = _mat("house_%d" % (rng.randi() % 4))
+	body.add_child(mi)
 
 
 ## Кусок дороги внутри участка: отрезок обрезается по участку и двору старта.
