@@ -28,6 +28,7 @@ speakers = {
  "terminal": {"name": "Патрульный терминал", "portrait": {"kind": "screen", "bg": "#0f2a1c"}},
  "kiosk": {"name": "Киоскёр", "portrait": {"kind": "face", "skin": "#d79c7c", "hair": "cap", "hair_color": "#1c4f9c", "eyes": "narrow", "mouth": "teeth", "extra": ["mustache", "gold_tooth", "sweat"], "bg": "#5a3320"}},
  "glorp": {"name": "Гл'орп, стажёр флота", "portrait": {"kind": "face", "skin": "#8fd27a", "hair": "antenna", "hair_color": "#5fae4a", "eyes": "huge", "mouth": "frown", "extra": ["tie", "sweat"], "bg": "#2a1f45"}},
+ "pavel": {"name": "Павел Тарелкин", "portrait": {"kind": "face", "skin": "#e2b08f", "hair": "cap", "hair_color": "#2c2c3a", "eyes": "tired", "mouth": "grin", "extra": ["mustache", "tie"], "bg": "#2a3550"}},
  "zina": {"name": "Тётя Зина с балкона", "portrait": {"kind": "face", "skin": "#efc2a4", "hair": "curlers", "hair_color": "#b0562f", "eyes": "crazy", "mouth": "grin", "extra": ["lipstick", "glasses", "cigarette"], "bg": "#6a2232"}},
 }
 
@@ -116,6 +117,16 @@ dialogues["ZINA"] = {"origin": E, "start": "n0", "nodes": {
  "o": node("zina", "Держи. Свежая! Ну… вчерашняя. Ну, мясо точно чьё-то. Кошек у нас во дворе пришельцы пересчитали — все на месте. Значит, не кошка. Наверное.", "end"),
  "c": node("zina", "Летала к заводу. Там у них, говорят, главный засел. А ещё к нам в баню — три раза. Мужики после этого стали спокойные-спокойные. Я не спрашиваю, и ты не спрашивай.", "end"),
  "p": node("zina", "Была. Трижды. Последний на Марс улетел — сказал, там спокойнее. Ты, кстати, тоже ничего, когда молчишь. Заходи вечером — дверь не закрываю, в нашем подъезде замки пришельцы сами боятся.", "end"),
+}}
+
+# Павел Тарелкин у временного киоска «НЛО напрокат» (ТЗ «Погуляй» п. 5): реплики — ключевые строки
+# поручения NPC_07_1 из сценария, последняя — редакторская подсказка, где его искать потом.
+dialogues["PAVEL"] = {"origin": "NPC_07_1 key_lines + editorial_P2", "start": "n0", "nodes": {
+ "n0": node("pavel", "Я пять лет аниматор, а тут мне звание дали!", "n1", canon="NPC_07_1:0"),
+ "n1": node("hero", "Я правильно понимаю, на этом можно хотя бы немного заработать?", "n2", canon="NPC_07_1:1"),
+ "n2": node("pavel", "Можно. Но сначала разберись, почему это вообще существует.", "n3", fx={"flag": "offered:NPC_07_1"},
+            canon="NPC_07_1:2"),
+ "n3": node("pavel", "Киоск временный, тарелка напрокат, звание — тоже. Подрастёшь — найди меня в парке, у пенопластовой тарелки. Там и поговорим про костюм."),
 }}
 
 out = {"schema_version": 1, "source": "SCENE_01 (канон) + editorial_P2",

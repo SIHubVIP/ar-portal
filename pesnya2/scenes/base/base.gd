@@ -58,7 +58,7 @@ func _ready() -> void:
 	add_child(player)
 	camera = IsoCamera.new()
 	camera.target = player
-	camera.distance = 13.0
+	camera.size = 16.0
 	add_child(camera)
 	camera.make_current()
 	hud = Hud.new()

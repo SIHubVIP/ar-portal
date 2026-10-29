@@ -19,6 +19,8 @@ var _banner: VBoxContainer
 var _banner_title: Label
 var _banner_sub: Label
 var pointer: ObjectivePointer
+var minimap: MiniMap
+var world_map: WorldMap
 var quest_log: QuestLog
 var _objective_detail := ""
 var _toast: Label
@@ -59,21 +61,27 @@ func _ready() -> void:
 	pause_btn.focus_mode = Control.FOCUS_NONE
 	pause_btn.pressed.connect(toggle_pause)
 	root.add_child(pause_btn)
-	_place(pause_btn, Vector2(1, 0), Vector2(-110, 14), Vector2(-20, 74))
+	_place(pause_btn, Vector2(1, 0), Vector2(-320, 14), Vector2(-230, 74))
 	var bag_btn := Button.new()
 	bag_btn.text = " Сумка "
 	bag_btn.add_theme_font_size_override("font_size", 24)
 	bag_btn.focus_mode = Control.FOCUS_NONE
 	bag_btn.pressed.connect(func(): open_inventory("bags"))
 	root.add_child(bag_btn)
-	_place(bag_btn, Vector2(1, 0), Vector2(-250, 14), Vector2(-120, 74))
+	_place(bag_btn, Vector2(1, 0), Vector2(-460, 14), Vector2(-330, 74))
 	var quests_btn := Button.new()
 	quests_btn.text = " Задания "
 	quests_btn.add_theme_font_size_override("font_size", 24)
 	quests_btn.focus_mode = Control.FOCUS_NONE
 	quests_btn.pressed.connect(open_quests)
 	root.add_child(quests_btn)
-	_place(quests_btn, Vector2(1, 0), Vector2(-405, 14), Vector2(-260, 74))
+	_place(quests_btn, Vector2(1, 0), Vector2(-615, 14), Vector2(-470, 74))
+	# мини-карта в правом верхнем углу, как на ориентире; нажатие — большая карта
+	minimap = MiniMap.new()
+	root.add_child(minimap)
+	_place(minimap, Vector2(1, 0), Vector2(-226, 8), Vector2(-18, 216))
+	minimap.opened.connect(open_map)
+	minimap.visible = false
 
 	_banner = VBoxContainer.new()
 	_banner.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -104,6 +112,10 @@ func _ready() -> void:
 	root.add_child(quest_log)
 	_place(quest_log, Vector2(0.5, 0.5), Vector2(-600, -340), Vector2(600, 340))
 	quest_log.closed.connect(func(): _set_controls(true))
+	world_map = WorldMap.new()
+	root.add_child(world_map)
+	_place(world_map, Vector2(0.5, 0.5), Vector2(-620, -350), Vector2(620, 350))
+	world_map.closed.connect(func(): _set_controls(true))
 	dialog = DialogView.new()
 	root.add_child(dialog)
 	dialog.closed.connect(func(): _set_controls(true))
@@ -305,6 +317,8 @@ func refresh_quest() -> void:
 ## Цель в мире: стрелка на экране и подпись. detail — строка прогресса в трекере.
 func set_objective(pos: Vector3, label := "", detail := "") -> void:
 	pointer.target = pos
+	minimap.objective = pos
+	world_map.objective = pos
 	pointer.label = label
 	if detail != _objective_detail:
 		_objective_detail = detail
@@ -331,7 +345,8 @@ func show_toast(text: String) -> void:
 # ---------- диалог и выбор ----------
 
 func is_busy() -> bool:
-	return dialog.visible or inventory.visible or quest_log.visible or _pause.visible or _death.visible
+	return dialog.visible or inventory.visible or quest_log.visible or world_map.visible or _pause.visible \
+			or _death.visible
 
 
 ## lines: [{speaker, text}]; on_done вызывается и при пропуске (с теми же последствиями).
@@ -414,6 +429,26 @@ func toggle_pause() -> void:
 		return
 	_pause.visible = not _pause.visible
 	_set_controls(not _pause.visible)
+
+
+## Карты: мир отдаёт живые точки (map_points), геометрия квартала снимается с коллизий один раз.
+func setup_map(world: Node, cam: IsoCamera, p: Node3D) -> void:
+	minimap.camera = cam
+	minimap.player = p
+	minimap.source = world
+	minimap.visible = true
+	world_map.player = p
+	world_map.source = world
+	var shapes := MapCanvas.collect(world)
+	minimap.set_shapes(shapes)
+	world_map.shapes = shapes
+
+
+func open_map() -> void:
+	if is_busy():
+		return
+	_set_controls(false)
+	world_map.open()
 
 
 func open_quests() -> void:

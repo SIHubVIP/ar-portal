@@ -263,7 +263,7 @@ func test_abilities_unlock_gradually() -> void:
 func test_dialogue_graphs_are_valid() -> void:
 	var errors := DialogueRunner.validate()
 	check(errors.is_empty(), "графы диалогов: %s" % ", ".join(errors))
-	for id in ["MAIN_001_INTRO", "PASSER", "TERMINAL", "KIOSK", "GLORP", "ZINA"]:
+	for id in ["MAIN_001_INTRO", "PASSER", "TERMINAL", "KIOSK", "GLORP", "ZINA", "PAVEL"]:
 		check(GameData.dialogues.has(id), "диалог %s есть" % id)
 
 
@@ -273,9 +273,16 @@ func test_dialogue_canon_lines_are_verbatim() -> void:
 	for id in GameData.dialogues:
 		for nid in GameData.dialogues[id].nodes:
 			var n: Dictionary = GameData.dialogues[id].nodes[nid]
-			if n.has("canon"):
+			if not n.has("canon"):
+				continue
+			# canon: «SCENE_01:i» — реплика сцены, «<ID поручения>:i» — ключевая строка поручения
+			var src := String(n.canon).get_slice(":", 0)
+			var i := int(String(n.canon).get_slice(":", 1))
+			if src == "SCENE_01":
 				found += 1
-				check(n.text == lines[int(String(n.canon).get_slice(":", 1))].text, "%s/%s дословно" % [id, nid])
+				check(n.text == lines[i].text, "%s/%s дословно" % [id, nid])
+			else:
+				check(n.text == GameData.quest(src).key_lines[i].text, "%s/%s дословно из %s" % [id, nid, src])
 	check(found == lines.size(), "все 7 реплик SCENE_01 звучат в диалогах")
 
 
@@ -387,3 +394,96 @@ func test_breakable_drops_loot_once() -> void:
 	again.take_hit(100.0, Vector3.ZERO)
 	check(world.get_children().filter(func(n): return n is LootDrop).size() == drops, "тот же ящик после перезахода пуст")
 	world.queue_free()
+
+
+# ---------- район «Погуляй» по ТЗ 1.0 ----------
+
+func test_district_manifest_counts() -> void:
+	var d := District.data()
+	var kinds := {}
+	for p in d.points:
+		kinds[p.type] = int(kinds.get(p.type, 0)) + 1
+	check(kinds == {"npc": 15, "boss": 3, "mob": 30, "place": 18, "safe": 5, "underground": 4}, "75 точек по типам ТЗ")
+	check(d.chunks.size() == 144 and d.sectors.size() == 9 and d.road_centerlines.size() == 32, "144 участка, 9 секторов, 32 дороги")
+	check(District.houses().size() > 400, "дома со схемы на месте")
+
+
+func test_district_chunks_follow_tz_formula() -> void:
+	check(District.chunk_of(Vector2(0, 0)) == Vector2i(0, 0), "угол — участок 0,0")
+	check(District.chunk_of(Vector2(249.9, 250)) == Vector2i(0, 1), "граница 250 м — следующий участок")
+	check(District.chunk_of(Vector2(3000, 3000)) == Vector2i(11, 11), "край 3000 м — последний участок")
+	var ok := true
+	for c in District.data().chunks:
+		var idx := Vector2i(int(c.index[0]), int(c.index[1]))
+		var b: Array = c.bounds_plan_m
+		ok = ok and c.id == "c%02d_%02d" % [idx.x, idx.y] and District.chunk_rect(idx) == Rect2(b[0], b[1], b[2] - b[0], b[3] - b[1])
+	check(ok, "участки манифеста совпадают с chunk_rect")
+	ok = true
+	for p in District.points():
+		ok = ok and District.chunk_of(District.pos(p)) == Vector2i(int(p.chunk[0]), int(p.chunk[1]))
+	check(ok, "точки лежат в своих участках")
+
+
+func test_district_coordinates_round_trip() -> void:
+	check(District.to_world(District.ORIGIN_M) == Vector3.ZERO, "старт — ноль мира")
+	var ok := true
+	for p in District.points():
+		var g: Array = p.godot_position_m
+		# формула манифеста (центр района) отличается от нашей только постоянным сдвигом (D-030)
+		var shift := District.to_world(District.pos(p)) - Vector3(g[0], 0, g[2])
+		ok = ok and shift.is_equal_approx(Vector3(1500 - District.ORIGIN_M.x, 0, 1500 - District.ORIGIN_M.y)) \
+				and District.to_plan(District.to_world(District.pos(p))).is_equal_approx(District.pos(p))
+	check(ok, "план ↔ мир без искажений, сдвиг постоянный")
+
+
+func test_start_yard_sits_between_roads() -> void:
+	var yard := District.start_area()
+	var ok := true
+	for s in District.road_segments():
+		# точки оси дороги через 2 м не заходят в двор, раздутый на полуширину коридора
+		var steps := int(s.a.distance_to(s.b) / 2.0) + 1
+		for i in steps + 1:
+			ok = ok and not yard.grow(s.w / 2.0 - 0.01).has_point(s.a.lerp(s.b, float(i) / steps))
+	check(ok, "двор «Похмельной» не залезает на дороги (между h12 и главной осью)")
+	check(District.sector_at(District.ORIGIN_M).id == "C1", "старт в секторе C1")
+
+
+func test_district_houses_avoid_roads_points_and_arenas() -> void:
+	var ok := true
+	for h in District.houses():
+		var c := h.get_center()
+		for s in District.road_segments():
+			ok = ok and District.dist_to_segment(c, s.a, s.b) > s.w / 2.0
+		for b in District.points("boss"):
+			ok = ok and not Rect2(District.pos(b) - District.m(b.arena_size_m) / 2.0, District.m(b.arena_size_m)).has_point(c)
+		ok = ok and not District.start_area().has_point(c)
+	check(ok, "ни один дом не стоит на дороге, арене или во дворе")
+
+
+func test_pavel_single_copy_by_quest_state() -> void:
+	var c := "MAIN_001_started_and_not_completed"
+	check(not District.condition_met(c, QuestService.AVAILABLE), "до MAIN_001 Павла у киоска нет")
+	check(District.condition_met(c, QuestService.ACTIVE) and District.condition_met(c, QuestService.TURN_IN_READY),
+			"пока идёт MAIN_001 — у киоска")
+	check(not District.condition_met(c, QuestService.COMPLETED), "после MAIN_001 — в парке")
+	QuestService.accept("MAIN_001")
+	var yard := District.npc_pos("N07")
+	check(District.start_area().has_point(yard), "киоск «НЛО напрокат» во дворе старта")
+	check(District.to_plan(ParkingReference.PAVEL_POS).distance_to(yard) < 1.0, "Павел стоит там, где сказано в данных")
+	var r := DialogueRunner.new("PAVEL")
+	while not r.finished():
+		r.advance()
+	check(GameState.has_flag("offered:NPC_07_1"), "Павел рассказал про «НЛО напрокат»")
+
+
+func test_parking_reference_assets_exist() -> void:
+	var ok := true
+	for m in ["parking_booth", "boom_gate", "ufo_kiosk", "brick_arch", "canal_rail", "taxi", "taxi_sign", "market_stall",
+			"chalk_board", "ac_unit"]:
+		ok = ok and Props.exists(m)
+	check(ok, "10 моделей эталона парковки на месте")
+	ok = true
+	for t in ["cobble", "brick"]:
+		for k in ["albedo", "normal", "rough"]:
+			ok = ok and ResourceLoader.exists("res://assets/textures/%s_%s.png" % [t, k])
+	check(ok, "текстуры брусчатки и кирпича на месте")

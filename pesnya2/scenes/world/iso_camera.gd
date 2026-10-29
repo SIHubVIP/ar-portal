@@ -1,25 +1,31 @@
 class_name IsoCamera
 extends Camera3D
-## Изометрическая камера: наклон 55°, ограниченный зум, поворот вокруг героя
-## (свайп по свободной части экрана или кнопки ⟲ ⟳). Здания между камерой
-## и героем становятся полупрозрачными. Ввод стика всегда относительно камеры.
+## Изометрическая камера по ТЗ «Погуляй» п. 7: ортографическая проекция, 45° по сторонам,
+## наклон 55°, размер кадра 24 м. Зум меняет размер кадра. По дополнению владельца к ТЗ
+## камеру можно крутить вокруг героя и наклонять вверх-вниз (свайп по свободной части экрана
+## или кнопки ⟲ ⟳); ТЗ запрещало вращение, решение D-029. Здания между камерой и героем
+## становятся полупрозрачными. Ввод стика всегда относительно камеры.
 
 const PITCH_MIN := deg_to_rad(28.0)
 const PITCH_MAX := deg_to_rad(80.0)
-const ZOOM_MIN := 10.0
-const ZOOM_MAX := 26.0
+const ZOOM_MIN := 14.0
+const ZOOM_MAX := 40.0
+## Камера стоит на этом расстоянии от героя: в ортографике оно не меняет масштаб,
+## только то, что попадает между камерой и героем.
+const ARM := 60.0
 
 var target: Node3D
-var distance := 14.0
 var yaw := deg_to_rad(45.0)
-var pitch := deg_to_rad(52.0)
-var _pitch_target := deg_to_rad(52.0)
+var pitch := deg_to_rad(55.0)
+var _pitch_target := deg_to_rad(55.0)
 var _yaw_target := deg_to_rad(45.0)
 var _faded: Array = []
 
 
 func _ready() -> void:
-	fov = 40.0
+	projection = PROJECTION_ORTHOGONAL
+	size = 24.0
+	near = 1.0
 	far = 400.0
 	if target:
 		global_position = _desired()
@@ -27,7 +33,7 @@ func _ready() -> void:
 
 
 func zoom_by(amount: float) -> void:
-	distance = clampf(distance + amount, ZOOM_MIN, ZOOM_MAX)
+	size = clampf(size + amount, ZOOM_MIN, ZOOM_MAX)
 
 
 ## Плавный поворот на угол (радианы); свайп передаёт мелкие шаги.
@@ -59,7 +65,7 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func _desired() -> Vector3:
 	var back := Vector3(sin(yaw), 0, cos(yaw)) * cos(pitch)
-	return target.global_position + (back + Vector3(0, sin(pitch), 0)) * distance
+	return target.global_position + (back + Vector3(0, sin(pitch), 0)) * ARM
 
 
 func _physics_process(delta: float) -> void:

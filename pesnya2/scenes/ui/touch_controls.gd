@@ -37,8 +37,9 @@ func buttons() -> Dictionary:
 	var b := {"attack": [a, 72.0], "dodge": [a + Vector2(-285, 45), 44.0]}
 	if interact_label != "":
 		b["interact"] = [a + Vector2(0, -330), 48.0]
-	b["rot_left"] = [Vector2(s.x - 190, 120), 30.0]
-	b["rot_right"] = [Vector2(s.x - 60, 120), 30.0]
+	# поворот камеры — слева от мини-карты (она в правом верхнем углу)
+	b["rot_left"] = [Vector2(s.x - 345, 120), 30.0]
+	b["rot_right"] = [Vector2(s.x - 265, 120), 30.0]
 	var inner := [180.0, 210.0, 240.0, 270.0]
 	var outer := [195.0, 225.0, 255.0]
 	for i in 7:

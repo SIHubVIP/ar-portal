@@ -8,6 +8,21 @@ const LAMPS_LEFT_X := -8.6
 const LAMPS_RIGHT_X := 8.6
 ## Игровая область: за её пределы не выйти (невидимые стены + заборы в просветах).
 const BOUNDS := Rect2(-16.5, -66.5, 33.0, 86.0)
+## Полуширина проёма кирпичной арки на севере двора: выход в остальной Погуляй (ТЗ п. 5 «открыть выход из двора»).
+const ARCH_HALF_W := 3.5
+
+
+## Открыть выход из двора: ворота уезжают вверх, коллизия снимается.
+static func open_exit(w: Node3D, instant := false) -> void:
+	var gate := w.get_node_or_null("ExitGate") as StaticBody3D
+	if gate == null or gate.has_meta("opened"):
+		return
+	gate.set_meta("opened", true)
+	gate.collision_layer = 0
+	if instant:
+		gate.position.y += 4.5
+	else:
+		gate.create_tween().tween_property(gate, "position:y", gate.position.y + 4.5, 1.2)
 
 
 static func build(w: Node3D) -> void:
@@ -24,30 +39,12 @@ static func build(w: Node3D) -> void:
 # ---------- земля ----------
 
 static func _ground(w: Node3D) -> void:
-	var noise := FastNoiseLite.new()
-	noise.frequency = 0.08
-	noise.fractal_octaves = 4
-	var tex := NoiseTexture2D.new()
-	tex.noise = noise
-	var ramp := Gradient.new()
-	ramp.set_color(0, Color(0.78, 0.78, 0.8))
-	ramp.set_color(1, Color(1, 1, 1))
-	tex.color_ramp = ramp
-	tex.seamless = true
-	tex.width = 256
-	tex.height = 256
-	var asphalt := StandardMaterial3D.new()
-	asphalt.albedo_color = Color(0.3, 0.29, 0.31)
-	asphalt.albedo_texture = tex
-	asphalt.uv1_triplanar = true
-	asphalt.uv1_world_triplanar = true
-	asphalt.uv1_scale = Vector3(0.35, 0.35, 0.35)
-	asphalt.roughness = 0.75
+	# мокрая брусчатка на всей земле двора (этап 2 ТЗ: эталон парковки)
 	for n in w.find_children("*", "MeshInstance3D", true, false):
 		var mi := n as MeshInstance3D
 		if mi.mesh is BoxMesh and (mi.mesh as BoxMesh).size.x >= 12.0 and (mi.mesh as BoxMesh).size.y <= 1.0 \
 				and mi.global_position.y <= 0.2:
-			mi.material_override = asphalt
+			mi.material_override = Surfaces.cobble()
 	# лужи: в них отражается неон
 	var puddle := StandardMaterial3D.new()
 	puddle.albedo_color = Color(0.16, 0.17, 0.22, 0.7)
@@ -79,8 +76,8 @@ static func _lamp(w: Node3D, pos: Vector3, yaw: float) -> void:
 	var head := pos + Vector3(0, 5.5, 1.55).rotated(Vector3.UP, deg_to_rad(yaw))
 	var light := OmniLight3D.new()
 	light.position = head
-	light.light_color = Color(1.0, 0.72, 0.4)
-	light.light_energy = 2.0
+	light.light_color = Color(1.0, 0.68, 0.36)
+	light.light_energy = 2.6
 	light.omni_range = 12.0
 	light.omni_attenuation = 1.8
 	w.add_child(light)
@@ -219,8 +216,8 @@ static func _tied_alien(w: Node3D, pos: Vector3) -> void:
 # ---------- мусор: его можно разнести ----------
 
 static func _trash(w: Node3D) -> void:
-	var spots := [["trash_bags", Vector3(-10.8, 0, -5)], ["boxes", Vector3(-10.5, 0, -12)], ["beer_crate", Vector3(10.4, 0, 4)],
-			["trash_bags", Vector3(10.6, 0, -11.5)], ["boxes", Vector3(10.3, 0, -24)], ["beer_crate", Vector3(-10.2, 0, -25)],
+	var spots := [["trash_bags", Vector3(-10.8, 0, -5)], ["boxes", Vector3(-10.9, 0, -19.4)], ["beer_crate", Vector3(7.6, 0, 12.4)],
+			["trash_bags", Vector3(8.0, 0, -15.6)], ["boxes", Vector3(10.3, 0, -24)], ["beer_crate", Vector3(-10.2, 0, -25)],
 			["trash_bags", Vector3(-10.6, 0, -33)], ["boxes", Vector3(10.6, 0, -38)], ["trash_bags", Vector3(-15, 0, -60)],
 			["beer_crate", Vector3(6, 0, -58)], ["boxes", Vector3(-8.5, 0, 12.5)], ["trash_bags", Vector3(12, 0, 12)]]
 	for s in spots:
@@ -228,7 +225,7 @@ static func _trash(w: Node3D) -> void:
 
 
 static func _graffiti(w: Node3D) -> void:
-	for g in [["ГЛ'ОРП — ЛОХ", Vector3(-12.95, 1.6, -9), 90.0, Color(0.3, 1, 0.9)],
+	for g in [["ГЛ'ОРП — ЛОХ", Vector3(-12.95, 1.6, -3.6), 90.0, Color(0.3, 1, 0.9)],
 			["ПРИШЕЛЬЦЫ, ВЕРНИТЕ ПЕНСИЮ", Vector3(12.95, 1.8, -28), -90.0, Color(1, 0.85, 0.1)],
 			["ВАСЯ + ЗЕЛЁНАЯ = ЛЮБОВЬ", Vector3(-12.95, 1.4, -36), 90.0, Color(1, 0.35, 0.65)],
 			["Сдам почку. Свою. Недорого\n8-900-ПОЧКА-00", Vector3(12.95, 1.6, -15), -90.0, Color(0.95, 0.95, 0.95)],
@@ -250,11 +247,20 @@ static func _ground_text(w: Node3D, text: String, pos: Vector3, color: Color, si
 
 static func _bounds(w: Node3D) -> void:
 	var r := BOUNDS
+	# север — с проходом под аркой (ARCH_HALF_W): его закрывает ворота, пока двор не пройден
+	var side_w := (r.size.x / 2.0 - ARCH_HALF_W)
 	for wall in [[Vector3(r.position.x, 2, r.get_center().y), Vector3(1, 4, r.size.y)],
 			[Vector3(r.end.x, 2, r.get_center().y), Vector3(1, 4, r.size.y)],
-			[Vector3(r.get_center().x, 2, r.position.y), Vector3(r.size.x, 4, 1)],
+			[Vector3(r.position.x + side_w / 2.0, 2, r.position.y), Vector3(side_w, 4, 1)],
+			[Vector3(r.end.x - side_w / 2.0, 2, r.position.y), Vector3(side_w, 4, 1)],
 			[Vector3(r.get_center().x, 2, r.end.y), Vector3(r.size.x, 4, 1)]]:
-		Props.collider(w, wall[1], wall[0])
+		Props.collider(w, wall[1], wall[0]).set_meta("map_skip", true)
+	var gate := Props.collider(w, Vector3(ARCH_HALF_W * 2.0, 4, 1), Vector3(0, 2, r.position.y))
+	gate.name = "ExitGate"
+	gate.set_meta("map_skip", true)
+	Kit.box(gate, Vector3(ARCH_HALF_W * 2.0, 2.2, 0.08), Vector3(0, -0.9, 0), Color(0.25, 0.27, 0.3))
+	for i in 9:
+		Kit.box(gate, Vector3(0.06, 2.2, 0.06), Vector3(-ARCH_HALF_W + 0.6 + i * 1.1, -0.9, 0.06), Color(0.5, 0.5, 0.5))
 	# просветы между домами закрыты бетонным забором (по 2.5 м)
 	for gap in [[-15.6, -6.0, -3.0], [-15.6, -30.0, -26.0], [-15.6, -66.0, -46.0], [-15.6, 15.0, 19.0],
 			[15.6, -11.0, -8.0], [15.6, -37.0, -33.0], [15.6, -66.0, -55.0], [15.6, 12.0, 19.0]]:

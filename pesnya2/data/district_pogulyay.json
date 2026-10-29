@@ -1,0 +1,10501 @@
+{
+ "schema_version": "1.1",
+ "district_id": "pogulyay",
+ "name": "Погуляй",
+ "status": "design_specification_not_implemented",
+ "dimensions_m": [
+  3000,
+  3000
+ ],
+ "city_dimensions_m": [
+  9000,
+  9000
+ ],
+ "units": "metres",
+ "coordinate_system": {
+  "plan_origin": "northwest",
+  "plan_x": "east",
+  "plan_y": "south",
+  "godot_formula": "Vector3(plan_x - 1500, elevation, plan_y - 1500)"
+ },
+ "chunk_size_m": 250,
+ "chunks": [
+  {
+   "id": "c00_00",
+   "index": [
+    0,
+    0
+   ],
+   "bounds_plan_m": [
+    0,
+    0,
+    250,
+    250
+   ]
+  },
+  {
+   "id": "c01_00",
+   "index": [
+    1,
+    0
+   ],
+   "bounds_plan_m": [
+    250,
+    0,
+    500,
+    250
+   ]
+  },
+  {
+   "id": "c02_00",
+   "index": [
+    2,
+    0
+   ],
+   "bounds_plan_m": [
+    500,
+    0,
+    750,
+    250
+   ]
+  },
+  {
+   "id": "c03_00",
+   "index": [
+    3,
+    0
+   ],
+   "bounds_plan_m": [
+    750,
+    0,
+    1000,
+    250
+   ]
+  },
+  {
+   "id": "c04_00",
+   "index": [
+    4,
+    0
+   ],
+   "bounds_plan_m": [
+    1000,
+    0,
+    1250,
+    250
+   ]
+  },
+  {
+   "id": "c05_00",
+   "index": [
+    5,
+    0
+   ],
+   "bounds_plan_m": [
+    1250,
+    0,
+    1500,
+    250
+   ]
+  },
+  {
+   "id": "c06_00",
+   "index": [
+    6,
+    0
+   ],
+   "bounds_plan_m": [
+    1500,
+    0,
+    1750,
+    250
+   ]
+  },
+  {
+   "id": "c07_00",
+   "index": [
+    7,
+    0
+   ],
+   "bounds_plan_m": [
+    1750,
+    0,
+    2000,
+    250
+   ]
+  },
+  {
+   "id": "c08_00",
+   "index": [
+    8,
+    0
+   ],
+   "bounds_plan_m": [
+    2000,
+    0,
+    2250,
+    250
+   ]
+  },
+  {
+   "id": "c09_00",
+   "index": [
+    9,
+    0
+   ],
+   "bounds_plan_m": [
+    2250,
+    0,
+    2500,
+    250
+   ]
+  },
+  {
+   "id": "c10_00",
+   "index": [
+    10,
+    0
+   ],
+   "bounds_plan_m": [
+    2500,
+    0,
+    2750,
+    250
+   ]
+  },
+  {
+   "id": "c11_00",
+   "index": [
+    11,
+    0
+   ],
+   "bounds_plan_m": [
+    2750,
+    0,
+    3000,
+    250
+   ]
+  },
+  {
+   "id": "c00_01",
+   "index": [
+    0,
+    1
+   ],
+   "bounds_plan_m": [
+    0,
+    250,
+    250,
+    500
+   ]
+  },
+  {
+   "id": "c01_01",
+   "index": [
+    1,
+    1
+   ],
+   "bounds_plan_m": [
+    250,
+    250,
+    500,
+    500
+   ]
+  },
+  {
+   "id": "c02_01",
+   "index": [
+    2,
+    1
+   ],
+   "bounds_plan_m": [
+    500,
+    250,
+    750,
+    500
+   ]
+  },
+  {
+   "id": "c03_01",
+   "index": [
+    3,
+    1
+   ],
+   "bounds_plan_m": [
+    750,
+    250,
+    1000,
+    500
+   ]
+  },
+  {
+   "id": "c04_01",
+   "index": [
+    4,
+    1
+   ],
+   "bounds_plan_m": [
+    1000,
+    250,
+    1250,
+    500
+   ]
+  },
+  {
+   "id": "c05_01",
+   "index": [
+    5,
+    1
+   ],
+   "bounds_plan_m": [
+    1250,
+    250,
+    1500,
+    500
+   ]
+  },
+  {
+   "id": "c06_01",
+   "index": [
+    6,
+    1
+   ],
+   "bounds_plan_m": [
+    1500,
+    250,
+    1750,
+    500
+   ]
+  },
+  {
+   "id": "c07_01",
+   "index": [
+    7,
+    1
+   ],
+   "bounds_plan_m": [
+    1750,
+    250,
+    2000,
+    500
+   ]
+  },
+  {
+   "id": "c08_01",
+   "index": [
+    8,
+    1
+   ],
+   "bounds_plan_m": [
+    2000,
+    250,
+    2250,
+    500
+   ]
+  },
+  {
+   "id": "c09_01",
+   "index": [
+    9,
+    1
+   ],
+   "bounds_plan_m": [
+    2250,
+    250,
+    2500,
+    500
+   ]
+  },
+  {
+   "id": "c10_01",
+   "index": [
+    10,
+    1
+   ],
+   "bounds_plan_m": [
+    2500,
+    250,
+    2750,
+    500
+   ]
+  },
+  {
+   "id": "c11_01",
+   "index": [
+    11,
+    1
+   ],
+   "bounds_plan_m": [
+    2750,
+    250,
+    3000,
+    500
+   ]
+  },
+  {
+   "id": "c00_02",
+   "index": [
+    0,
+    2
+   ],
+   "bounds_plan_m": [
+    0,
+    500,
+    250,
+    750
+   ]
+  },
+  {
+   "id": "c01_02",
+   "index": [
+    1,
+    2
+   ],
+   "bounds_plan_m": [
+    250,
+    500,
+    500,
+    750
+   ]
+  },
+  {
+   "id": "c02_02",
+   "index": [
+    2,
+    2
+   ],
+   "bounds_plan_m": [
+    500,
+    500,
+    750,
+    750
+   ]
+  },
+  {
+   "id": "c03_02",
+   "index": [
+    3,
+    2
+   ],
+   "bounds_plan_m": [
+    750,
+    500,
+    1000,
+    750
+   ]
+  },
+  {
+   "id": "c04_02",
+   "index": [
+    4,
+    2
+   ],
+   "bounds_plan_m": [
+    1000,
+    500,
+    1250,
+    750
+   ]
+  },
+  {
+   "id": "c05_02",
+   "index": [
+    5,
+    2
+   ],
+   "bounds_plan_m": [
+    1250,
+    500,
+    1500,
+    750
+   ]
+  },
+  {
+   "id": "c06_02",
+   "index": [
+    6,
+    2
+   ],
+   "bounds_plan_m": [
+    1500,
+    500,
+    1750,
+    750
+   ]
+  },
+  {
+   "id": "c07_02",
+   "index": [
+    7,
+    2
+   ],
+   "bounds_plan_m": [
+    1750,
+    500,
+    2000,
+    750
+   ]
+  },
+  {
+   "id": "c08_02",
+   "index": [
+    8,
+    2
+   ],
+   "bounds_plan_m": [
+    2000,
+    500,
+    2250,
+    750
+   ]
+  },
+  {
+   "id": "c09_02",
+   "index": [
+    9,
+    2
+   ],
+   "bounds_plan_m": [
+    2250,
+    500,
+    2500,
+    750
+   ]
+  },
+  {
+   "id": "c10_02",
+   "index": [
+    10,
+    2
+   ],
+   "bounds_plan_m": [
+    2500,
+    500,
+    2750,
+    750
+   ]
+  },
+  {
+   "id": "c11_02",
+   "index": [
+    11,
+    2
+   ],
+   "bounds_plan_m": [
+    2750,
+    500,
+    3000,
+    750
+   ]
+  },
+  {
+   "id": "c00_03",
+   "index": [
+    0,
+    3
+   ],
+   "bounds_plan_m": [
+    0,
+    750,
+    250,
+    1000
+   ]
+  },
+  {
+   "id": "c01_03",
+   "index": [
+    1,
+    3
+   ],
+   "bounds_plan_m": [
+    250,
+    750,
+    500,
+    1000
+   ]
+  },
+  {
+   "id": "c02_03",
+   "index": [
+    2,
+    3
+   ],
+   "bounds_plan_m": [
+    500,
+    750,
+    750,
+    1000
+   ]
+  },
+  {
+   "id": "c03_03",
+   "index": [
+    3,
+    3
+   ],
+   "bounds_plan_m": [
+    750,
+    750,
+    1000,
+    1000
+   ]
+  },
+  {
+   "id": "c04_03",
+   "index": [
+    4,
+    3
+   ],
+   "bounds_plan_m": [
+    1000,
+    750,
+    1250,
+    1000
+   ]
+  },
+  {
+   "id": "c05_03",
+   "index": [
+    5,
+    3
+   ],
+   "bounds_plan_m": [
+    1250,
+    750,
+    1500,
+    1000
+   ]
+  },
+  {
+   "id": "c06_03",
+   "index": [
+    6,
+    3
+   ],
+   "bounds_plan_m": [
+    1500,
+    750,
+    1750,
+    1000
+   ]
+  },
+  {
+   "id": "c07_03",
+   "index": [
+    7,
+    3
+   ],
+   "bounds_plan_m": [
+    1750,
+    750,
+    2000,
+    1000
+   ]
+  },
+  {
+   "id": "c08_03",
+   "index": [
+    8,
+    3
+   ],
+   "bounds_plan_m": [
+    2000,
+    750,
+    2250,
+    1000
+   ]
+  },
+  {
+   "id": "c09_03",
+   "index": [
+    9,
+    3
+   ],
+   "bounds_plan_m": [
+    2250,
+    750,
+    2500,
+    1000
+   ]
+  },
+  {
+   "id": "c10_03",
+   "index": [
+    10,
+    3
+   ],
+   "bounds_plan_m": [
+    2500,
+    750,
+    2750,
+    1000
+   ]
+  },
+  {
+   "id": "c11_03",
+   "index": [
+    11,
+    3
+   ],
+   "bounds_plan_m": [
+    2750,
+    750,
+    3000,
+    1000
+   ]
+  },
+  {
+   "id": "c00_04",
+   "index": [
+    0,
+    4
+   ],
+   "bounds_plan_m": [
+    0,
+    1000,
+    250,
+    1250
+   ]
+  },
+  {
+   "id": "c01_04",
+   "index": [
+    1,
+    4
+   ],
+   "bounds_plan_m": [
+    250,
+    1000,
+    500,
+    1250
+   ]
+  },
+  {
+   "id": "c02_04",
+   "index": [
+    2,
+    4
+   ],
+   "bounds_plan_m": [
+    500,
+    1000,
+    750,
+    1250
+   ]
+  },
+  {
+   "id": "c03_04",
+   "index": [
+    3,
+    4
+   ],
+   "bounds_plan_m": [
+    750,
+    1000,
+    1000,
+    1250
+   ]
+  },
+  {
+   "id": "c04_04",
+   "index": [
+    4,
+    4
+   ],
+   "bounds_plan_m": [
+    1000,
+    1000,
+    1250,
+    1250
+   ]
+  },
+  {
+   "id": "c05_04",
+   "index": [
+    5,
+    4
+   ],
+   "bounds_plan_m": [
+    1250,
+    1000,
+    1500,
+    1250
+   ]
+  },
+  {
+   "id": "c06_04",
+   "index": [
+    6,
+    4
+   ],
+   "bounds_plan_m": [
+    1500,
+    1000,
+    1750,
+    1250
+   ]
+  },
+  {
+   "id": "c07_04",
+   "index": [
+    7,
+    4
+   ],
+   "bounds_plan_m": [
+    1750,
+    1000,
+    2000,
+    1250
+   ]
+  },
+  {
+   "id": "c08_04",
+   "index": [
+    8,
+    4
+   ],
+   "bounds_plan_m": [
+    2000,
+    1000,
+    2250,
+    1250
+   ]
+  },
+  {
+   "id": "c09_04",
+   "index": [
+    9,
+    4
+   ],
+   "bounds_plan_m": [
+    2250,
+    1000,
+    2500,
+    1250
+   ]
+  },
+  {
+   "id": "c10_04",
+   "index": [
+    10,
+    4
+   ],
+   "bounds_plan_m": [
+    2500,
+    1000,
+    2750,
+    1250
+   ]
+  },
+  {
+   "id": "c11_04",
+   "index": [
+    11,
+    4
+   ],
+   "bounds_plan_m": [
+    2750,
+    1000,
+    3000,
+    1250
+   ]
+  },
+  {
+   "id": "c00_05",
+   "index": [
+    0,
+    5
+   ],
+   "bounds_plan_m": [
+    0,
+    1250,
+    250,
+    1500
+   ]
+  },
+  {
+   "id": "c01_05",
+   "index": [
+    1,
+    5
+   ],
+   "bounds_plan_m": [
+    250,
+    1250,
+    500,
+    1500
+   ]
+  },
+  {
+   "id": "c02_05",
+   "index": [
+    2,
+    5
+   ],
+   "bounds_plan_m": [
+    500,
+    1250,
+    750,
+    1500
+   ]
+  },
+  {
+   "id": "c03_05",
+   "index": [
+    3,
+    5
+   ],
+   "bounds_plan_m": [
+    750,
+    1250,
+    1000,
+    1500
+   ]
+  },
+  {
+   "id": "c04_05",
+   "index": [
+    4,
+    5
+   ],
+   "bounds_plan_m": [
+    1000,
+    1250,
+    1250,
+    1500
+   ]
+  },
+  {
+   "id": "c05_05",
+   "index": [
+    5,
+    5
+   ],
+   "bounds_plan_m": [
+    1250,
+    1250,
+    1500,
+    1500
+   ]
+  },
+  {
+   "id": "c06_05",
+   "index": [
+    6,
+    5
+   ],
+   "bounds_plan_m": [
+    1500,
+    1250,
+    1750,
+    1500
+   ]
+  },
+  {
+   "id": "c07_05",
+   "index": [
+    7,
+    5
+   ],
+   "bounds_plan_m": [
+    1750,
+    1250,
+    2000,
+    1500
+   ]
+  },
+  {
+   "id": "c08_05",
+   "index": [
+    8,
+    5
+   ],
+   "bounds_plan_m": [
+    2000,
+    1250,
+    2250,
+    1500
+   ]
+  },
+  {
+   "id": "c09_05",
+   "index": [
+    9,
+    5
+   ],
+   "bounds_plan_m": [
+    2250,
+    1250,
+    2500,
+    1500
+   ]
+  },
+  {
+   "id": "c10_05",
+   "index": [
+    10,
+    5
+   ],
+   "bounds_plan_m": [
+    2500,
+    1250,
+    2750,
+    1500
+   ]
+  },
+  {
+   "id": "c11_05",
+   "index": [
+    11,
+    5
+   ],
+   "bounds_plan_m": [
+    2750,
+    1250,
+    3000,
+    1500
+   ]
+  },
+  {
+   "id": "c00_06",
+   "index": [
+    0,
+    6
+   ],
+   "bounds_plan_m": [
+    0,
+    1500,
+    250,
+    1750
+   ]
+  },
+  {
+   "id": "c01_06",
+   "index": [
+    1,
+    6
+   ],
+   "bounds_plan_m": [
+    250,
+    1500,
+    500,
+    1750
+   ]
+  },
+  {
+   "id": "c02_06",
+   "index": [
+    2,
+    6
+   ],
+   "bounds_plan_m": [
+    500,
+    1500,
+    750,
+    1750
+   ]
+  },
+  {
+   "id": "c03_06",
+   "index": [
+    3,
+    6
+   ],
+   "bounds_plan_m": [
+    750,
+    1500,
+    1000,
+    1750
+   ]
+  },
+  {
+   "id": "c04_06",
+   "index": [
+    4,
+    6
+   ],
+   "bounds_plan_m": [
+    1000,
+    1500,
+    1250,
+    1750
+   ]
+  },
+  {
+   "id": "c05_06",
+   "index": [
+    5,
+    6
+   ],
+   "bounds_plan_m": [
+    1250,
+    1500,
+    1500,
+    1750
+   ]
+  },
+  {
+   "id": "c06_06",
+   "index": [
+    6,
+    6
+   ],
+   "bounds_plan_m": [
+    1500,
+    1500,
+    1750,
+    1750
+   ]
+  },
+  {
+   "id": "c07_06",
+   "index": [
+    7,
+    6
+   ],
+   "bounds_plan_m": [
+    1750,
+    1500,
+    2000,
+    1750
+   ]
+  },
+  {
+   "id": "c08_06",
+   "index": [
+    8,
+    6
+   ],
+   "bounds_plan_m": [
+    2000,
+    1500,
+    2250,
+    1750
+   ]
+  },
+  {
+   "id": "c09_06",
+   "index": [
+    9,
+    6
+   ],
+   "bounds_plan_m": [
+    2250,
+    1500,
+    2500,
+    1750
+   ]
+  },
+  {
+   "id": "c10_06",
+   "index": [
+    10,
+    6
+   ],
+   "bounds_plan_m": [
+    2500,
+    1500,
+    2750,
+    1750
+   ]
+  },
+  {
+   "id": "c11_06",
+   "index": [
+    11,
+    6
+   ],
+   "bounds_plan_m": [
+    2750,
+    1500,
+    3000,
+    1750
+   ]
+  },
+  {
+   "id": "c00_07",
+   "index": [
+    0,
+    7
+   ],
+   "bounds_plan_m": [
+    0,
+    1750,
+    250,
+    2000
+   ]
+  },
+  {
+   "id": "c01_07",
+   "index": [
+    1,
+    7
+   ],
+   "bounds_plan_m": [
+    250,
+    1750,
+    500,
+    2000
+   ]
+  },
+  {
+   "id": "c02_07",
+   "index": [
+    2,
+    7
+   ],
+   "bounds_plan_m": [
+    500,
+    1750,
+    750,
+    2000
+   ]
+  },
+  {
+   "id": "c03_07",
+   "index": [
+    3,
+    7
+   ],
+   "bounds_plan_m": [
+    750,
+    1750,
+    1000,
+    2000
+   ]
+  },
+  {
+   "id": "c04_07",
+   "index": [
+    4,
+    7
+   ],
+   "bounds_plan_m": [
+    1000,
+    1750,
+    1250,
+    2000
+   ]
+  },
+  {
+   "id": "c05_07",
+   "index": [
+    5,
+    7
+   ],
+   "bounds_plan_m": [
+    1250,
+    1750,
+    1500,
+    2000
+   ]
+  },
+  {
+   "id": "c06_07",
+   "index": [
+    6,
+    7
+   ],
+   "bounds_plan_m": [
+    1500,
+    1750,
+    1750,
+    2000
+   ]
+  },
+  {
+   "id": "c07_07",
+   "index": [
+    7,
+    7
+   ],
+   "bounds_plan_m": [
+    1750,
+    1750,
+    2000,
+    2000
+   ]
+  },
+  {
+   "id": "c08_07",
+   "index": [
+    8,
+    7
+   ],
+   "bounds_plan_m": [
+    2000,
+    1750,
+    2250,
+    2000
+   ]
+  },
+  {
+   "id": "c09_07",
+   "index": [
+    9,
+    7
+   ],
+   "bounds_plan_m": [
+    2250,
+    1750,
+    2500,
+    2000
+   ]
+  },
+  {
+   "id": "c10_07",
+   "index": [
+    10,
+    7
+   ],
+   "bounds_plan_m": [
+    2500,
+    1750,
+    2750,
+    2000
+   ]
+  },
+  {
+   "id": "c11_07",
+   "index": [
+    11,
+    7
+   ],
+   "bounds_plan_m": [
+    2750,
+    1750,
+    3000,
+    2000
+   ]
+  },
+  {
+   "id": "c00_08",
+   "index": [
+    0,
+    8
+   ],
+   "bounds_plan_m": [
+    0,
+    2000,
+    250,
+    2250
+   ]
+  },
+  {
+   "id": "c01_08",
+   "index": [
+    1,
+    8
+   ],
+   "bounds_plan_m": [
+    250,
+    2000,
+    500,
+    2250
+   ]
+  },
+  {
+   "id": "c02_08",
+   "index": [
+    2,
+    8
+   ],
+   "bounds_plan_m": [
+    500,
+    2000,
+    750,
+    2250
+   ]
+  },
+  {
+   "id": "c03_08",
+   "index": [
+    3,
+    8
+   ],
+   "bounds_plan_m": [
+    750,
+    2000,
+    1000,
+    2250
+   ]
+  },
+  {
+   "id": "c04_08",
+   "index": [
+    4,
+    8
+   ],
+   "bounds_plan_m": [
+    1000,
+    2000,
+    1250,
+    2250
+   ]
+  },
+  {
+   "id": "c05_08",
+   "index": [
+    5,
+    8
+   ],
+   "bounds_plan_m": [
+    1250,
+    2000,
+    1500,
+    2250
+   ]
+  },
+  {
+   "id": "c06_08",
+   "index": [
+    6,
+    8
+   ],
+   "bounds_plan_m": [
+    1500,
+    2000,
+    1750,
+    2250
+   ]
+  },
+  {
+   "id": "c07_08",
+   "index": [
+    7,
+    8
+   ],
+   "bounds_plan_m": [
+    1750,
+    2000,
+    2000,
+    2250
+   ]
+  },
+  {
+   "id": "c08_08",
+   "index": [
+    8,
+    8
+   ],
+   "bounds_plan_m": [
+    2000,
+    2000,
+    2250,
+    2250
+   ]
+  },
+  {
+   "id": "c09_08",
+   "index": [
+    9,
+    8
+   ],
+   "bounds_plan_m": [
+    2250,
+    2000,
+    2500,
+    2250
+   ]
+  },
+  {
+   "id": "c10_08",
+   "index": [
+    10,
+    8
+   ],
+   "bounds_plan_m": [
+    2500,
+    2000,
+    2750,
+    2250
+   ]
+  },
+  {
+   "id": "c11_08",
+   "index": [
+    11,
+    8
+   ],
+   "bounds_plan_m": [
+    2750,
+    2000,
+    3000,
+    2250
+   ]
+  },
+  {
+   "id": "c00_09",
+   "index": [
+    0,
+    9
+   ],
+   "bounds_plan_m": [
+    0,
+    2250,
+    250,
+    2500
+   ]
+  },
+  {
+   "id": "c01_09",
+   "index": [
+    1,
+    9
+   ],
+   "bounds_plan_m": [
+    250,
+    2250,
+    500,
+    2500
+   ]
+  },
+  {
+   "id": "c02_09",
+   "index": [
+    2,
+    9
+   ],
+   "bounds_plan_m": [
+    500,
+    2250,
+    750,
+    2500
+   ]
+  },
+  {
+   "id": "c03_09",
+   "index": [
+    3,
+    9
+   ],
+   "bounds_plan_m": [
+    750,
+    2250,
+    1000,
+    2500
+   ]
+  },
+  {
+   "id": "c04_09",
+   "index": [
+    4,
+    9
+   ],
+   "bounds_plan_m": [
+    1000,
+    2250,
+    1250,
+    2500
+   ]
+  },
+  {
+   "id": "c05_09",
+   "index": [
+    5,
+    9
+   ],
+   "bounds_plan_m": [
+    1250,
+    2250,
+    1500,
+    2500
+   ]
+  },
+  {
+   "id": "c06_09",
+   "index": [
+    6,
+    9
+   ],
+   "bounds_plan_m": [
+    1500,
+    2250,
+    1750,
+    2500
+   ]
+  },
+  {
+   "id": "c07_09",
+   "index": [
+    7,
+    9
+   ],
+   "bounds_plan_m": [
+    1750,
+    2250,
+    2000,
+    2500
+   ]
+  },
+  {
+   "id": "c08_09",
+   "index": [
+    8,
+    9
+   ],
+   "bounds_plan_m": [
+    2000,
+    2250,
+    2250,
+    2500
+   ]
+  },
+  {
+   "id": "c09_09",
+   "index": [
+    9,
+    9
+   ],
+   "bounds_plan_m": [
+    2250,
+    2250,
+    2500,
+    2500
+   ]
+  },
+  {
+   "id": "c10_09",
+   "index": [
+    10,
+    9
+   ],
+   "bounds_plan_m": [
+    2500,
+    2250,
+    2750,
+    2500
+   ]
+  },
+  {
+   "id": "c11_09",
+   "index": [
+    11,
+    9
+   ],
+   "bounds_plan_m": [
+    2750,
+    2250,
+    3000,
+    2500
+   ]
+  },
+  {
+   "id": "c00_10",
+   "index": [
+    0,
+    10
+   ],
+   "bounds_plan_m": [
+    0,
+    2500,
+    250,
+    2750
+   ]
+  },
+  {
+   "id": "c01_10",
+   "index": [
+    1,
+    10
+   ],
+   "bounds_plan_m": [
+    250,
+    2500,
+    500,
+    2750
+   ]
+  },
+  {
+   "id": "c02_10",
+   "index": [
+    2,
+    10
+   ],
+   "bounds_plan_m": [
+    500,
+    2500,
+    750,
+    2750
+   ]
+  },
+  {
+   "id": "c03_10",
+   "index": [
+    3,
+    10
+   ],
+   "bounds_plan_m": [
+    750,
+    2500,
+    1000,
+    2750
+   ]
+  },
+  {
+   "id": "c04_10",
+   "index": [
+    4,
+    10
+   ],
+   "bounds_plan_m": [
+    1000,
+    2500,
+    1250,
+    2750
+   ]
+  },
+  {
+   "id": "c05_10",
+   "index": [
+    5,
+    10
+   ],
+   "bounds_plan_m": [
+    1250,
+    2500,
+    1500,
+    2750
+   ]
+  },
+  {
+   "id": "c06_10",
+   "index": [
+    6,
+    10
+   ],
+   "bounds_plan_m": [
+    1500,
+    2500,
+    1750,
+    2750
+   ]
+  },
+  {
+   "id": "c07_10",
+   "index": [
+    7,
+    10
+   ],
+   "bounds_plan_m": [
+    1750,
+    2500,
+    2000,
+    2750
+   ]
+  },
+  {
+   "id": "c08_10",
+   "index": [
+    8,
+    10
+   ],
+   "bounds_plan_m": [
+    2000,
+    2500,
+    2250,
+    2750
+   ]
+  },
+  {
+   "id": "c09_10",
+   "index": [
+    9,
+    10
+   ],
+   "bounds_plan_m": [
+    2250,
+    2500,
+    2500,
+    2750
+   ]
+  },
+  {
+   "id": "c10_10",
+   "index": [
+    10,
+    10
+   ],
+   "bounds_plan_m": [
+    2500,
+    2500,
+    2750,
+    2750
+   ]
+  },
+  {
+   "id": "c11_10",
+   "index": [
+    11,
+    10
+   ],
+   "bounds_plan_m": [
+    2750,
+    2500,
+    3000,
+    2750
+   ]
+  },
+  {
+   "id": "c00_11",
+   "index": [
+    0,
+    11
+   ],
+   "bounds_plan_m": [
+    0,
+    2750,
+    250,
+    3000
+   ]
+  },
+  {
+   "id": "c01_11",
+   "index": [
+    1,
+    11
+   ],
+   "bounds_plan_m": [
+    250,
+    2750,
+    500,
+    3000
+   ]
+  },
+  {
+   "id": "c02_11",
+   "index": [
+    2,
+    11
+   ],
+   "bounds_plan_m": [
+    500,
+    2750,
+    750,
+    3000
+   ]
+  },
+  {
+   "id": "c03_11",
+   "index": [
+    3,
+    11
+   ],
+   "bounds_plan_m": [
+    750,
+    2750,
+    1000,
+    3000
+   ]
+  },
+  {
+   "id": "c04_11",
+   "index": [
+    4,
+    11
+   ],
+   "bounds_plan_m": [
+    1000,
+    2750,
+    1250,
+    3000
+   ]
+  },
+  {
+   "id": "c05_11",
+   "index": [
+    5,
+    11
+   ],
+   "bounds_plan_m": [
+    1250,
+    2750,
+    1500,
+    3000
+   ]
+  },
+  {
+   "id": "c06_11",
+   "index": [
+    6,
+    11
+   ],
+   "bounds_plan_m": [
+    1500,
+    2750,
+    1750,
+    3000
+   ]
+  },
+  {
+   "id": "c07_11",
+   "index": [
+    7,
+    11
+   ],
+   "bounds_plan_m": [
+    1750,
+    2750,
+    2000,
+    3000
+   ]
+  },
+  {
+   "id": "c08_11",
+   "index": [
+    8,
+    11
+   ],
+   "bounds_plan_m": [
+    2000,
+    2750,
+    2250,
+    3000
+   ]
+  },
+  {
+   "id": "c09_11",
+   "index": [
+    9,
+    11
+   ],
+   "bounds_plan_m": [
+    2250,
+    2750,
+    2500,
+    3000
+   ]
+  },
+  {
+   "id": "c10_11",
+   "index": [
+    10,
+    11
+   ],
+   "bounds_plan_m": [
+    2500,
+    2750,
+    2750,
+    3000
+   ]
+  },
+  {
+   "id": "c11_11",
+   "index": [
+    11,
+    11
+   ],
+   "bounds_plan_m": [
+    2750,
+    2750,
+    3000,
+    3000
+   ]
+  }
+ ],
+ "sectors": [
+  {
+   "id": "A1",
+   "name": "Парк аттракционов",
+   "bounds_plan_m": [
+    0,
+    0,
+    1000,
+    1000
+   ]
+  },
+  {
+   "id": "A2",
+   "name": "Клубный квартал",
+   "bounds_plan_m": [
+    1000,
+    0,
+    2000,
+    1000
+   ]
+  },
+  {
+   "id": "A3",
+   "name": "Верхние этажи",
+   "bounds_plan_m": [
+    2000,
+    0,
+    3000,
+    1000
+   ]
+  },
+  {
+   "id": "B1",
+   "name": "Старые дворы",
+   "bounds_plan_m": [
+    0,
+    1000,
+    1000,
+    2000
+   ]
+  },
+  {
+   "id": "B2",
+   "name": "Центр",
+   "bounds_plan_m": [
+    1000,
+    1000,
+    2000,
+    2000
+   ]
+  },
+  {
+   "id": "B3",
+   "name": "Медиаквартал",
+   "bounds_plan_m": [
+    2000,
+    1000,
+    3000,
+    2000
+   ]
+  },
+  {
+   "id": "C1",
+   "name": "Похмельная",
+   "bounds_plan_m": [
+    0,
+    2000,
+    1000,
+    3000
+   ]
+  },
+  {
+   "id": "C2",
+   "name": "Рынок",
+   "bounds_plan_m": [
+    1000,
+    2000,
+    2000,
+    3000
+   ]
+  },
+  {
+   "id": "C3",
+   "name": "Служебная зона",
+   "bounds_plan_m": [
+    2000,
+    2000,
+    3000,
+    3000
+   ]
+  }
+ ],
+ "road_centerlines": [
+  {
+   "id": "v0",
+   "polyline_plan_m": [
+    [
+     75,
+     35
+    ],
+    [
+     75,
+     2960
+    ]
+   ],
+   "corridor_width_m": 24
+  },
+  {
+   "id": "h0",
+   "polyline_plan_m": [
+    [
+     35,
+     75
+    ],
+    [
+     2960,
+     75
+    ]
+   ],
+   "corridor_width_m": 24
+  },
+  {
+   "id": "v1",
+   "polyline_plan_m": [
+    [
+     240,
+     35
+    ],
+    [
+     240,
+     2960
+    ]
+   ],
+   "corridor_width_m": 12
+  },
+  {
+   "id": "h1",
+   "polyline_plan_m": [
+    [
+     35,
+     240
+    ],
+    [
+     2960,
+     240
+    ]
+   ],
+   "corridor_width_m": 12
+  },
+  {
+   "id": "v2",
+   "polyline_plan_m": [
+    [
+     420,
+     35
+    ],
+    [
+     420,
+     2960
+    ]
+   ],
+   "corridor_width_m": 12
+  },
+  {
+   "id": "h2",
+   "polyline_plan_m": [
+    [
+     35,
+     420
+    ],
+    [
+     2960,
+     420
+    ]
+   ],
+   "corridor_width_m": 12
+  },
+  {
+   "id": "v3",
+   "polyline_plan_m": [
+    [
+     620,
+     35
+    ],
+    [
+     620,
+     2960
+    ]
+   ],
+   "corridor_width_m": 24
+  },
+  {
+   "id": "h3",
+   "polyline_plan_m": [
+    [
+     35,
+     620
+    ],
+    [
+     2960,
+     620
+    ]
+   ],
+   "corridor_width_m": 24
+  },
+  {
+   "id": "v4",
+   "polyline_plan_m": [
+    [
+     800,
+     35
+    ],
+    [
+     800,
+     2960
+    ]
+   ],
+   "corridor_width_m": 12
+  },
+  {
+   "id": "h4",
+   "polyline_plan_m": [
+    [
+     35,
+     800
+    ],
+    [
+     2960,
+     800
+    ]
+   ],
+   "corridor_width_m": 12
+  },
+  {
+   "id": "v5",
+   "polyline_plan_m": [
+    [
+     1000,
+     35
+    ],
+    [
+     1000,
+     2960
+    ]
+   ],
+   "corridor_width_m": 12
+  },
+  {
+   "id": "h5",
+   "polyline_plan_m": [
+    [
+     35,
+     1000
+    ],
+    [
+     2960,
+     1000
+    ]
+   ],
+   "corridor_width_m": 12
+  },
+  {
+   "id": "v6",
+   "polyline_plan_m": [
+    [
+     1220,
+     35
+    ],
+    [
+     1220,
+     2960
+    ]
+   ],
+   "corridor_width_m": 24
+  },
+  {
+   "id": "h6",
+   "polyline_plan_m": [
+    [
+     35,
+     1220
+    ],
+    [
+     2960,
+     1220
+    ]
+   ],
+   "corridor_width_m": 24
+  },
+  {
+   "id": "v7",
+   "polyline_plan_m": [
+    [
+     1480,
+     35
+    ],
+    [
+     1480,
+     2960
+    ]
+   ],
+   "corridor_width_m": 12
+  },
+  {
+   "id": "h7",
+   "polyline_plan_m": [
+    [
+     35,
+     1480
+    ],
+    [
+     2960,
+     1480
+    ]
+   ],
+   "corridor_width_m": 12
+  },
+  {
+   "id": "v8",
+   "polyline_plan_m": [
+    [
+     1720,
+     35
+    ],
+    [
+     1720,
+     2960
+    ]
+   ],
+   "corridor_width_m": 12
+  },
+  {
+   "id": "h8",
+   "polyline_plan_m": [
+    [
+     35,
+     1720
+    ],
+    [
+     2960,
+     1720
+    ]
+   ],
+   "corridor_width_m": 12
+  },
+  {
+   "id": "v9",
+   "polyline_plan_m": [
+    [
+     1960,
+     35
+    ],
+    [
+     1960,
+     2960
+    ]
+   ],
+   "corridor_width_m": 24
+  },
+  {
+   "id": "h9",
+   "polyline_plan_m": [
+    [
+     35,
+     1960
+    ],
+    [
+     2960,
+     1960
+    ]
+   ],
+   "corridor_width_m": 24
+  },
+  {
+   "id": "v10",
+   "polyline_plan_m": [
+    [
+     2190,
+     35
+    ],
+    [
+     2190,
+     2960
+    ]
+   ],
+   "corridor_width_m": 12
+  },
+  {
+   "id": "h10",
+   "polyline_plan_m": [
+    [
+     35,
+     2190
+    ],
+    [
+     2960,
+     2190
+    ]
+   ],
+   "corridor_width_m": 12
+  },
+  {
+   "id": "v11",
+   "polyline_plan_m": [
+    [
+     2400,
+     35
+    ],
+    [
+     2400,
+     2960
+    ]
+   ],
+   "corridor_width_m": 12
+  },
+  {
+   "id": "h11",
+   "polyline_plan_m": [
+    [
+     35,
+     2400
+    ],
+    [
+     2960,
+     2400
+    ]
+   ],
+   "corridor_width_m": 12
+  },
+  {
+   "id": "v12",
+   "polyline_plan_m": [
+    [
+     2600,
+     35
+    ],
+    [
+     2600,
+     2960
+    ]
+   ],
+   "corridor_width_m": 24
+  },
+  {
+   "id": "h12",
+   "polyline_plan_m": [
+    [
+     35,
+     2600
+    ],
+    [
+     2960,
+     2600
+    ]
+   ],
+   "corridor_width_m": 24
+  },
+  {
+   "id": "v13",
+   "polyline_plan_m": [
+    [
+     2780,
+     35
+    ],
+    [
+     2780,
+     2960
+    ]
+   ],
+   "corridor_width_m": 12
+  },
+  {
+   "id": "h13",
+   "polyline_plan_m": [
+    [
+     35,
+     2780
+    ],
+    [
+     2960,
+     2780
+    ]
+   ],
+   "corridor_width_m": 12
+  },
+  {
+   "id": "v14",
+   "polyline_plan_m": [
+    [
+     2930,
+     35
+    ],
+    [
+     2930,
+     2960
+    ]
+   ],
+   "corridor_width_m": 12
+  },
+  {
+   "id": "h14",
+   "polyline_plan_m": [
+    [
+     35,
+     2930
+    ],
+    [
+     2960,
+     2930
+    ]
+   ],
+   "corridor_width_m": 12
+  },
+  {
+   "id": "tram_loop",
+   "polyline_plan_m": [
+    [
+     240,
+     1000
+    ],
+    [
+     1000,
+     1000
+    ],
+    [
+     1000,
+     240
+    ],
+    [
+     2400,
+     240
+    ],
+    [
+     2780,
+     1000
+    ],
+    [
+     2780,
+     2210
+    ],
+    [
+     2190,
+     2780
+    ],
+    [
+     1000,
+     2780
+    ],
+    [
+     240,
+     2210
+    ],
+    [
+     240,
+     1000
+    ]
+   ],
+   "corridor_width_m": 24
+  },
+  {
+   "id": "main_spine",
+   "polyline_plan_m": [
+    [
+     60,
+     2740
+    ],
+    [
+     630,
+     2740
+    ],
+    [
+     1010,
+     2210
+    ],
+    [
+     1490,
+     1960
+    ],
+    [
+     1910,
+     1960
+    ],
+    [
+     2380,
+     1480
+    ],
+    [
+     2930,
+     1480
+    ]
+   ],
+   "corridor_width_m": 24
+  }
+ ],
+ "points": [
+  {
+   "id": "N01",
+   "type": "npc",
+   "name": "Тёма «Три Миллиона»",
+   "meta": "Квесты NPC_01 · акты 1–3",
+   "text": "Прямой эфир подписался на похищение. Клуб «Тридцать лайков» и телецентр связывают его цепочку заданий.",
+   "plan_position_m": [
+    2110,
+    1400
+   ],
+   "godot_position_m": [
+    610,
+    0,
+    -100
+   ],
+   "chunk": [
+    8,
+    5
+   ],
+   "placement_status": "proposed_requires_navmesh_validation",
+   "quest_line_id": "NPC_01"
+  },
+  {
+   "id": "N02",
+   "type": "npc",
+   "name": "Левша Рифма",
+   "meta": "Квесты NPC_02 · акты 1–3",
+   "text": "Студия «Подвал 808». Песни без лицензии и концерт для эвакуации музыкантов.",
+   "plan_position_m": [
+    1210,
+    620
+   ],
+   "godot_position_m": [
+    -290,
+    0,
+    -880
+   ],
+   "chunk": [
+    4,
+    2
+   ],
+   "placement_status": "proposed_requires_navmesh_validation",
+   "quest_line_id": "NPC_02"
+  },
+  {
+   "id": "N03",
+   "type": "npc",
+   "name": "Белла Сверхценная",
+   "meta": "Квесты NPC_03 · акты 2–4",
+   "text": "Ресторан «Сытый конец». Суп признан саботажем, а посетители — ингредиентами.",
+   "plan_position_m": [
+    1450,
+    2460
+   ],
+   "godot_position_m": [
+    -50,
+    0,
+    960
+   ],
+   "chunk": [
+    5,
+    9
+   ],
+   "placement_status": "proposed_requires_navmesh_validation",
+   "quest_line_id": "NPC_03"
+  },
+  {
+   "id": "N04",
+   "type": "npc",
+   "name": "Аркадий Позитив",
+   "meta": "Квесты NPC_04 · акты 2–4",
+   "text": "Агентство «Рост 300%». Обязательная трансформация под видом карьерного роста.",
+   "plan_position_m": [
+    1970,
+    1630
+   ],
+   "godot_position_m": [
+    470,
+    0,
+    130
+   ],
+   "chunk": [
+    7,
+    6
+   ],
+   "placement_status": "proposed_requires_navmesh_validation",
+   "quest_line_id": "NPC_04"
+  },
+  {
+   "id": "N05",
+   "type": "npc",
+   "name": "Дина «Овация»",
+   "meta": "Квесты NPC_05 · акты 1–3",
+   "text": "Театр «Овация». Аплодисменты по подписке; отсутствие хлопков становится уликой.",
+   "plan_position_m": [
+    1510,
+    760
+   ],
+   "godot_position_m": [
+    10,
+    0,
+    -740
+   ],
+   "chunk": [
+    6,
+    3
+   ],
+   "placement_status": "proposed_requires_navmesh_validation",
+   "quest_line_id": "NPC_05"
+  },
+  {
+   "id": "N06",
+   "type": "npc",
+   "name": "Миша Пломба",
+   "meta": "Квесты NPC_06 · акты 2–4",
+   "text": "Копицентр «Много копий». Принтер копирует пропуск вместе с личностью.",
+   "plan_position_m": [
+    1730,
+    1530
+   ],
+   "godot_position_m": [
+    230,
+    0,
+    30
+   ],
+   "chunk": [
+    6,
+    6
+   ],
+   "placement_status": "proposed_requires_navmesh_validation",
+   "quest_line_id": "NPC_06"
+  },
+  {
+   "id": "N07",
+   "type": "npc",
+   "name": "Павел Тарелкин",
+   "meta": "Квесты NPC_07 · акты 1–3",
+   "text": "НЛО напрокат, банкетный павильон, парк аттракционов. Пенопластовая тарелка отвлекает настоящих пришельцев.",
+   "plan_position_m": [
+    740,
+    730
+   ],
+   "godot_position_m": [
+    -760,
+    0,
+    -770
+   ],
+   "chunk": [
+    2,
+    2
+   ],
+   "placement_status": "proposed_requires_navmesh_validation",
+   "quest_line_id": "NPC_07"
+  },
+  {
+   "id": "N08",
+   "type": "npc",
+   "name": "Валера Космос",
+   "meta": "Квесты NPC_08 · акты 3–5",
+   "text": "Обсерватория «Седьмой этаж». Гороскоп совпадает с секретным расписанием рейдов.",
+   "plan_position_m": [
+    2530,
+    330
+   ],
+   "godot_position_m": [
+    1030,
+    0,
+    -1170
+   ],
+   "chunk": [
+    10,
+    1
+   ],
+   "placement_status": "proposed_requires_navmesh_validation",
+   "quest_line_id": "NPC_08"
+  },
+  {
+   "id": "N09",
+   "type": "npc",
+   "name": "Зоя Номерок",
+   "meta": "Квесты NPC_09 · акты 1–3",
+   "text": "МФЦ «Окно № 0». Очередь подключена к устройству перепрошивки. Восстание — строго по талонам.",
+   "plan_position_m": [
+    1460,
+    1320
+   ],
+   "godot_position_m": [
+    -40,
+    0,
+    -180
+   ],
+   "chunk": [
+    5,
+    5
+   ],
+   "placement_status": "proposed_requires_navmesh_validation",
+   "quest_line_id": "NPC_09"
+  },
+  {
+   "id": "N10",
+   "type": "npc",
+   "name": "Рома Безсчётчика",
+   "meta": "Квесты NPC_10 · акты 2–4",
+   "text": "Гаражи «Чек энджин». Путь через подземелье навигатор считает платной объездной.",
+   "plan_position_m": [
+    690,
+    2350
+   ],
+   "godot_position_m": [
+    -810,
+    0,
+    850
+   ],
+   "chunk": [
+    2,
+    9
+   ],
+   "placement_status": "proposed_requires_navmesh_validation",
+   "quest_line_id": "NPC_10"
+  },
+  {
+   "id": "N11",
+   "type": "npc",
+   "name": "Вера Пресс",
+   "meta": "Квесты NPC_11 · акты 2–4",
+   "text": "Спортзал «Вечно двадцать». Молодость оплачивается памятью, кардио питает дронов.",
+   "plan_position_m": [
+    2500,
+    780
+   ],
+   "godot_position_m": [
+    1000,
+    0,
+    -720
+   ],
+   "chunk": [
+    10,
+    3
+   ],
+   "placement_status": "proposed_requires_navmesh_validation",
+   "quest_line_id": "NPC_11"
+  },
+  {
+   "id": "N12",
+   "type": "npc",
+   "name": "Гоша Кольцо",
+   "meta": "Квесты NPC_12 · акты 3–5",
+   "text": "ЗАГС «До первого рейда». Героя по ошибке женят на муниципальной парковке.",
+   "plan_position_m": [
+    1150,
+    1630
+   ],
+   "godot_position_m": [
+    -350,
+    0,
+    130
+   ],
+   "chunk": [
+    4,
+    6
+   ],
+   "placement_status": "proposed_requires_navmesh_validation",
+   "quest_line_id": "NPC_12"
+  },
+  {
+   "id": "N13",
+   "type": "npc",
+   "name": "Инга Архив",
+   "meta": "Квесты NPC_13 · акты 4–5",
+   "text": "Архив R-12. Доказательства поддельной добровольности и письма с будущими извинениями.",
+   "plan_position_m": [
+    2580,
+    2450
+   ],
+   "godot_position_m": [
+    1080,
+    0,
+    950
+   ],
+   "chunk": [
+    10,
+    9
+   ],
+   "placement_status": "proposed_requires_navmesh_validation",
+   "quest_line_id": "NPC_13"
+  },
+  {
+   "id": "N14",
+   "type": "npc",
+   "name": "Феликс Ус",
+   "meta": "Квесты NPC_14 · акты 1–3",
+   "text": "Парикмахерская «Без лица». Парик признан гражданином и проходит КПП без хозяина.",
+   "plan_position_m": [
+    590,
+    1440
+   ],
+   "godot_position_m": [
+    -910,
+    0,
+    -60
+   ],
+   "chunk": [
+    2,
+    5
+   ],
+   "placement_status": "proposed_requires_navmesh_validation",
+   "quest_line_id": "NPC_14"
+  },
+  {
+   "id": "N15",
+   "type": "npc",
+   "name": "Саня Стерильный",
+   "meta": "Квесты NPC_15 · акты 3–5",
+   "text": "Клуб «Стерильно» и старая баня. Сертификат чистоты выдан раньше проверки подвала.",
+   "plan_position_m": [
+    1910,
+    600
+   ],
+   "godot_position_m": [
+    410,
+    0,
+    -900
+   ],
+   "chunk": [
+    7,
+    2
+   ],
+   "placement_status": "proposed_requires_navmesh_validation",
+   "quest_line_id": "NPC_15"
+  },
+  {
+   "id": "B1",
+   "type": "boss",
+   "name": "Люся Глушительница Лайков",
+   "meta": "BOSS_01 · ARENA_01 · LOC_039 · ур. 8",
+   "text": "Рекламная площадь, проект арены 110 × 90 м. Укрытия — колонны рекламных щитов. Сектор «вспышки спонсорства»; квест «Реклама спасения».",
+   "plan_position_m": [
+    2440,
+    1350
+   ],
+   "godot_position_m": [
+    940,
+    0,
+    -150
+   ],
+   "chunk": [
+    9,
+    5
+   ],
+   "placement_status": "proposed_requires_navmesh_validation",
+   "source_boss_id": "BOSS_01",
+   "source_arena_id": "ARENA_01",
+   "source_location_id": "LOC_039",
+   "legacy_level": 8,
+   "arena_size_m": [
+    110,
+    90
+   ],
+   "phase_health_percent": [
+    100,
+    70,
+    35,
+    0
+   ]
+  },
+  {
+   "id": "B2",
+   "type": "boss",
+   "name": "Портье Семь Лиц",
+   "meta": "BOSS_02 · ARENA_02 · LOC_038 · ур. 11",
+   "text": "Клубная арена 90 × 70 м. Световой фейс-контроль и голографическая проверка личности; укрытия — барные стойки. Квест «Карантин с танцами».",
+   "plan_position_m": [
+    1780,
+    380
+   ],
+   "godot_position_m": [
+    280,
+    0,
+    -1120
+   ],
+   "chunk": [
+    7,
+    1
+   ],
+   "placement_status": "proposed_requires_navmesh_validation",
+   "source_boss_id": "BOSS_02",
+   "source_arena_id": "ARENA_02",
+   "source_location_id": "LOC_038",
+   "legacy_level": 11,
+   "arena_size_m": [
+    90,
+    70
+   ],
+   "phase_health_percent": [
+    100,
+    70,
+    35,
+    0
+   ]
+  },
+  {
+   "id": "B3",
+   "type": "boss",
+   "name": "Танцор Протокол-404",
+   "meta": "BOSS_03 · ARENA_03 · LOC_052 · ур. 14",
+   "text": "Площадка аттракциона 120 × 100 м. Танцевальный рой дронов, лазерные дорожки и укрытия-кассы. Квест «Тарелка из пенопласта».",
+   "plan_position_m": [
+    460,
+    420
+   ],
+   "godot_position_m": [
+    -1040,
+    0,
+    -1080
+   ],
+   "chunk": [
+    1,
+    1
+   ],
+   "placement_status": "proposed_requires_navmesh_validation",
+   "source_boss_id": "BOSS_03",
+   "source_arena_id": "ARENA_03",
+   "source_location_id": "LOC_052",
+   "legacy_level": 14,
+   "arena_size_m": [
+    120,
+    100
+   ],
+   "phase_health_percent": [
+    100,
+    70,
+    35,
+    0
+   ]
+  },
+  {
+   "id": "M1-1",
+   "type": "mob",
+   "name": "Дрон-лайкомёт",
+   "meta": "Проект спавна · радиус 45 м",
+   "text": "Рекламные дворы; патруль из 3–4 дронов. Не появляется в зоне отдыха. Состав группы — предложение для балансировки.",
+   "plan_position_m": [
+    2260,
+    1180
+   ],
+   "godot_position_m": [
+    760,
+    0,
+    -320
+   ],
+   "chunk": [
+    9,
+    4
+   ],
+   "placement_status": "proposed_requires_navmesh_validation",
+   "radius_m": 45,
+   "spawn_min_distance_to_player_m": 25,
+   "respawn_delay_s": 180,
+   "group_composition": {
+    "status": "proposed_not_playtested",
+    "members": [
+     {
+      "mob_type_id": "mob_01",
+      "count_min": 3,
+      "count_max": 4
+     }
+    ],
+    "total_min": 3,
+    "total_max": 4,
+    "count_selection": "integer_in_inclusive_range_at_group_creation"
+   }
+  },
+  {
+   "id": "M1-2",
+   "type": "mob",
+   "name": "Дрон-лайкомёт",
+   "meta": "Проект спавна · радиус 45 м",
+   "text": "Рекламные дворы; патруль из 3–4 дронов. Не появляется в зоне отдыха. Состав группы — предложение для балансировки.",
+   "plan_position_m": [
+    2220,
+    1650
+   ],
+   "godot_position_m": [
+    720,
+    0,
+    150
+   ],
+   "chunk": [
+    8,
+    6
+   ],
+   "placement_status": "proposed_requires_navmesh_validation",
+   "radius_m": 45,
+   "spawn_min_distance_to_player_m": 25,
+   "respawn_delay_s": 180,
+   "group_composition": {
+    "status": "proposed_not_playtested",
+    "members": [
+     {
+      "mob_type_id": "mob_01",
+      "count_min": 3,
+      "count_max": 4
+     }
+    ],
+    "total_min": 3,
+    "total_max": 4,
+    "count_selection": "integer_in_inclusive_range_at_group_creation"
+   }
+  },
+  {
+   "id": "M1-3",
+   "type": "mob",
+   "name": "Дрон-лайкомёт",
+   "meta": "Проект спавна · радиус 45 м",
+   "text": "Рекламные дворы; патруль из 3–4 дронов. Не появляется в зоне отдыха. Состав группы — предложение для балансировки.",
+   "plan_position_m": [
+    1570,
+    1120
+   ],
+   "godot_position_m": [
+    70,
+    0,
+    -380
+   ],
+   "chunk": [
+    6,
+    4
+   ],
+   "placement_status": "proposed_requires_navmesh_validation",
+   "radius_m": 45,
+   "spawn_min_distance_to_player_m": 25,
+   "respawn_delay_s": 180,
+   "group_composition": {
+    "status": "proposed_not_playtested",
+    "members": [
+     {
+      "mob_type_id": "mob_01",
+      "count_min": 3,
+      "count_max": 4
+     }
+    ],
+    "total_min": 3,
+    "total_max": 4,
+    "count_selection": "integer_in_inclusive_range_at_group_creation"
+   }
+  },
+  {
+   "id": "M2-1",
+   "type": "mob",
+   "name": "Охранник клуба «Без слуха»",
+   "meta": "Проект спавна · радиус 45 м",
+   "text": "Входные группы клубов; 2–3 охранника. Не появляется в зоне отдыха. Состав группы — предложение для балансировки.",
+   "plan_position_m": [
+    1140,
+    420
+   ],
+   "godot_position_m": [
+    -360,
+    0,
+    -1080
+   ],
+   "chunk": [
+    4,
+    1
+   ],
+   "placement_status": "proposed_requires_navmesh_validation",
+   "radius_m": 45,
+   "spawn_min_distance_to_player_m": 25,
+   "respawn_delay_s": 180,
+   "group_composition": {
+    "status": "proposed_not_playtested",
+    "members": [
+     {
+      "mob_type_id": "mob_02",
+      "count_min": 2,
+      "count_max": 3
+     }
+    ],
+    "total_min": 2,
+    "total_max": 3,
+    "count_selection": "integer_in_inclusive_range_at_group_creation"
+   }
+  },
+  {
+   "id": "M2-2",
+   "type": "mob",
+   "name": "Охранник клуба «Без слуха»",
+   "meta": "Проект спавна · радиус 45 м",
+   "text": "Входные группы клубов; 2–3 охранника. Не появляется в зоне отдыха. Состав группы — предложение для балансировки.",
+   "plan_position_m": [
+    1320,
+    860
+   ],
+   "godot_position_m": [
+    -180,
+    0,
+    -640
+   ],
+   "chunk": [
+    5,
+    3
+   ],
+   "placement_status": "proposed_requires_navmesh_validation",
+   "radius_m": 45,
+   "spawn_min_distance_to_player_m": 25,
+   "respawn_delay_s": 180,
+   "group_composition": {
+    "status": "proposed_not_playtested",
+    "members": [
+     {
+      "mob_type_id": "mob_02",
+      "count_min": 2,
+      "count_max": 3
+     }
+    ],
+    "total_min": 2,
+    "total_max": 3,
+    "count_selection": "integer_in_inclusive_range_at_group_creation"
+   }
+  },
+  {
+   "id": "M2-3",
+   "type": "mob",
+   "name": "Охранник клуба «Без слуха»",
+   "meta": "Проект спавна · радиус 45 м",
+   "text": "Входные группы клубов; 2–3 охранника. Не появляется в зоне отдыха. Состав группы — предложение для балансировки.",
+   "plan_position_m": [
+    1980,
+    430
+   ],
+   "godot_position_m": [
+    480,
+    0,
+    -1070
+   ],
+   "chunk": [
+    7,
+    1
+   ],
+   "placement_status": "proposed_requires_navmesh_validation",
+   "radius_m": 45,
+   "spawn_min_distance_to_player_m": 25,
+   "respawn_delay_s": 180,
+   "group_composition": {
+    "status": "proposed_not_playtested",
+    "members": [
+     {
+      "mob_type_id": "mob_02",
+      "count_min": 2,
+      "count_max": 3
+     }
+    ],
+    "total_min": 2,
+    "total_max": 3,
+    "count_selection": "integer_in_inclusive_range_at_group_creation"
+   }
+  },
+  {
+   "id": "M3-1",
+   "type": "mob",
+   "name": "Гастрономический слизень",
+   "meta": "Проект спавна · радиус 45 м",
+   "text": "Кухни, мусорные дворы и сливные решётки; 4–6 существ. Не появляется в зоне отдыха. Состав группы — предложение для балансировки.",
+   "plan_position_m": [
+    1340,
+    2310
+   ],
+   "godot_position_m": [
+    -160,
+    0,
+    810
+   ],
+   "chunk": [
+    5,
+    9
+   ],
+   "placement_status": "proposed_requires_navmesh_validation",
+   "radius_m": 45,
+   "spawn_min_distance_to_player_m": 25,
+   "respawn_delay_s": 180,
+   "group_composition": {
+    "status": "proposed_not_playtested",
+    "members": [
+     {
+      "mob_type_id": "mob_03",
+      "count_min": 4,
+      "count_max": 6
+     }
+    ],
+    "total_min": 4,
+    "total_max": 6,
+    "count_selection": "integer_in_inclusive_range_at_group_creation"
+   }
+  },
+  {
+   "id": "M3-2",
+   "type": "mob",
+   "name": "Гастрономический слизень",
+   "meta": "Проект спавна · радиус 45 м",
+   "text": "Кухни, мусорные дворы и сливные решётки; 4–6 существ. Не появляется в зоне отдыха. Состав группы — предложение для балансировки.",
+   "plan_position_m": [
+    1710,
+    2580
+   ],
+   "godot_position_m": [
+    210,
+    0,
+    1080
+   ],
+   "chunk": [
+    6,
+    10
+   ],
+   "placement_status": "proposed_requires_navmesh_validation",
+   "radius_m": 45,
+   "spawn_min_distance_to_player_m": 25,
+   "respawn_delay_s": 180,
+   "group_composition": {
+    "status": "proposed_not_playtested",
+    "members": [
+     {
+      "mob_type_id": "mob_03",
+      "count_min": 4,
+      "count_max": 6
+     }
+    ],
+    "total_min": 4,
+    "total_max": 6,
+    "count_selection": "integer_in_inclusive_range_at_group_creation"
+   }
+  },
+  {
+   "id": "M3-3",
+   "type": "mob",
+   "name": "Гастрономический слизень",
+   "meta": "Проект спавна · радиус 45 м",
+   "text": "Кухни, мусорные дворы и сливные решётки; 4–6 существ. Не появляется в зоне отдыха. Состав группы — предложение для балансировки.",
+   "plan_position_m": [
+    1100,
+    2710
+   ],
+   "godot_position_m": [
+    -400,
+    0,
+    1210
+   ],
+   "chunk": [
+    4,
+    10
+   ],
+   "placement_status": "proposed_requires_navmesh_validation",
+   "radius_m": 45,
+   "spawn_min_distance_to_player_m": 25,
+   "respawn_delay_s": 180,
+   "group_composition": {
+    "status": "proposed_not_playtested",
+    "members": [
+     {
+      "mob_type_id": "mob_03",
+      "count_min": 4,
+      "count_max": 6
+     }
+    ],
+    "total_min": 4,
+    "total_max": 6,
+    "count_selection": "integer_in_inclusive_range_at_group_creation"
+   }
+  },
+  {
+   "id": "M4-1",
+   "type": "mob",
+   "name": "Патрульный цензор",
+   "meta": "Проект спавна · радиус 45 м",
+   "text": "Административные проходы; 2 патрульных и 1 дрон. Не появляется в зоне отдыха. Состав группы — предложение для балансировки.",
+   "plan_position_m": [
+    1700,
+    1230
+   ],
+   "godot_position_m": [
+    200,
+    0,
+    -270
+   ],
+   "chunk": [
+    6,
+    4
+   ],
+   "placement_status": "proposed_requires_navmesh_validation",
+   "radius_m": 45,
+   "spawn_min_distance_to_player_m": 25,
+   "respawn_delay_s": 180,
+   "group_composition": {
+    "status": "proposed_not_playtested",
+    "members": [
+     {
+      "mob_type_id": "mob_04",
+      "count_min": 2,
+      "count_max": 2
+     },
+     {
+      "mob_type_id": "mob_01",
+      "count_min": 1,
+      "count_max": 1
+     }
+    ],
+    "total_min": 3,
+    "total_max": 3,
+    "count_selection": "integer_in_inclusive_range_at_group_creation",
+    "note": "В прежнем тексте указан один дрон без уточнения типа. Выбран дрон-лайкомёт как проектное уточнение."
+   }
+  },
+  {
+   "id": "M4-2",
+   "type": "mob",
+   "name": "Патрульный цензор",
+   "meta": "Проект спавна · радиус 45 м",
+   "text": "Административные проходы; 2 патрульных и 1 дрон. Не появляется в зоне отдыха. Состав группы — предложение для балансировки.",
+   "plan_position_m": [
+    2020,
+    1810
+   ],
+   "godot_position_m": [
+    520,
+    0,
+    310
+   ],
+   "chunk": [
+    8,
+    7
+   ],
+   "placement_status": "proposed_requires_navmesh_validation",
+   "radius_m": 45,
+   "spawn_min_distance_to_player_m": 25,
+   "respawn_delay_s": 180,
+   "group_composition": {
+    "status": "proposed_not_playtested",
+    "members": [
+     {
+      "mob_type_id": "mob_04",
+      "count_min": 2,
+      "count_max": 2
+     },
+     {
+      "mob_type_id": "mob_01",
+      "count_min": 1,
+      "count_max": 1
+     }
+    ],
+    "total_min": 3,
+    "total_max": 3,
+    "count_selection": "integer_in_inclusive_range_at_group_creation",
+    "note": "В прежнем тексте указан один дрон без уточнения типа. Выбран дрон-лайкомёт как проектное уточнение."
+   }
+  },
+  {
+   "id": "M4-3",
+   "type": "mob",
+   "name": "Патрульный цензор",
+   "meta": "Проект спавна · радиус 45 м",
+   "text": "Административные проходы; 2 патрульных и 1 дрон. Не появляется в зоне отдыха. Состав группы — предложение для балансировки.",
+   "plan_position_m": [
+    1170,
+    1470
+   ],
+   "godot_position_m": [
+    -330,
+    0,
+    -30
+   ],
+   "chunk": [
+    4,
+    5
+   ],
+   "placement_status": "proposed_requires_navmesh_validation",
+   "radius_m": 45,
+   "spawn_min_distance_to_player_m": 25,
+   "respawn_delay_s": 180,
+   "group_composition": {
+    "status": "proposed_not_playtested",
+    "members": [
+     {
+      "mob_type_id": "mob_04",
+      "count_min": 2,
+      "count_max": 2
+     },
+     {
+      "mob_type_id": "mob_01",
+      "count_min": 1,
+      "count_max": 1
+     }
+    ],
+    "total_min": 3,
+    "total_max": 3,
+    "count_selection": "integer_in_inclusive_range_at_group_creation",
+    "note": "В прежнем тексте указан один дрон без уточнения типа. Выбран дрон-лайкомёт как проектное уточнение."
+   }
+  },
+  {
+   "id": "M5-1",
+   "type": "mob",
+   "name": "Хлопающий мутант",
+   "meta": "Проект спавна · радиус 45 м",
+   "text": "Театр и места обязательного восхищения; группа 4–5. Не появляется в зоне отдыха. Состав группы — предложение для балансировки.",
+   "plan_position_m": [
+    1500,
+    520
+   ],
+   "godot_position_m": [
+    0,
+    0,
+    -980
+   ],
+   "chunk": [
+    6,
+    2
+   ],
+   "placement_status": "proposed_requires_navmesh_validation",
+   "radius_m": 45,
+   "spawn_min_distance_to_player_m": 25,
+   "respawn_delay_s": 180,
+   "group_composition": {
+    "status": "proposed_not_playtested",
+    "members": [
+     {
+      "mob_type_id": "mob_05",
+      "count_min": 4,
+      "count_max": 5
+     }
+    ],
+    "total_min": 4,
+    "total_max": 5,
+    "count_selection": "integer_in_inclusive_range_at_group_creation"
+   }
+  },
+  {
+   "id": "M5-2",
+   "type": "mob",
+   "name": "Хлопающий мутант",
+   "meta": "Проект спавна · радиус 45 м",
+   "text": "Театр и места обязательного восхищения; группа 4–5. Не появляется в зоне отдыха. Состав группы — предложение для балансировки.",
+   "plan_position_m": [
+    1320,
+    1440
+   ],
+   "godot_position_m": [
+    -180,
+    0,
+    -60
+   ],
+   "chunk": [
+    5,
+    5
+   ],
+   "placement_status": "proposed_requires_navmesh_validation",
+   "radius_m": 45,
+   "spawn_min_distance_to_player_m": 25,
+   "respawn_delay_s": 180,
+   "group_composition": {
+    "status": "proposed_not_playtested",
+    "members": [
+     {
+      "mob_type_id": "mob_05",
+      "count_min": 4,
+      "count_max": 5
+     }
+    ],
+    "total_min": 4,
+    "total_max": 5,
+    "count_selection": "integer_in_inclusive_range_at_group_creation"
+   }
+  },
+  {
+   "id": "M5-3",
+   "type": "mob",
+   "name": "Хлопающий мутант",
+   "meta": "Проект спавна · радиус 45 м",
+   "text": "Театр и места обязательного восхищения; группа 4–5. Не появляется в зоне отдыха. Состав группы — предложение для балансировки.",
+   "plan_position_m": [
+    2120,
+    1170
+   ],
+   "godot_position_m": [
+    620,
+    0,
+    -330
+   ],
+   "chunk": [
+    8,
+    4
+   ],
+   "placement_status": "proposed_requires_navmesh_validation",
+   "radius_m": 45,
+   "spawn_min_distance_to_player_m": 25,
+   "respawn_delay_s": 180,
+   "group_composition": {
+    "status": "proposed_not_playtested",
+    "members": [
+     {
+      "mob_type_id": "mob_05",
+      "count_min": 4,
+      "count_max": 5
+     }
+    ],
+    "total_min": 4,
+    "total_max": 5,
+    "count_selection": "integer_in_inclusive_range_at_group_creation"
+   }
+  },
+  {
+   "id": "M6-1",
+   "type": "mob",
+   "name": "Курьер пропусков",
+   "meta": "Проект спавна · радиус 45 м",
+   "text": "Проходные и боковые улицы; подвижная группа из 3. Не появляется в зоне отдыха. Состав группы — предложение для балансировки.",
+   "plan_position_m": [
+    930,
+    1520
+   ],
+   "godot_position_m": [
+    -570,
+    0,
+    20
+   ],
+   "chunk": [
+    3,
+    6
+   ],
+   "placement_status": "proposed_requires_navmesh_validation",
+   "radius_m": 45,
+   "spawn_min_distance_to_player_m": 25,
+   "respawn_delay_s": 180,
+   "group_composition": {
+    "status": "proposed_not_playtested",
+    "members": [
+     {
+      "mob_type_id": "mob_06",
+      "count_min": 3,
+      "count_max": 3
+     }
+    ],
+    "total_min": 3,
+    "total_max": 3,
+    "count_selection": "integer_in_inclusive_range_at_group_creation"
+   }
+  },
+  {
+   "id": "M6-2",
+   "type": "mob",
+   "name": "Курьер пропусков",
+   "meta": "Проект спавна · радиус 45 м",
+   "text": "Проходные и боковые улицы; подвижная группа из 3. Не появляется в зоне отдыха. Состав группы — предложение для балансировки.",
+   "plan_position_m": [
+    1730,
+    1770
+   ],
+   "godot_position_m": [
+    230,
+    0,
+    270
+   ],
+   "chunk": [
+    6,
+    7
+   ],
+   "placement_status": "proposed_requires_navmesh_validation",
+   "radius_m": 45,
+   "spawn_min_distance_to_player_m": 25,
+   "respawn_delay_s": 180,
+   "group_composition": {
+    "status": "proposed_not_playtested",
+    "members": [
+     {
+      "mob_type_id": "mob_06",
+      "count_min": 3,
+      "count_max": 3
+     }
+    ],
+    "total_min": 3,
+    "total_max": 3,
+    "count_selection": "integer_in_inclusive_range_at_group_creation"
+   }
+  },
+  {
+   "id": "M6-3",
+   "type": "mob",
+   "name": "Курьер пропусков",
+   "meta": "Проект спавна · радиус 45 м",
+   "text": "Проходные и боковые улицы; подвижная группа из 3. Не появляется в зоне отдыха. Состав группы — предложение для балансировки.",
+   "plan_position_m": [
+    2820,
+    1640
+   ],
+   "godot_position_m": [
+    1320,
+    0,
+    140
+   ],
+   "chunk": [
+    11,
+    6
+   ],
+   "placement_status": "proposed_requires_navmesh_validation",
+   "radius_m": 45,
+   "spawn_min_distance_to_player_m": 25,
+   "respawn_delay_s": 180,
+   "group_composition": {
+    "status": "proposed_not_playtested",
+    "members": [
+     {
+      "mob_type_id": "mob_06",
+      "count_min": 3,
+      "count_max": 3
+     }
+    ],
+    "total_min": 3,
+    "total_max": 3,
+    "count_selection": "integer_in_inclusive_range_at_group_creation"
+   }
+  },
+  {
+   "id": "M7-1",
+   "type": "mob",
+   "name": "Дрон осветитель",
+   "meta": "Проект спавна · радиус 45 м",
+   "text": "Парк и сцены; 3 световых дрона. Не появляется в зоне отдыха. Состав группы — предложение для балансировки.",
+   "plan_position_m": [
+    590,
+    590
+   ],
+   "godot_position_m": [
+    -910,
+    0,
+    -910
+   ],
+   "chunk": [
+    2,
+    2
+   ],
+   "placement_status": "proposed_requires_navmesh_validation",
+   "radius_m": 45,
+   "spawn_min_distance_to_player_m": 25,
+   "respawn_delay_s": 180,
+   "group_composition": {
+    "status": "proposed_not_playtested",
+    "members": [
+     {
+      "mob_type_id": "mob_07",
+      "count_min": 3,
+      "count_max": 3
+     }
+    ],
+    "total_min": 3,
+    "total_max": 3,
+    "count_selection": "integer_in_inclusive_range_at_group_creation"
+   }
+  },
+  {
+   "id": "M7-2",
+   "type": "mob",
+   "name": "Дрон осветитель",
+   "meta": "Проект спавна · радиус 45 м",
+   "text": "Парк и сцены; 3 световых дрона. Не появляется в зоне отдыха. Состав группы — предложение для балансировки.",
+   "plan_position_m": [
+    880,
+    370
+   ],
+   "godot_position_m": [
+    -620,
+    0,
+    -1130
+   ],
+   "chunk": [
+    3,
+    1
+   ],
+   "placement_status": "proposed_requires_navmesh_validation",
+   "radius_m": 45,
+   "spawn_min_distance_to_player_m": 25,
+   "respawn_delay_s": 180,
+   "group_composition": {
+    "status": "proposed_not_playtested",
+    "members": [
+     {
+      "mob_type_id": "mob_07",
+      "count_min": 3,
+      "count_max": 3
+     }
+    ],
+    "total_min": 3,
+    "total_max": 3,
+    "count_selection": "integer_in_inclusive_range_at_group_creation"
+   }
+  },
+  {
+   "id": "M7-3",
+   "type": "mob",
+   "name": "Дрон осветитель",
+   "meta": "Проект спавна · радиус 45 м",
+   "text": "Парк и сцены; 3 световых дрона. Не появляется в зоне отдыха. Состав группы — предложение для балансировки.",
+   "plan_position_m": [
+    1670,
+    700
+   ],
+   "godot_position_m": [
+    170,
+    0,
+    -800
+   ],
+   "chunk": [
+    6,
+    2
+   ],
+   "placement_status": "proposed_requires_navmesh_validation",
+   "radius_m": 45,
+   "spawn_min_distance_to_player_m": 25,
+   "respawn_delay_s": 180,
+   "group_composition": {
+    "status": "proposed_not_playtested",
+    "members": [
+     {
+      "mob_type_id": "mob_07",
+      "count_min": 3,
+      "count_max": 3
+     }
+    ],
+    "total_min": 3,
+    "total_max": 3,
+    "count_selection": "integer_in_inclusive_range_at_group_creation"
+   }
+  },
+  {
+   "id": "M8-1",
+   "type": "mob",
+   "name": "Пустоглазый бармен",
+   "meta": "Проект спавна · радиус 45 м",
+   "text": "Служебные двери баров; 2–3 противника. Не появляется в зоне отдыха. Состав группы — предложение для балансировки.",
+   "plan_position_m": [
+    1670,
+    450
+   ],
+   "godot_position_m": [
+    170,
+    0,
+    -1050
+   ],
+   "chunk": [
+    6,
+    1
+   ],
+   "placement_status": "proposed_requires_navmesh_validation",
+   "radius_m": 45,
+   "spawn_min_distance_to_player_m": 25,
+   "respawn_delay_s": 180,
+   "group_composition": {
+    "status": "proposed_not_playtested",
+    "members": [
+     {
+      "mob_type_id": "mob_08",
+      "count_min": 2,
+      "count_max": 3
+     }
+    ],
+    "total_min": 2,
+    "total_max": 3,
+    "count_selection": "integer_in_inclusive_range_at_group_creation"
+   }
+  },
+  {
+   "id": "M8-2",
+   "type": "mob",
+   "name": "Пустоглазый бармен",
+   "meta": "Проект спавна · радиус 45 м",
+   "text": "Служебные двери баров; 2–3 противника. Не появляется в зоне отдыха. Состав группы — предложение для балансировки.",
+   "plan_position_m": [
+    1120,
+    720
+   ],
+   "godot_position_m": [
+    -380,
+    0,
+    -780
+   ],
+   "chunk": [
+    4,
+    2
+   ],
+   "placement_status": "proposed_requires_navmesh_validation",
+   "radius_m": 45,
+   "spawn_min_distance_to_player_m": 25,
+   "respawn_delay_s": 180,
+   "group_composition": {
+    "status": "proposed_not_playtested",
+    "members": [
+     {
+      "mob_type_id": "mob_08",
+      "count_min": 2,
+      "count_max": 3
+     }
+    ],
+    "total_min": 2,
+    "total_max": 3,
+    "count_selection": "integer_in_inclusive_range_at_group_creation"
+   }
+  },
+  {
+   "id": "M8-3",
+   "type": "mob",
+   "name": "Пустоглазый бармен",
+   "meta": "Проект спавна · радиус 45 м",
+   "text": "Служебные двери баров; 2–3 противника. Не появляется в зоне отдыха. Состав группы — предложение для балансировки.",
+   "plan_position_m": [
+    1820,
+    2280
+   ],
+   "godot_position_m": [
+    320,
+    0,
+    780
+   ],
+   "chunk": [
+    7,
+    9
+   ],
+   "placement_status": "proposed_requires_navmesh_validation",
+   "radius_m": 45,
+   "spawn_min_distance_to_player_m": 25,
+   "respawn_delay_s": 180,
+   "group_composition": {
+    "status": "proposed_not_playtested",
+    "members": [
+     {
+      "mob_type_id": "mob_08",
+      "count_min": 2,
+      "count_max": 3
+     }
+    ],
+    "total_min": 2,
+    "total_max": 3,
+    "count_selection": "integer_in_inclusive_range_at_group_creation"
+   }
+  },
+  {
+   "id": "M9-1",
+   "type": "mob",
+   "name": "Мутант-очередник",
+   "meta": "Проект спавна · радиус 45 м",
+   "text": "Очереди у МФЦ и регистрационных окон; группа 5–6. Не появляется в зоне отдыха. Состав группы — предложение для балансировки.",
+   "plan_position_m": [
+    1410,
+    1190
+   ],
+   "godot_position_m": [
+    -90,
+    0,
+    -310
+   ],
+   "chunk": [
+    5,
+    4
+   ],
+   "placement_status": "proposed_requires_navmesh_validation",
+   "radius_m": 45,
+   "spawn_min_distance_to_player_m": 25,
+   "respawn_delay_s": 180,
+   "group_composition": {
+    "status": "proposed_not_playtested",
+    "members": [
+     {
+      "mob_type_id": "mob_09",
+      "count_min": 5,
+      "count_max": 6
+     }
+    ],
+    "total_min": 5,
+    "total_max": 6,
+    "count_selection": "integer_in_inclusive_range_at_group_creation"
+   }
+  },
+  {
+   "id": "M9-2",
+   "type": "mob",
+   "name": "Мутант-очередник",
+   "meta": "Проект спавна · радиус 45 м",
+   "text": "Очереди у МФЦ и регистрационных окон; группа 5–6. Не появляется в зоне отдыха. Состав группы — предложение для балансировки.",
+   "plan_position_m": [
+    1040,
+    1730
+   ],
+   "godot_position_m": [
+    -460,
+    0,
+    230
+   ],
+   "chunk": [
+    4,
+    6
+   ],
+   "placement_status": "proposed_requires_navmesh_validation",
+   "radius_m": 45,
+   "spawn_min_distance_to_player_m": 25,
+   "respawn_delay_s": 180,
+   "group_composition": {
+    "status": "proposed_not_playtested",
+    "members": [
+     {
+      "mob_type_id": "mob_09",
+      "count_min": 5,
+      "count_max": 6
+     }
+    ],
+    "total_min": 5,
+    "total_max": 6,
+    "count_selection": "integer_in_inclusive_range_at_group_creation"
+   }
+  },
+  {
+   "id": "M9-3",
+   "type": "mob",
+   "name": "Мутант-очередник",
+   "meta": "Проект спавна · радиус 45 м",
+   "text": "Очереди у МФЦ и регистрационных окон; группа 5–6. Не появляется в зоне отдыха. Состав группы — предложение для балансировки.",
+   "plan_position_m": [
+    1820,
+    1440
+   ],
+   "godot_position_m": [
+    320,
+    0,
+    -60
+   ],
+   "chunk": [
+    7,
+    5
+   ],
+   "placement_status": "proposed_requires_navmesh_validation",
+   "radius_m": 45,
+   "spawn_min_distance_to_player_m": 25,
+   "respawn_delay_s": 180,
+   "group_composition": {
+    "status": "proposed_not_playtested",
+    "members": [
+     {
+      "mob_type_id": "mob_09",
+      "count_min": 5,
+      "count_max": 6
+     }
+    ],
+    "total_min": 5,
+    "total_max": 6,
+    "count_selection": "integer_in_inclusive_range_at_group_creation"
+   }
+  },
+  {
+   "id": "M10-1",
+   "type": "mob",
+   "name": "Дорожный паразит",
+   "meta": "Проект спавна · радиус 45 м",
+   "text": "Разбитое покрытие и объездные; 4–6 существ. Не появляется в зоне отдыха. Состав группы — предложение для балансировки.",
+   "plan_position_m": [
+    510,
+    2210
+   ],
+   "godot_position_m": [
+    -990,
+    0,
+    710
+   ],
+   "chunk": [
+    2,
+    8
+   ],
+   "placement_status": "proposed_requires_navmesh_validation",
+   "radius_m": 45,
+   "spawn_min_distance_to_player_m": 25,
+   "respawn_delay_s": 180,
+   "group_composition": {
+    "status": "proposed_not_playtested",
+    "members": [
+     {
+      "mob_type_id": "mob_10",
+      "count_min": 4,
+      "count_max": 6
+     }
+    ],
+    "total_min": 4,
+    "total_max": 6,
+    "count_selection": "integer_in_inclusive_range_at_group_creation"
+   }
+  },
+  {
+   "id": "M10-2",
+   "type": "mob",
+   "name": "Дорожный паразит",
+   "meta": "Проект спавна · радиус 45 м",
+   "text": "Разбитое покрытие и объездные; 4–6 существ. Не появляется в зоне отдыха. Состав группы — предложение для балансировки.",
+   "plan_position_m": [
+    2400,
+    2670
+   ],
+   "godot_position_m": [
+    900,
+    0,
+    1170
+   ],
+   "chunk": [
+    9,
+    10
+   ],
+   "placement_status": "proposed_requires_navmesh_validation",
+   "radius_m": 45,
+   "spawn_min_distance_to_player_m": 25,
+   "respawn_delay_s": 180,
+   "group_composition": {
+    "status": "proposed_not_playtested",
+    "members": [
+     {
+      "mob_type_id": "mob_10",
+      "count_min": 4,
+      "count_max": 6
+     }
+    ],
+    "total_min": 4,
+    "total_max": 6,
+    "count_selection": "integer_in_inclusive_range_at_group_creation"
+   }
+  },
+  {
+   "id": "M10-3",
+   "type": "mob",
+   "name": "Дорожный паразит",
+   "meta": "Проект спавна · радиус 45 м",
+   "text": "Разбитое покрытие и объездные; 4–6 существ. Не появляется в зоне отдыха. Состав группы — предложение для балансировки.",
+   "plan_position_m": [
+    2710,
+    2200
+   ],
+   "godot_position_m": [
+    1210,
+    0,
+    700
+   ],
+   "chunk": [
+    10,
+    8
+   ],
+   "placement_status": "proposed_requires_navmesh_validation",
+   "radius_m": 45,
+   "spawn_min_distance_to_player_m": 25,
+   "respawn_delay_s": 180,
+   "group_composition": {
+    "status": "proposed_not_playtested",
+    "members": [
+     {
+      "mob_type_id": "mob_10",
+      "count_min": 4,
+      "count_max": 6
+     }
+    ],
+    "total_min": 4,
+    "total_max": 6,
+    "count_selection": "integer_in_inclusive_range_at_group_creation"
+   }
+  },
+  {
+   "id": "P0",
+   "type": "place",
+   "name": "Парковка «Похмельная»",
+   "meta": "MAIN_001",
+   "text": "Старт: чужой кабриолет, телефон у разбитого киоска и счёт за ЖКХ.",
+   "plan_position_m": [
+    360,
+    2640
+   ],
+   "godot_position_m": [
+    -1140,
+    0,
+    1140
+   ],
+   "chunk": [
+    1,
+    10
+   ],
+   "placement_status": "proposed_requires_navmesh_validation"
+  },
+  {
+   "id": "P1",
+   "type": "place",
+   "name": "Центральная площадь",
+   "meta": "MAIN_003",
+   "text": "Ежедневные поклоны тарелке. Места в очереди продают заранее.",
+   "plan_position_m": [
+    1490,
+    1490
+   ],
+   "godot_position_m": [
+    -10,
+    0,
+    -10
+   ],
+   "chunk": [
+    5,
+    5
+   ],
+   "placement_status": "proposed_requires_navmesh_validation"
+  },
+  {
+   "id": "P2",
+   "type": "place",
+   "name": "Торговый коллектор",
+   "meta": "MAIN_004",
+   "text": "Торговля под улицей, обходные тоннели и первый подземный маршрут.",
+   "plan_position_m": [
+    1430,
+    2030
+   ],
+   "godot_position_m": [
+    -70,
+    0,
+    530
+   ],
+   "chunk": [
+    5,
+    8
+   ],
+   "placement_status": "proposed_requires_navmesh_validation"
+  },
+  {
+   "id": "P3",
+   "type": "place",
+   "name": "Клуб «Тридцать лайков»",
+   "meta": "NPC_01_2",
+   "text": "Подписка на спасение продаётся до появления маршрута эвакуации.",
+   "plan_position_m": [
+    2190,
+    1480
+   ],
+   "godot_position_m": [
+    690,
+    0,
+    -20
+   ],
+   "chunk": [
+    8,
+    5
+   ],
+   "placement_status": "proposed_requires_navmesh_validation"
+  },
+  {
+   "id": "P4",
+   "type": "place",
+   "name": "Телецентр «Погуляй»",
+   "meta": "NPC_01_3",
+   "text": "Единственный честный зритель — инопланетный ИИ.",
+   "plan_position_m": [
+    2590,
+    1670
+   ],
+   "godot_position_m": [
+    1090,
+    0,
+    170
+   ],
+   "chunk": [
+    10,
+    6
+   ],
+   "placement_status": "proposed_requires_navmesh_validation"
+  },
+  {
+   "id": "P5",
+   "type": "place",
+   "name": "Студия «Подвал 808»",
+   "meta": "NPC_02_2",
+   "text": "Речитатив признан нелегальным способом передачи информации.",
+   "plan_position_m": [
+    1110,
+    600
+   ],
+   "godot_position_m": [
+    -390,
+    0,
+    -900
+   ],
+   "chunk": [
+    4,
+    2
+   ],
+   "placement_status": "proposed_requires_navmesh_validation"
+  },
+  {
+   "id": "P6",
+   "type": "place",
+   "name": "Площадь «Бит»",
+   "meta": "NPC_02_3",
+   "text": "Концерт прикрывает вывоз музыкантов из клиники.",
+   "plan_position_m": [
+    1350,
+    920
+   ],
+   "godot_position_m": [
+    -150,
+    0,
+    -580
+   ],
+   "chunk": [
+    5,
+    3
+   ],
+   "placement_status": "proposed_requires_navmesh_validation"
+  },
+  {
+   "id": "P7",
+   "type": "place",
+   "name": "Ресторан «Сытый конец»",
+   "meta": "NPC_03_2",
+   "text": "Посетители в меню не по собственной воле.",
+   "plan_position_m": [
+    1570,
+    2410
+   ],
+   "godot_position_m": [
+    70,
+    0,
+    910
+   ],
+   "chunk": [
+    6,
+    9
+   ],
+   "placement_status": "proposed_requires_navmesh_validation"
+  },
+  {
+   "id": "P8",
+   "type": "place",
+   "name": "Театр «Овация»",
+   "meta": "NPC_05_2",
+   "text": "Тишина — новая роскошь.",
+   "plan_position_m": [
+    1440,
+    610
+   ],
+   "godot_position_m": [
+    -60,
+    0,
+    -890
+   ],
+   "chunk": [
+    5,
+    2
+   ],
+   "placement_status": "proposed_requires_navmesh_validation"
+  },
+  {
+   "id": "P9",
+   "type": "place",
+   "name": "КПП «Нулевая дверь»",
+   "meta": "NPC_06_3",
+   "text": "Главный КПП охраняет выход из сознания. Переход в Деловой.",
+   "plan_position_m": [
+    2840,
+    1450
+   ],
+   "godot_position_m": [
+    1340,
+    0,
+    -50
+   ],
+   "chunk": [
+    11,
+    5
+   ],
+   "placement_status": "proposed_requires_navmesh_validation"
+  },
+  {
+   "id": "P10",
+   "type": "place",
+   "name": "Парк аттракционов",
+   "meta": "NPC_07_3",
+   "text": "Фальшивая тарелка, настоящие проблемы.",
+   "plan_position_m": [
+    590,
+    280
+   ],
+   "godot_position_m": [
+    -910,
+    0,
+    -1220
+   ],
+   "chunk": [
+    2,
+    1
+   ],
+   "placement_status": "proposed_requires_navmesh_validation"
+  },
+  {
+   "id": "P11",
+   "type": "place",
+   "name": "Обсерватория «Седьмой этаж»",
+   "meta": "NPC_08_2",
+   "text": "Прогноз рейда на квартал, который ещё не построили.",
+   "plan_position_m": [
+    2660,
+    380
+   ],
+   "godot_position_m": [
+    1160,
+    0,
+    -1120
+   ],
+   "chunk": [
+    10,
+    1
+   ],
+   "placement_status": "proposed_requires_navmesh_validation"
+  },
+  {
+   "id": "P12",
+   "type": "place",
+   "name": "МФЦ «Окно № 0»",
+   "meta": "NPC_09_2",
+   "text": "Выдача талонов на перепрошивку личности.",
+   "plan_position_m": [
+    1390,
+    1390
+   ],
+   "godot_position_m": [
+    -110,
+    0,
+    -110
+   ],
+   "chunk": [
+    5,
+    5
+   ],
+   "placement_status": "proposed_requires_navmesh_validation"
+  },
+  {
+   "id": "P13",
+   "type": "place",
+   "name": "Гаражи «Чек энджин»",
+   "meta": "NPC_10_3",
+   "text": "Такси, ремонт, сомнительная объездная.",
+   "plan_position_m": [
+    530,
+    2450
+   ],
+   "godot_position_m": [
+    -970,
+    0,
+    950
+   ],
+   "chunk": [
+    2,
+    9
+   ],
+   "placement_status": "proposed_requires_navmesh_validation"
+  },
+  {
+   "id": "P14",
+   "type": "place",
+   "name": "Показательный ЖК",
+   "meta": "MAIN_010",
+   "text": "Бесплатные квартиры отсутствуют на плане города.",
+   "plan_position_m": [
+    2470,
+    580
+   ],
+   "godot_position_m": [
+    970,
+    0,
+    -920
+   ],
+   "chunk": [
+    9,
+    2
+   ],
+   "placement_status": "proposed_requires_navmesh_validation"
+  },
+  {
+   "id": "P15",
+   "type": "place",
+   "name": "Старая баня",
+   "meta": "NPC_15_3",
+   "text": "Город признан чистым, биоколония в подвале не согласна.",
+   "plan_position_m": [
+    2240,
+    2320
+   ],
+   "godot_position_m": [
+    740,
+    0,
+    820
+   ],
+   "chunk": [
+    8,
+    9
+   ],
+   "placement_status": "proposed_requires_navmesh_validation"
+  },
+  {
+   "id": "P16",
+   "type": "place",
+   "name": "ЗАГС «До первого рейда»",
+   "meta": "NPC_12_2",
+   "text": "Развод с парковкой требует её личного присутствия.",
+   "plan_position_m": [
+    1070,
+    1560
+   ],
+   "godot_position_m": [
+    -430,
+    0,
+    60
+   ],
+   "chunk": [
+    4,
+    6
+   ],
+   "placement_status": "proposed_requires_navmesh_validation"
+  },
+  {
+   "id": "P17",
+   "type": "place",
+   "name": "Подземный архив R-12",
+   "meta": "NPC_13_2",
+   "text": "Шаблоны извинений тем, чью личность перепрошили.",
+   "plan_position_m": [
+    2690,
+    2570
+   ],
+   "godot_position_m": [
+    1190,
+    0,
+    1070
+   ],
+   "chunk": [
+    10,
+    10
+   ],
+   "placement_status": "proposed_requires_navmesh_validation"
+  },
+  {
+   "id": "S0",
+   "type": "safe",
+   "name": "Стартовый двор",
+   "meta": "Проект безопасной точки · радиус 90 м",
+   "text": "Отдых, возврат после поражения и остановка такси после открытия. Мобы сюда не спавнятся; агрессия сбрасывается на границе.",
+   "plan_position_m": [
+    480,
+    2750
+   ],
+   "godot_position_m": [
+    -1020,
+    0,
+    1250
+   ],
+   "chunk": [
+    1,
+    11
+   ],
+   "placement_status": "proposed_requires_navmesh_validation",
+   "radius_m": 90
+  },
+  {
+   "id": "S1",
+   "type": "safe",
+   "name": "Двор мастерских",
+   "meta": "Проект безопасной точки · радиус 90 м",
+   "text": "Отдых, возврат после поражения и остановка такси после открытия. Мобы сюда не спавнятся; агрессия сбрасывается на границе.",
+   "plan_position_m": [
+    850,
+    1100
+   ],
+   "godot_position_m": [
+    -650,
+    0,
+    -400
+   ],
+   "chunk": [
+    3,
+    4
+   ],
+   "placement_status": "proposed_requires_navmesh_validation",
+   "radius_m": 90
+  },
+  {
+   "id": "S2",
+   "type": "safe",
+   "name": "Тихий внутренний двор",
+   "meta": "Проект безопасной точки · радиус 90 м",
+   "text": "Отдых, возврат после поражения и остановка такси после открытия. Мобы сюда не спавнятся; агрессия сбрасывается на границе.",
+   "plan_position_m": [
+    1610,
+    1850
+   ],
+   "godot_position_m": [
+    110,
+    0,
+    350
+   ],
+   "chunk": [
+    6,
+    7
+   ],
+   "placement_status": "proposed_requires_navmesh_validation",
+   "radius_m": 90
+  },
+  {
+   "id": "S3",
+   "type": "safe",
+   "name": "Рыночная стоянка",
+   "meta": "Проект безопасной точки · радиус 90 м",
+   "text": "Отдых, возврат после поражения и остановка такси после открытия. Мобы сюда не спавнятся; агрессия сбрасывается на границе.",
+   "plan_position_m": [
+    1140,
+    2480
+   ],
+   "godot_position_m": [
+    -360,
+    0,
+    980
+   ],
+   "chunk": [
+    4,
+    9
+   ],
+   "placement_status": "proposed_requires_navmesh_validation",
+   "radius_m": 90
+  },
+  {
+   "id": "S4",
+   "type": "safe",
+   "name": "Двор клиники",
+   "meta": "Проект безопасной точки · радиус 90 м",
+   "text": "Отдых, возврат после поражения и остановка такси после открытия. Мобы сюда не спавнятся; агрессия сбрасывается на границе.",
+   "plan_position_m": [
+    2680,
+    890
+   ],
+   "godot_position_m": [
+    1180,
+    0,
+    -610
+   ],
+   "chunk": [
+    10,
+    3
+   ],
+   "placement_status": "proposed_requires_navmesh_validation",
+   "radius_m": 90
+  },
+  {
+   "id": "U0",
+   "type": "underground",
+   "name": "Торговый коллектор",
+   "meta": "Проект входа на нижний уровень",
+   "text": "Вход с поверхности. Подземный маршрут связывает сюжетную локацию с соседними улицами; подробная внутренняя планировка — отдельный уровень.",
+   "plan_position_m": [
+    1430,
+    2030
+   ],
+   "godot_position_m": [
+    -70,
+    0,
+    530
+   ],
+   "chunk": [
+    5,
+    8
+   ],
+   "placement_status": "proposed_requires_navmesh_validation"
+  },
+  {
+   "id": "U1",
+   "type": "underground",
+   "name": "Клубная лаборатория",
+   "meta": "Проект входа на нижний уровень",
+   "text": "Вход с поверхности. Подземный маршрут связывает сюжетную локацию с соседними улицами; подробная внутренняя планировка — отдельный уровень.",
+   "plan_position_m": [
+    1850,
+    870
+   ],
+   "godot_position_m": [
+    350,
+    0,
+    -630
+   ],
+   "chunk": [
+    7,
+    3
+   ],
+   "placement_status": "proposed_requires_navmesh_validation"
+  },
+  {
+   "id": "U2",
+   "type": "underground",
+   "name": "Архив R-12",
+   "meta": "Проект входа на нижний уровень",
+   "text": "Вход с поверхности. Подземный маршрут связывает сюжетную локацию с соседними улицами; подробная внутренняя планировка — отдельный уровень.",
+   "plan_position_m": [
+    2690,
+    2570
+   ],
+   "godot_position_m": [
+    1190,
+    0,
+    1070
+   ],
+   "chunk": [
+    10,
+    10
+   ],
+   "placement_status": "proposed_requires_navmesh_validation"
+  },
+  {
+   "id": "U3",
+   "type": "underground",
+   "name": "Объездной модуль",
+   "meta": "Проект входа на нижний уровень",
+   "text": "Вход с поверхности. Подземный маршрут связывает сюжетную локацию с соседними улицами; подробная внутренняя планировка — отдельный уровень.",
+   "plan_position_m": [
+    770,
+    2570
+   ],
+   "godot_position_m": [
+    -730,
+    0,
+    1070
+   ],
+   "chunk": [
+    3,
+    10
+   ],
+   "placement_status": "proposed_requires_navmesh_validation"
+  }
+ ],
+ "npc_position_overrides": [
+  {
+   "npc_id": "N07",
+   "condition": "MAIN_001_started_and_not_completed",
+   "plan_position_m": [
+    430,
+    2590
+   ],
+   "note": "Только одна активная копия Павла; после вступления основная точка в парке.",
+   "yard_plan_position_m": [
+    352,
+    2675
+   ],
+   "yard_note": "Фактическая точка в Godot: двор «Похмельной» у киоска «НЛО напрокат» (D-031)."
+  }
+ ],
+ "source_notes": {
+  "canon": "03_SCENARIY_127_KVESTOV.pdf, редакция 28.10.2026",
+  "new_design": "Все координаты, сетка улиц, размеры арен, лимиты групп и подгрузки предложены в этом пакете."
+ },
+ "revision_notes": {
+  "date": "2026-10-29",
+  "changes": [
+   "Добавлены mob_types и group_composition во всех 30 спавнах.",
+   "Все прежние ID, координаты и параметры сохранены."
+  ],
+  "balance_status": "proposed_not_playtested",
+  "previous_version": "1.0"
+ },
+ "mob_types": [
+  {
+   "id": "mob_01",
+   "name": "Дрон-лайкомёт",
+   "id_scope": "local_to_this_manifest_not_canonical_source_id"
+  },
+  {
+   "id": "mob_02",
+   "name": "Охранник клуба «Без слуха»",
+   "id_scope": "local_to_this_manifest_not_canonical_source_id"
+  },
+  {
+   "id": "mob_03",
+   "name": "Гастрономический слизень",
+   "id_scope": "local_to_this_manifest_not_canonical_source_id"
+  },
+  {
+   "id": "mob_04",
+   "name": "Патрульный цензор",
+   "id_scope": "local_to_this_manifest_not_canonical_source_id"
+  },
+  {
+   "id": "mob_05",
+   "name": "Хлопающий мутант",
+   "id_scope": "local_to_this_manifest_not_canonical_source_id"
+  },
+  {
+   "id": "mob_06",
+   "name": "Курьер пропусков",
+   "id_scope": "local_to_this_manifest_not_canonical_source_id"
+  },
+  {
+   "id": "mob_07",
+   "name": "Дрон осветитель",
+   "id_scope": "local_to_this_manifest_not_canonical_source_id"
+  },
+  {
+   "id": "mob_08",
+   "name": "Пустоглазый бармен",
+   "id_scope": "local_to_this_manifest_not_canonical_source_id"
+  },
+  {
+   "id": "mob_09",
+   "name": "Мутант-очередник",
+   "id_scope": "local_to_this_manifest_not_canonical_source_id"
+  },
+  {
+   "id": "mob_10",
+   "name": "Дорожный паразит",
+   "id_scope": "local_to_this_manifest_not_canonical_source_id"
+  }
+ ],
+ "houses_plan_m": [
+  [
+   113,
+   939,
+   28,
+   38
+  ],
+  [
+   165,
+   914,
+   36,
+   39
+  ],
+  [
+   164,
+   1058,
+   44,
+   49
+  ],
+  [
+   107,
+   1054,
+   40,
+   28
+  ],
+  [
+   134,
+   1067,
+   41,
+   54
+  ],
+  [
+   175,
+   1095,
+   26,
+   51
+  ],
+  [
+   158,
+   1135,
+   36,
+   26
+  ],
+  [
+   193,
+   1127,
+   23,
+   56
+  ],
+  [
+   115,
+   1391,
+   39,
+   29
+  ],
+  [
+   158,
+   1334,
+   41,
+   43
+  ],
+  [
+   127,
+   1277,
+   44,
+   28
+  ],
+  [
+   106,
+   1341,
+   49,
+   47
+  ],
+  [
+   133,
+   1344,
+   47,
+   52
+  ],
+  [
+   129,
+   1266,
+   31,
+   38
+  ],
+  [
+   167,
+   1648,
+   30,
+   36
+  ],
+  [
+   98,
+   1655,
+   39,
+   34
+  ],
+  [
+   170,
+   1535,
+   30,
+   51
+  ],
+  [
+   106,
+   1559,
+   27,
+   48
+  ],
+  [
+   127,
+   1572,
+   40,
+   53
+  ],
+  [
+   167,
+   1505,
+   45,
+   37
+  ],
+  [
+   143,
+   1902,
+   32,
+   33
+  ],
+  [
+   106,
+   1886,
+   43,
+   33
+  ],
+  [
+   181,
+   1795,
+   36,
+   36
+  ],
+  [
+   177,
+   1761,
+   27,
+   54
+  ],
+  [
+   163,
+   1742,
+   50,
+   57
+  ],
+  [
+   125,
+   1801,
+   31,
+   37
+  ],
+  [
+   109,
+   2038,
+   52,
+   38
+  ],
+  [
+   150,
+   2096,
+   22,
+   49
+  ],
+  [
+   136,
+   2100,
+   44,
+   46
+  ],
+  [
+   108,
+   2026,
+   38,
+   54
+  ],
+  [
+   191,
+   2062,
+   24,
+   57
+  ],
+  [
+   129,
+   1990,
+   51,
+   47
+  ],
+  [
+   152,
+   2242,
+   43,
+   52
+  ],
+  [
+   158,
+   2234,
+   31,
+   44
+  ],
+  [
+   129,
+   2267,
+   47,
+   42
+  ],
+  [
+   147,
+   2232,
+   46,
+   36
+  ],
+  [
+   150,
+   2242,
+   25,
+   55
+  ],
+  [
+   108,
+   2240,
+   50,
+   45
+  ],
+  [
+   136,
+   2442,
+   43,
+   29
+  ],
+  [
+   150,
+   2430,
+   38,
+   40
+  ],
+  [
+   136,
+   2453,
+   25,
+   47
+  ],
+  [
+   305,
+   916,
+   29,
+   46
+  ],
+  [
+   262,
+   939,
+   38,
+   39
+  ],
+  [
+   317,
+   945,
+   34,
+   29
+  ],
+  [
+   270,
+   915,
+   31,
+   43
+  ],
+  [
+   330,
+   1122,
+   23,
+   23
+  ],
+  [
+   273,
+   1079,
+   49,
+   37
+  ],
+  [
+   359,
+   1034,
+   27,
+   51
+  ],
+  [
+   320,
+   1089,
+   36,
+   51
+  ],
+  [
+   318,
+   1127,
+   24,
+   37
+  ],
+  [
+   273,
+   1111,
+   34,
+   29
+  ],
+  [
+   318,
+   1345,
+   35,
+   45
+  ],
+  [
+   323,
+   1321,
+   51,
+   25
+  ],
+  [
+   273,
+   1333,
+   35,
+   56
+  ],
+  [
+   329,
+   1333,
+   43,
+   56
+  ],
+  [
+   362,
+   1433,
+   35,
+   25
+  ],
+  [
+   286,
+   1261,
+   27,
+   24
+  ],
+  [
+   352,
+   1531,
+   31,
+   31
+  ],
+  [
+   296,
+   1609,
+   34,
+   56
+  ],
+  [
+   297,
+   1506,
+   33,
+   39
+  ],
+  [
+   291,
+   1639,
+   29,
+   42
+  ],
+  [
+   289,
+   1553,
+   43,
+   34
+  ],
+  [
+   291,
+   1542,
+   28,
+   42
+  ],
+  [
+   311,
+   1825,
+   38,
+   56
+  ],
+  [
+   307,
+   1879,
+   45,
+   55
+  ],
+  [
+   315,
+   1859,
+   45,
+   30
+  ],
+  [
+   341,
+   1794,
+   28,
+   38
+  ],
+  [
+   318,
+   1840,
+   31,
+   50
+  ],
+  [
+   268,
+   1884,
+   52,
+   44
+  ],
+  [
+   330,
+   2068,
+   25,
+   25
+  ],
+  [
+   324,
+   2032,
+   34,
+   25
+  ],
+  [
+   290,
+   2021,
+   45,
+   53
+  ],
+  [
+   346,
+   2003,
+   39,
+   36
+  ],
+  [
+   359,
+   1988,
+   33,
+   52
+  ],
+  [
+   354,
+   2088,
+   29,
+   41
+  ],
+  [
+   297,
+   2226,
+   23,
+   39
+  ],
+  [
+   302,
+   2276,
+   27,
+   29
+  ],
+  [
+   330,
+   2304,
+   28,
+   23
+  ],
+  [
+   264,
+   2240,
+   42,
+   35
+  ],
+  [
+   306,
+   2316,
+   42,
+   25
+  ],
+  [
+   344,
+   2338,
+   32,
+   23
+  ],
+  [
+   282,
+   2439,
+   49,
+   36
+  ],
+  [
+   269,
+   2435,
+   48,
+   52
+  ],
+  [
+   443,
+   917,
+   23,
+   31
+  ],
+  [
+   475,
+   1035,
+   23,
+   50
+  ],
+  [
+   526,
+   1124,
+   29,
+   41
+  ],
+  [
+   507,
+   1056,
+   35,
+   42
+  ],
+  [
+   511,
+   1093,
+   31,
+   28
+  ],
+  [
+   534,
+   1036,
+   50,
+   49
+  ],
+  [
+   476,
+   1122,
+   30,
+   25
+  ],
+  [
+   479,
+   1303,
+   46,
+   38
+  ],
+  [
+   547,
+   1347,
+   43,
+   31
+  ],
+  [
+   460,
+   1284,
+   42,
+   39
+  ],
+  [
+   539,
+   1384,
+   51,
+   35
+  ],
+  [
+   482,
+   1314,
+   45,
+   48
+  ],
+  [
+   508,
+   1302,
+   53,
+   49
+  ],
+  [
+   461,
+   1513,
+   44,
+   38
+  ],
+  [
+   547,
+   1639,
+   50,
+   41
+  ],
+  [
+   553,
+   1544,
+   41,
+   47
+  ],
+  [
+   520,
+   1512,
+   25,
+   39
+  ],
+  [
+   519,
+   1610,
+   37,
+   43
+  ],
+  [
+   530,
+   1608,
+   37,
+   49
+  ],
+  [
+   446,
+   1835,
+   50,
+   44
+  ],
+  [
+   490,
+   1830,
+   36,
+   39
+  ],
+  [
+   462,
+   1769,
+   37,
+   48
+  ],
+  [
+   504,
+   1764,
+   28,
+   43
+  ],
+  [
+   552,
+   1746,
+   26,
+   53
+  ],
+  [
+   544,
+   1758,
+   28,
+   56
+  ],
+  [
+   535,
+   2052,
+   48,
+   44
+  ],
+  [
+   507,
+   1987,
+   50,
+   32
+  ],
+  [
+   525,
+   2072,
+   34,
+   45
+  ],
+  [
+   550,
+   2042,
+   42,
+   36
+  ],
+  [
+   522,
+   2130,
+   31,
+   34
+  ],
+  [
+   522,
+   2001,
+   27,
+   30
+  ],
+  [
+   470,
+   2286,
+   38,
+   40
+  ],
+  [
+   447,
+   2329,
+   46,
+   26
+  ],
+  [
+   475,
+   2279,
+   31,
+   33
+  ],
+  [
+   464,
+   2247,
+   51,
+   33
+  ],
+  [
+   449,
+   2280,
+   43,
+   27
+  ],
+  [
+   490,
+   2271,
+   51,
+   46
+  ],
+  [
+   494,
+   2447,
+   27,
+   29
+  ],
+  [
+   710,
+   921,
+   37,
+   50
+  ],
+  [
+   666,
+   928,
+   43,
+   32
+  ],
+  [
+   664,
+   932,
+   51,
+   28
+  ],
+  [
+   710,
+   1112,
+   26,
+   32
+  ],
+  [
+   724,
+   1043,
+   48,
+   35
+  ],
+  [
+   676,
+   1080,
+   48,
+   34
+  ],
+  [
+   647,
+   1106,
+   46,
+   57
+  ],
+  [
+   710,
+   1131,
+   45,
+   38
+  ],
+  [
+   669,
+   1101,
+   26,
+   56
+  ],
+  [
+   687,
+   1377,
+   28,
+   39
+  ],
+  [
+   722,
+   1325,
+   52,
+   57
+  ],
+  [
+   673,
+   1272,
+   44,
+   49
+  ],
+  [
+   681,
+   1288,
+   29,
+   38
+  ],
+  [
+   730,
+   1320,
+   30,
+   32
+  ],
+  [
+   746,
+   1319,
+   23,
+   54
+  ],
+  [
+   716,
+   1548,
+   30,
+   29
+  ],
+  [
+   704,
+   1590,
+   45,
+   50
+  ],
+  [
+   728,
+   1530,
+   36,
+   53
+  ],
+  [
+   677,
+   1578,
+   43,
+   55
+  ],
+  [
+   717,
+   1613,
+   36,
+   40
+  ],
+  [
+   653,
+   1616,
+   29,
+   32
+  ],
+  [
+   711,
+   1801,
+   47,
+   38
+  ],
+  [
+   679,
+   1780,
+   42,
+   42
+  ],
+  [
+   724,
+   1807,
+   40,
+   32
+  ],
+  [
+   643,
+   1789,
+   52,
+   38
+  ],
+  [
+   669,
+   1888,
+   52,
+   41
+  ],
+  [
+   693,
+   1817,
+   40,
+   44
+  ],
+  [
+   647,
+   2081,
+   35,
+   37
+  ],
+  [
+   726,
+   2042,
+   42,
+   35
+  ],
+  [
+   717,
+   2042,
+   49,
+   54
+  ],
+  [
+   741,
+   1989,
+   32,
+   25
+  ],
+  [
+   723,
+   1985,
+   32,
+   47
+  ],
+  [
+   644,
+   2065,
+   22,
+   32
+  ],
+  [
+   710,
+   2308,
+   32,
+   35
+  ],
+  [
+   687,
+   2286,
+   35,
+   52
+  ],
+  [
+   729,
+   2286,
+   26,
+   33
+  ],
+  [
+   652,
+   2248,
+   26,
+   28
+  ],
+  [
+   685,
+   2234,
+   43,
+   28
+  ],
+  [
+   750,
+   2319,
+   28,
+   48
+  ],
+  [
+   692,
+   2508,
+   32,
+   38
+  ],
+  [
+   685,
+   2488,
+   32,
+   48
+  ],
+  [
+   730,
+   2499,
+   30,
+   24
+  ],
+  [
+   671,
+   2439,
+   30,
+   53
+  ],
+  [
+   658,
+   2512,
+   45,
+   25
+  ],
+  [
+   681,
+   2535,
+   28,
+   34
+  ],
+  [
+   681,
+   2659,
+   31,
+   38
+  ],
+  [
+   702,
+   2693,
+   34,
+   31
+  ],
+  [
+   717,
+   2645,
+   23,
+   28
+  ],
+  [
+   655,
+   2654,
+   28,
+   39
+  ],
+  [
+   707,
+   2685,
+   43,
+   46
+  ],
+  [
+   694,
+   2633,
+   33,
+   48
+  ],
+  [
+   721,
+   2802,
+   52,
+   40
+  ],
+  [
+   728,
+   2805,
+   44,
+   49
+  ],
+  [
+   726,
+   2804,
+   44,
+   23
+  ],
+  [
+   688,
+   2821,
+   23,
+   28
+  ],
+  [
+   725,
+   2844,
+   33,
+   27
+  ],
+  [
+   714,
+   2814,
+   27,
+   44
+  ],
+  [
+   923,
+   130,
+   44,
+   55
+  ],
+  [
+   931,
+   136,
+   43,
+   44
+  ],
+  [
+   928,
+   297,
+   36,
+   55
+  ],
+  [
+   913,
+   535,
+   46,
+   24
+  ],
+  [
+   944,
+   494,
+   26,
+   30
+  ],
+  [
+   946,
+   553,
+   28,
+   40
+  ],
+  [
+   928,
+   658,
+   39,
+   53
+  ],
+  [
+   933,
+   713,
+   35,
+   40
+  ],
+  [
+   922,
+   863,
+   39,
+   22
+  ],
+  [
+   930,
+   847,
+   38,
+   56
+  ],
+  [
+   844,
+   938,
+   43,
+   39
+  ],
+  [
+   907,
+   1038,
+   49,
+   33
+  ],
+  [
+   864,
+   1079,
+   50,
+   33
+  ],
+  [
+   897,
+   1071,
+   40,
+   26
+  ],
+  [
+   865,
+   1037,
+   38,
+   55
+  ],
+  [
+   855,
+   1100,
+   23,
+   46
+  ],
+  [
+   851,
+   1138,
+   46,
+   36
+  ],
+  [
+   826,
+   1372,
+   47,
+   48
+  ],
+  [
+   839,
+   1361,
+   30,
+   54
+  ],
+  [
+   882,
+   1376,
+   39,
+   36
+  ],
+  [
+   906,
+   1368,
+   52,
+   40
+  ],
+  [
+   926,
+   1305,
+   48,
+   24
+  ],
+  [
+   881,
+   1420,
+   50,
+   24
+  ],
+  [
+   837,
+   1556,
+   48,
+   30
+  ],
+  [
+   876,
+   1595,
+   49,
+   28
+  ],
+  [
+   897,
+   1640,
+   50,
+   34
+  ],
+  [
+   901,
+   1593,
+   47,
+   53
+  ],
+  [
+   860,
+   1561,
+   43,
+   47
+  ],
+  [
+   908,
+   1511,
+   27,
+   55
+  ],
+  [
+   896,
+   1862,
+   36,
+   29
+  ],
+  [
+   914,
+   1850,
+   37,
+   47
+  ],
+  [
+   823,
+   1908,
+   33,
+   30
+  ],
+  [
+   871,
+   1849,
+   34,
+   30
+  ],
+  [
+   834,
+   1786,
+   33,
+   34
+  ],
+  [
+   844,
+   1801,
+   30,
+   52
+  ],
+  [
+   826,
+   2064,
+   53,
+   44
+  ],
+  [
+   841,
+   2125,
+   42,
+   30
+  ],
+  [
+   881,
+   2044,
+   40,
+   27
+  ],
+  [
+   921,
+   2064,
+   43,
+   47
+  ],
+  [
+   908,
+   2108,
+   26,
+   41
+  ],
+  [
+   883,
+   2054,
+   39,
+   49
+  ],
+  [
+   904,
+   2237,
+   47,
+   25
+  ],
+  [
+   831,
+   2275,
+   32,
+   47
+  ],
+  [
+   882,
+   2267,
+   46,
+   54
+  ],
+  [
+   933,
+   2218,
+   34,
+   45
+  ],
+  [
+   860,
+   2234,
+   25,
+   33
+  ],
+  [
+   908,
+   2226,
+   47,
+   53
+  ],
+  [
+   825,
+   2464,
+   34,
+   55
+  ],
+  [
+   911,
+   2454,
+   34,
+   27
+  ],
+  [
+   891,
+   2456,
+   40,
+   36
+  ],
+  [
+   849,
+   2495,
+   37,
+   40
+  ],
+  [
+   885,
+   2489,
+   45,
+   37
+  ],
+  [
+   914,
+   2506,
+   47,
+   40
+  ],
+  [
+   879,
+   2675,
+   28,
+   42
+  ],
+  [
+   837,
+   2660,
+   33,
+   52
+  ],
+  [
+   882,
+   2685,
+   25,
+   38
+  ],
+  [
+   839,
+   2669,
+   46,
+   47
+  ],
+  [
+   844,
+   2690,
+   52,
+   46
+  ],
+  [
+   913,
+   2670,
+   42,
+   50
+  ],
+  [
+   915,
+   2856,
+   51,
+   33
+  ],
+  [
+   839,
+   2840,
+   45,
+   42
+  ],
+  [
+   923,
+   2809,
+   27,
+   43
+  ],
+  [
+   913,
+   2815,
+   43,
+   45
+  ],
+  [
+   929,
+   2859,
+   37,
+   43
+  ],
+  [
+   866,
+   2835,
+   26,
+   40
+  ],
+  [
+   1102,
+   137,
+   34,
+   23
+  ],
+  [
+   1083,
+   101,
+   46,
+   48
+  ],
+  [
+   1025,
+   129,
+   47,
+   41
+  ],
+  [
+   1045,
+   151,
+   27,
+   34
+  ],
+  [
+   1097,
+   115,
+   51,
+   26
+  ],
+  [
+   1038,
+   164,
+   44,
+   35
+  ],
+  [
+   1144,
+   284,
+   39,
+   23
+  ],
+  [
+   1138,
+   299,
+   52,
+   32
+  ],
+  [
+   1129,
+   304,
+   34,
+   47
+  ],
+  [
+   1035,
+   301,
+   23,
+   52
+  ],
+  [
+   1106,
+   325,
+   46,
+   24
+  ],
+  [
+   1144,
+   286,
+   47,
+   23
+  ],
+  [
+   1085,
+   499,
+   49,
+   47
+  ],
+  [
+   1143,
+   531,
+   30,
+   34
+  ],
+  [
+   1126,
+   523,
+   53,
+   50
+  ],
+  [
+   1112,
+   516,
+   48,
+   37
+  ],
+  [
+   1041,
+   485,
+   34,
+   36
+  ],
+  [
+   1084,
+   512,
+   40,
+   56
+  ],
+  [
+   1107,
+   654,
+   24,
+   40
+  ],
+  [
+   1085,
+   645,
+   51,
+   56
+  ],
+  [
+   1093,
+   661,
+   37,
+   30
+  ],
+  [
+   1081,
+   645,
+   51,
+   50
+  ],
+  [
+   1069,
+   729,
+   23,
+   28
+  ],
+  [
+   1128,
+   655,
+   29,
+   46
+  ],
+  [
+   1076,
+   873,
+   51,
+   47
+  ],
+  [
+   1110,
+   924,
+   35,
+   35
+  ],
+  [
+   1032,
+   942,
+   35,
+   23
+  ],
+  [
+   1085,
+   865,
+   45,
+   57
+  ],
+  [
+   1157,
+   869,
+   38,
+   37
+  ],
+  [
+   1101,
+   893,
+   46,
+   40
+  ],
+  [
+   1064,
+   1038,
+   23,
+   33
+  ],
+  [
+   1080,
+   1074,
+   36,
+   53
+  ],
+  [
+   1073,
+   1094,
+   38,
+   45
+  ],
+  [
+   1035,
+   1123,
+   27,
+   49
+  ],
+  [
+   1160,
+   1147,
+   28,
+   33
+  ],
+  [
+   1087,
+   1131,
+   51,
+   38
+  ],
+  [
+   1063,
+   1262,
+   27,
+   57
+  ],
+  [
+   1132,
+   1399,
+   38,
+   45
+  ],
+  [
+   1111,
+   1381,
+   47,
+   51
+  ],
+  [
+   1023,
+   1265,
+   44,
+   28
+  ],
+  [
+   1071,
+   1283,
+   27,
+   29
+  ],
+  [
+   1137,
+   1260,
+   50,
+   53
+  ],
+  [
+   1035,
+   1541,
+   42,
+   49
+  ],
+  [
+   1076,
+   1529,
+   29,
+   57
+  ],
+  [
+   1130,
+   1664,
+   34,
+   32
+  ],
+  [
+   1110,
+   1590,
+   37,
+   22
+  ],
+  [
+   1082,
+   1591,
+   49,
+   45
+  ],
+  [
+   1045,
+   1606,
+   47,
+   48
+  ],
+  [
+   1075,
+   1810,
+   50,
+   39
+  ],
+  [
+   1030,
+   1854,
+   47,
+   27
+  ],
+  [
+   1071,
+   1856,
+   49,
+   28
+  ],
+  [
+   1068,
+   1784,
+   33,
+   39
+  ],
+  [
+   1139,
+   1792,
+   36,
+   57
+  ],
+  [
+   1052,
+   1784,
+   51,
+   43
+  ],
+  [
+   1144,
+   1987,
+   47,
+   54
+  ],
+  [
+   1032,
+   2018,
+   45,
+   50
+  ],
+  [
+   1070,
+   2089,
+   42,
+   55
+  ],
+  [
+   1077,
+   2000,
+   36,
+   26
+  ],
+  [
+   1139,
+   2035,
+   44,
+   29
+  ],
+  [
+   1075,
+   2108,
+   32,
+   53
+  ],
+  [
+   1076,
+   2281,
+   30,
+   26
+  ],
+  [
+   1050,
+   2309,
+   28,
+   48
+  ],
+  [
+   1028,
+   2292,
+   40,
+   30
+  ],
+  [
+   1113,
+   2239,
+   33,
+   54
+  ],
+  [
+   1075,
+   2217,
+   31,
+   49
+  ],
+  [
+   1137,
+   2316,
+   23,
+   37
+  ],
+  [
+   1105,
+   2482,
+   49,
+   45
+  ],
+  [
+   1064,
+   2533,
+   46,
+   37
+  ],
+  [
+   1121,
+   2489,
+   47,
+   36
+  ],
+  [
+   1072,
+   2534,
+   52,
+   44
+  ],
+  [
+   1061,
+   2459,
+   28,
+   42
+  ],
+  [
+   1033,
+   2472,
+   25,
+   38
+  ],
+  [
+   1109,
+   2697,
+   29,
+   26
+  ],
+  [
+   1071,
+   2624,
+   26,
+   40
+  ],
+  [
+   1036,
+   2625,
+   34,
+   48
+  ],
+  [
+   1026,
+   2635,
+   28,
+   37
+  ],
+  [
+   1132,
+   2699,
+   42,
+   43
+  ],
+  [
+   1092,
+   2719,
+   43,
+   38
+  ],
+  [
+   1159,
+   2858,
+   26,
+   35
+  ],
+  [
+   1094,
+   2803,
+   25,
+   39
+  ],
+  [
+   1035,
+   2839,
+   24,
+   42
+  ],
+  [
+   1026,
+   2807,
+   41,
+   23
+  ],
+  [
+   1072,
+   2833,
+   48,
+   38
+  ],
+  [
+   1071,
+   2829,
+   53,
+   40
+  ],
+  [
+   1289,
+   156,
+   35,
+   36
+  ],
+  [
+   1353,
+   114,
+   23,
+   53
+  ],
+  [
+   1274,
+   159,
+   32,
+   53
+  ],
+  [
+   1249,
+   178,
+   52,
+   33
+  ],
+  [
+   1333,
+   141,
+   52,
+   46
+  ],
+  [
+   1387,
+   130,
+   35,
+   52
+  ],
+  [
+   1309,
+   332,
+   36,
+   50
+  ],
+  [
+   1385,
+   329,
+   49,
+   32
+  ],
+  [
+   1388,
+   301,
+   36,
+   31
+  ],
+  [
+   1358,
+   318,
+   25,
+   50
+  ],
+  [
+   1357,
+   310,
+   23,
+   56
+  ],
+  [
+   1268,
+   347,
+   33,
+   26
+  ],
+  [
+   1377,
+   465,
+   41,
+   32
+  ],
+  [
+   1362,
+   469,
+   42,
+   43
+  ],
+  [
+   1269,
+   524,
+   42,
+   55
+  ],
+  [
+   1265,
+   539,
+   42,
+   27
+  ],
+  [
+   1360,
+   560,
+   46,
+   37
+  ],
+  [
+   1413,
+   481,
+   26,
+   24
+  ],
+  [
+   1327,
+   648,
+   24,
+   37
+  ],
+  [
+   1427,
+   657,
+   25,
+   55
+  ],
+  [
+   1341,
+   656,
+   49,
+   55
+  ],
+  [
+   1332,
+   732,
+   45,
+   43
+  ],
+  [
+   1365,
+   653,
+   30,
+   36
+  ],
+  [
+   1356,
+   692,
+   33,
+   36
+  ],
+  [
+   1283,
+   852,
+   45,
+   37
+  ],
+  [
+   1253,
+   946,
+   44,
+   26
+  ],
+  [
+   1412,
+   914,
+   42,
+   47
+  ],
+  [
+   1276,
+   938,
+   47,
+   39
+  ],
+  [
+   1356,
+   870,
+   47,
+   36
+  ],
+  [
+   1405,
+   854,
+   26,
+   25
+  ],
+  [
+   1387,
+   1085,
+   45,
+   28
+  ],
+  [
+   1295,
+   1086,
+   48,
+   40
+  ],
+  [
+   1284,
+   1105,
+   44,
+   39
+  ],
+  [
+   1338,
+   1117,
+   22,
+   46
+  ],
+  [
+   1363,
+   1041,
+   38,
+   30
+  ],
+  [
+   1286,
+   1045,
+   35,
+   39
+  ],
+  [
+   1384,
+   1256,
+   23,
+   45
+  ],
+  [
+   1384,
+   1298,
+   32,
+   54
+  ],
+  [
+   1244,
+   1605,
+   53,
+   54
+  ],
+  [
+   1248,
+   1585,
+   40,
+   24
+  ],
+  [
+   1380,
+   1750,
+   49,
+   46
+  ],
+  [
+   1267,
+   1839,
+   28,
+   53
+  ],
+  [
+   1281,
+   1875,
+   41,
+   40
+  ],
+  [
+   1265,
+   1891,
+   45,
+   37
+  ],
+  [
+   1417,
+   1807,
+   34,
+   44
+  ],
+  [
+   1397,
+   1890,
+   36,
+   34
+  ],
+  [
+   1382,
+   2100,
+   23,
+   50
+  ],
+  [
+   1255,
+   2068,
+   52,
+   49
+  ],
+  [
+   1251,
+   2102,
+   38,
+   38
+  ],
+  [
+   1318,
+   2014,
+   45,
+   31
+  ],
+  [
+   1396,
+   2000,
+   31,
+   40
+  ],
+  [
+   1360,
+   2070,
+   41,
+   43
+  ],
+  [
+   1385,
+   2287,
+   41,
+   24
+  ],
+  [
+   1333,
+   2283,
+   27,
+   44
+  ],
+  [
+   1422,
+   2237,
+   28,
+   24
+  ],
+  [
+   1300,
+   2290,
+   46,
+   40
+  ],
+  [
+   1284,
+   2248,
+   27,
+   38
+  ],
+  [
+   1394,
+   2254,
+   31,
+   25
+  ],
+  [
+   1252,
+   2528,
+   30,
+   48
+  ],
+  [
+   1304,
+   2446,
+   41,
+   56
+  ],
+  [
+   1321,
+   2423,
+   41,
+   43
+  ],
+  [
+   1410,
+   2470,
+   23,
+   36
+  ],
+  [
+   1317,
+   2514,
+   53,
+   23
+  ],
+  [
+   1369,
+   2463,
+   48,
+   54
+  ],
+  [
+   1378,
+   2666,
+   27,
+   54
+  ],
+  [
+   1394,
+   2657,
+   37,
+   53
+  ],
+  [
+   1346,
+   2658,
+   49,
+   54
+  ],
+  [
+   1340,
+   2659,
+   26,
+   28
+  ],
+  [
+   1330,
+   2690,
+   30,
+   29
+  ],
+  [
+   1300,
+   2710,
+   38,
+   39
+  ],
+  [
+   1318,
+   2833,
+   24,
+   44
+  ],
+  [
+   1251,
+   2832,
+   40,
+   26
+  ],
+  [
+   1275,
+   2816,
+   40,
+   31
+  ],
+  [
+   1276,
+   2821,
+   45,
+   27
+  ],
+  [
+   1408,
+   2834,
+   44,
+   51
+  ],
+  [
+   1302,
+   2880,
+   33,
+   23
+  ],
+  [
+   1603,
+   103,
+   30,
+   40
+  ],
+  [
+   1505,
+   157,
+   53,
+   52
+  ],
+  [
+   1536,
+   164,
+   42,
+   28
+  ],
+  [
+   1641,
+   130,
+   41,
+   30
+  ],
+  [
+   1665,
+   166,
+   29,
+   31
+  ],
+  [
+   1589,
+   142,
+   29,
+   39
+  ],
+  [
+   1571,
+   303,
+   43,
+   46
+  ],
+  [
+   1620,
+   293,
+   34,
+   33
+  ],
+  [
+   1524,
+   337,
+   49,
+   55
+  ],
+  [
+   1526,
+   508,
+   34,
+   38
+  ],
+  [
+   1617,
+   543,
+   39,
+   44
+  ],
+  [
+   1635,
+   503,
+   24,
+   54
+  ],
+  [
+   1509,
+   495,
+   50,
+   48
+  ],
+  [
+   1615,
+   475,
+   39,
+   44
+  ],
+  [
+   1587,
+   463,
+   32,
+   46
+  ],
+  [
+   1585,
+   678,
+   48,
+   30
+  ],
+  [
+   1565,
+   681,
+   51,
+   31
+  ],
+  [
+   1582,
+   718,
+   43,
+   45
+  ],
+  [
+   1622,
+   647,
+   46,
+   40
+  ],
+  [
+   1549,
+   650,
+   29,
+   37
+  ],
+  [
+   1622,
+   660,
+   39,
+   54
+  ],
+  [
+   1548,
+   861,
+   24,
+   37
+  ],
+  [
+   1513,
+   906,
+   32,
+   46
+  ],
+  [
+   1657,
+   878,
+   33,
+   53
+  ],
+  [
+   1584,
+   919,
+   48,
+   52
+  ],
+  [
+   1609,
+   942,
+   46,
+   31
+  ],
+  [
+   1544,
+   921,
+   26,
+   54
+  ],
+  [
+   1515,
+   1052,
+   34,
+   38
+  ],
+  [
+   1638,
+   1024,
+   52,
+   35
+  ],
+  [
+   1603,
+   1164,
+   29,
+   33
+  ],
+  [
+   1528,
+   1043,
+   48,
+   48
+  ],
+  [
+   1558,
+   1115,
+   22,
+   26
+  ],
+  [
+   1593,
+   1140,
+   38,
+   49
+  ],
+  [
+   1613,
+   1256,
+   38,
+   47
+  ],
+  [
+   1521,
+   1282,
+   35,
+   25
+  ],
+  [
+   1661,
+   1256,
+   35,
+   51
+  ],
+  [
+   1653,
+   1651,
+   42,
+   36
+  ],
+  [
+   1638,
+   1825,
+   29,
+   54
+  ],
+  [
+   1538,
+   1756,
+   41,
+   36
+  ],
+  [
+   1630,
+   1861,
+   43,
+   26
+  ],
+  [
+   1516,
+   1743,
+   50,
+   32
+  ],
+  [
+   1524,
+   1851,
+   38,
+   41
+  ],
+  [
+   1526,
+   1823,
+   49,
+   29
+  ],
+  [
+   1652,
+   2096,
+   37,
+   42
+  ],
+  [
+   1595,
+   2073,
+   49,
+   34
+  ],
+  [
+   1593,
+   2010,
+   40,
+   56
+  ],
+  [
+   1508,
+   1996,
+   39,
+   40
+  ],
+  [
+   1516,
+   2046,
+   45,
+   55
+  ],
+  [
+   1623,
+   2077,
+   48,
+   30
+  ],
+  [
+   1536,
+   2281,
+   32,
+   31
+  ],
+  [
+   1509,
+   2265,
+   39,
+   31
+  ],
+  [
+   1557,
+   2321,
+   37,
+   27
+  ],
+  [
+   1616,
+   2231,
+   40,
+   40
+  ],
+  [
+   1645,
+   2249,
+   49,
+   26
+  ],
+  [
+   1550,
+   2227,
+   32,
+   48
+  ],
+  [
+   1645,
+   2512,
+   25,
+   40
+  ],
+  [
+   1651,
+   2426,
+   32,
+   50
+  ],
+  [
+   1613,
+   2525,
+   47,
+   34
+  ],
+  [
+   1591,
+   2500,
+   33,
+   31
+  ],
+  [
+   1658,
+   2449,
+   35,
+   32
+  ],
+  [
+   1545,
+   2473,
+   47,
+   44
+  ],
+  [
+   1545,
+   2645,
+   22,
+   47
+  ],
+  [
+   1574,
+   2672,
+   29,
+   57
+  ],
+  [
+   1645,
+   2695,
+   41,
+   41
+  ],
+  [
+   1630,
+   2690,
+   25,
+   29
+  ],
+  [
+   1611,
+   2630,
+   35,
+   56
+  ],
+  [
+   1509,
+   2720,
+   44,
+   34
+  ],
+  [
+   1661,
+   2818,
+   30,
+   33
+  ],
+  [
+   1539,
+   2850,
+   45,
+   30
+  ],
+  [
+   1612,
+   2849,
+   29,
+   53
+  ],
+  [
+   1550,
+   2829,
+   38,
+   46
+  ],
+  [
+   1611,
+   2804,
+   38,
+   52
+  ],
+  [
+   1596,
+   2844,
+   36,
+   49
+  ],
+  [
+   1828,
+   139,
+   44,
+   48
+  ],
+  [
+   1797,
+   138,
+   47,
+   32
+  ],
+  [
+   1845,
+   152,
+   38,
+   47
+  ],
+  [
+   1779,
+   168,
+   43,
+   40
+  ],
+  [
+   1799,
+   133,
+   50,
+   45
+  ],
+  [
+   1883,
+   154,
+   49,
+   48
+  ],
+  [
+   1826,
+   564,
+   38,
+   25
+  ],
+  [
+   1835,
+   551,
+   46,
+   37
+  ],
+  [
+   1782,
+   526,
+   31,
+   50
+  ],
+  [
+   1848,
+   517,
+   26,
+   55
+  ],
+  [
+   1805,
+   489,
+   29,
+   40
+  ],
+  [
+   1843,
+   667,
+   51,
+   57
+  ],
+  [
+   1857,
+   703,
+   42,
+   22
+  ],
+  [
+   1801,
+   691,
+   52,
+   26
+  ],
+  [
+   1796,
+   674,
+   47,
+   48
+  ],
+  [
+   1758,
+   685,
+   31,
+   52
+  ],
+  [
+   1752,
+   700,
+   40,
+   52
+  ],
+  [
+   1870,
+   831,
+   48,
+   46
+  ],
+  [
+   1845,
+   869,
+   28,
+   43
+  ],
+  [
+   1793,
+   827,
+   31,
+   40
+  ],
+  [
+   1890,
+   825,
+   32,
+   34
+  ],
+  [
+   1842,
+   936,
+   33,
+   30
+  ],
+  [
+   1867,
+   940,
+   27,
+   35
+  ],
+  [
+   1832,
+   1028,
+   24,
+   28
+  ],
+  [
+   1836,
+   1076,
+   29,
+   37
+  ],
+  [
+   1877,
+   1030,
+   29,
+   55
+  ],
+  [
+   1810,
+   1087,
+   32,
+   39
+  ],
+  [
+   1808,
+   1095,
+   40,
+   34
+  ],
+  [
+   1872,
+   1144,
+   50,
+   28
+  ],
+  [
+   1891,
+   1410,
+   25,
+   46
+  ],
+  [
+   1763,
+   1314,
+   27,
+   38
+  ],
+  [
+   1836,
+   1398,
+   26,
+   48
+  ],
+  [
+   1913,
+   1357,
+   24,
+   51
+  ],
+  [
+   1823,
+   1362,
+   45,
+   41
+  ],
+  [
+   1893,
+   1412,
+   22,
+   41
+  ],
+  [
+   1898,
+   1655,
+   33,
+   34
+  ],
+  [
+   1774,
+   1508,
+   32,
+   39
+  ],
+  [
+   1827,
+   1612,
+   28,
+   33
+  ],
+  [
+   1753,
+   1579,
+   24,
+   42
+  ],
+  [
+   1791,
+   1569,
+   36,
+   39
+  ],
+  [
+   1775,
+   1513,
+   46,
+   51
+  ],
+  [
+   1815,
+   1857,
+   36,
+   42
+  ],
+  [
+   1867,
+   1767,
+   44,
+   51
+  ],
+  [
+   1765,
+   1874,
+   44,
+   40
+  ],
+  [
+   1840,
+   1778,
+   43,
+   50
+  ],
+  [
+   1748,
+   1878,
+   53,
+   52
+  ],
+  [
+   1855,
+   1849,
+   52,
+   31
+  ],
+  [
+   1846,
+   2069,
+   27,
+   24
+  ],
+  [
+   1769,
+   2061,
+   46,
+   49
+  ],
+  [
+   1797,
+   2068,
+   52,
+   37
+  ],
+  [
+   1777,
+   2075,
+   33,
+   56
+  ],
+  [
+   1790,
+   2100,
+   35,
+   51
+  ],
+  [
+   1894,
+   2088,
+   36,
+   53
+  ],
+  [
+   1802,
+   2212,
+   32,
+   32
+  ],
+  [
+   1750,
+   2319,
+   43,
+   35
+  ],
+  [
+   1757,
+   2221,
+   26,
+   55
+  ],
+  [
+   1817,
+   2253,
+   25,
+   41
+  ],
+  [
+   1750,
+   2228,
+   51,
+   46
+  ],
+  [
+   1877,
+   2244,
+   29,
+   22
+  ],
+  [
+   1874,
+   2426,
+   49,
+   49
+  ],
+  [
+   1827,
+   2484,
+   34,
+   40
+  ],
+  [
+   1849,
+   2424,
+   35,
+   41
+  ],
+  [
+   1744,
+   2472,
+   35,
+   49
+  ],
+  [
+   1861,
+   2476,
+   39,
+   46
+  ],
+  [
+   1762,
+   2471,
+   29,
+   55
+  ],
+  [
+   1814,
+   2685,
+   28,
+   39
+  ],
+  [
+   1858,
+   2652,
+   49,
+   48
+  ],
+  [
+   1873,
+   2636,
+   39,
+   32
+  ],
+  [
+   1871,
+   2677,
+   52,
+   36
+  ],
+  [
+   1817,
+   2642,
+   50,
+   48
+  ],
+  [
+   1908,
+   2698,
+   23,
+   22
+  ],
+  [
+   1746,
+   2806,
+   41,
+   29
+  ],
+  [
+   1855,
+   2845,
+   41,
+   55
+  ],
+  [
+   1874,
+   2825,
+   23,
+   36
+  ],
+  [
+   1813,
+   2863,
+   27,
+   28
+  ],
+  [
+   1877,
+   2881,
+   34,
+   24
+  ],
+  [
+   1745,
+   2815,
+   51,
+   40
+  ],
+  [
+   2057,
+   123,
+   52,
+   35
+  ],
+  [
+   2109,
+   189,
+   46,
+   27
+  ],
+  [
+   2039,
+   129,
+   29,
+   26
+  ],
+  [
+   2010,
+   170,
+   34,
+   47
+  ],
+  [
+   1993,
+   173,
+   35,
+   24
+  ],
+  [
+   2115,
+   135,
+   36,
+   35
+  ],
+  [
+   2025,
+   343,
+   25,
+   51
+  ],
+  [
+   2112,
+   358,
+   44,
+   26
+  ],
+  [
+   2059,
+   328,
+   45,
+   46
+  ],
+  [
+   2061,
+   293,
+   44,
+   40
+  ],
+  [
+   2128,
+   351,
+   38,
+   30
+  ],
+  [
+   1988,
+   273,
+   38,
+   52
+  ],
+  [
+   1984,
+   503,
+   34,
+   34
+  ],
+  [
+   1983,
+   519,
+   49,
+   51
+  ],
+  [
+   2078,
+   499,
+   38,
+   47
+  ],
+  [
+   2087,
+   509,
+   43,
+   36
+  ],
+  [
+   2018,
+   534,
+   27,
+   27
+  ],
+  [
+   2000,
+   458,
+   39,
+   52
+  ],
+  [
+   2100,
+   691,
+   33,
+   23
+  ],
+  [
+   2014,
+   651,
+   24,
+   57
+  ],
+  [
+   2028,
+   696,
+   39,
+   29
+  ],
+  [
+   2045,
+   692,
+   30,
+   44
+  ],
+  [
+   2068,
+   722,
+   23,
+   31
+  ],
+  [
+   2061,
+   647,
+   40,
+   39
+  ],
+  [
+   2074,
+   895,
+   49,
+   37
+  ],
+  [
+   2037,
+   874,
+   37,
+   24
+  ],
+  [
+   2135,
+   845,
+   33,
+   46
+  ],
+  [
+   2117,
+   898,
+   26,
+   50
+  ],
+  [
+   2122,
+   863,
+   30,
+   34
+  ],
+  [
+   2089,
+   889,
+   25,
+   55
+  ],
+  [
+   2092,
+   1081,
+   22,
+   53
+  ],
+  [
+   2049,
+   1072,
+   39,
+   33
+  ],
+  [
+   2009,
+   1111,
+   46,
+   53
+  ],
+  [
+   2049,
+   1083,
+   44,
+   55
+  ],
+  [
+   2026,
+   1141,
+   30,
+   30
+  ],
+  [
+   1998,
+   1098,
+   49,
+   34
+  ],
+  [
+   2082,
+   1358,
+   22,
+   46
+  ],
+  [
+   1986,
+   1286,
+   29,
+   44
+  ],
+  [
+   2015,
+   1383,
+   48,
+   39
+  ],
+  [
+   2102,
+   1291,
+   34,
+   29
+  ],
+  [
+   2101,
+   1278,
+   30,
+   52
+  ],
+  [
+   2084,
+   1350,
+   44,
+   55
+  ],
+  [
+   2119,
+   1516,
+   25,
+   48
+  ],
+  [
+   2060,
+   1598,
+   46,
+   52
+  ],
+  [
+   2047,
+   1673,
+   35,
+   25
+  ],
+  [
+   2084,
+   1529,
+   30,
+   54
+  ],
+  [
+   2038,
+   1634,
+   44,
+   53
+  ],
+  [
+   2041,
+   1635,
+   38,
+   33
+  ],
+  [
+   2109,
+   1897,
+   44,
+   32
+  ],
+  [
+   2090,
+   1759,
+   42,
+   49
+  ],
+  [
+   2127,
+   1877,
+   23,
+   25
+  ],
+  [
+   2115,
+   1863,
+   51,
+   48
+  ],
+  [
+   2113,
+   1845,
+   26,
+   32
+  ],
+  [
+   2125,
+   1871,
+   33,
+   54
+  ],
+  [
+   2064,
+   2004,
+   30,
+   44
+  ],
+  [
+   2132,
+   2018,
+   27,
+   38
+  ],
+  [
+   2051,
+   2104,
+   29,
+   37
+  ],
+  [
+   2014,
+   2048,
+   30,
+   42
+  ],
+  [
+   2020,
+   2105,
+   33,
+   28
+  ],
+  [
+   2041,
+   2072,
+   35,
+   25
+  ],
+  [
+   2008,
+   2308,
+   31,
+   52
+  ],
+  [
+   1993,
+   2293,
+   27,
+   24
+  ],
+  [
+   2053,
+   2271,
+   28,
+   34
+  ],
+  [
+   1998,
+   2269,
+   35,
+   43
+  ],
+  [
+   2103,
+   2246,
+   36,
+   36
+  ],
+  [
+   1989,
+   2267,
+   38,
+   31
+  ],
+  [
+   1989,
+   2509,
+   34,
+   40
+  ],
+  [
+   2125,
+   2514,
+   27,
+   33
+  ],
+  [
+   2004,
+   2523,
+   27,
+   32
+  ],
+  [
+   2101,
+   2508,
+   44,
+   32
+  ],
+  [
+   2107,
+   2505,
+   46,
+   50
+  ],
+  [
+   2017,
+   2508,
+   46,
+   40
+  ],
+  [
+   1990,
+   2659,
+   42,
+   51
+  ],
+  [
+   1991,
+   2651,
+   46,
+   25
+  ],
+  [
+   2072,
+   2648,
+   41,
+   50
+  ],
+  [
+   2051,
+   2705,
+   27,
+   31
+  ],
+  [
+   2104,
+   2660,
+   43,
+   52
+  ],
+  [
+   2109,
+   2661,
+   42,
+   46
+  ],
+  [
+   2013,
+   2824,
+   40,
+   49
+  ],
+  [
+   2099,
+   2854,
+   37,
+   52
+  ],
+  [
+   2093,
+   2810,
+   53,
+   41
+  ],
+  [
+   2049,
+   2817,
+   47,
+   55
+  ],
+  [
+   2080,
+   2838,
+   43,
+   49
+  ],
+  [
+   1999,
+   2807,
+   51,
+   35
+  ],
+  [
+   2287,
+   118,
+   37,
+   23
+  ],
+  [
+   2226,
+   116,
+   47,
+   43
+  ],
+  [
+   2302,
+   114,
+   28,
+   52
+  ],
+  [
+   2287,
+   127,
+   35,
+   42
+  ],
+  [
+   2225,
+   114,
+   34,
+   50
+  ],
+  [
+   2323,
+   133,
+   47,
+   30
+  ],
+  [
+   2242,
+   341,
+   31,
+   33
+  ],
+  [
+   2318,
+   329,
+   26,
+   54
+  ],
+  [
+   2312,
+   264,
+   48,
+   29
+  ],
+  [
+   2225,
+   286,
+   44,
+   28
+  ],
+  [
+   2223,
+   336,
+   27,
+   40
+  ],
+  [
+   2235,
+   294,
+   26,
+   28
+  ],
+  [
+   2268,
+   533,
+   44,
+   52
+  ],
+  [
+   2275,
+   562,
+   51,
+   26
+  ],
+  [
+   2304,
+   483,
+   41,
+   28
+  ],
+  [
+   2277,
+   443,
+   40,
+   36
+  ],
+  [
+   2318,
+   474,
+   33,
+   35
+  ],
+  [
+   2226,
+   517,
+   33,
+   55
+  ],
+  [
+   2272,
+   661,
+   35,
+   45
+  ],
+  [
+   2265,
+   690,
+   49,
+   51
+  ],
+  [
+   2232,
+   738,
+   31,
+   26
+  ],
+  [
+   2298,
+   688,
+   24,
+   51
+  ],
+  [
+   2304,
+   673,
+   26,
+   53
+  ],
+  [
+   2271,
+   722,
+   42,
+   25
+  ],
+  [
+   2315,
+   849,
+   38,
+   45
+  ],
+  [
+   2310,
+   866,
+   49,
+   32
+  ],
+  [
+   2253,
+   941,
+   43,
+   34
+  ],
+  [
+   2284,
+   822,
+   39,
+   45
+  ],
+  [
+   2221,
+   848,
+   26,
+   51
+  ],
+  [
+   2325,
+   903,
+   46,
+   25
+  ],
+  [
+   2269,
+   1090,
+   27,
+   36
+  ],
+  [
+   2327,
+   1029,
+   39,
+   35
+  ],
+  [
+   2320,
+   1053,
+   24,
+   37
+  ],
+  [
+   2293,
+   1108,
+   23,
+   25
+  ],
+  [
+   2279,
+   1047,
+   49,
+   42
+  ],
+  [
+   2239,
+   1031,
+   43,
+   38
+  ],
+  [
+   2226,
+   1386,
+   25,
+   52
+  ],
+  [
+   2241,
+   1253,
+   44,
+   28
+  ],
+  [
+   2236,
+   1368,
+   43,
+   49
+  ],
+  [
+   2241,
+   1298,
+   46,
+   47
+  ],
+  [
+   2312,
+   1588,
+   45,
+   41
+  ],
+  [
+   2325,
+   1510,
+   30,
+   31
+  ],
+  [
+   2304,
+   1543,
+   36,
+   50
+  ],
+  [
+   2266,
+   1520,
+   38,
+   45
+  ],
+  [
+   2221,
+   1644,
+   25,
+   37
+  ],
+  [
+   2254,
+   1566,
+   37,
+   32
+  ],
+  [
+   2287,
+   1783,
+   36,
+   33
+  ],
+  [
+   2286,
+   1754,
+   28,
+   23
+  ],
+  [
+   2250,
+   1757,
+   42,
+   38
+  ],
+  [
+   2314,
+   1852,
+   31,
+   34
+  ],
+  [
+   2225,
+   1857,
+   30,
+   50
+  ],
+  [
+   2223,
+   1843,
+   26,
+   40
+  ],
+  [
+   2336,
+   2026,
+   38,
+   49
+  ],
+  [
+   2272,
+   1999,
+   48,
+   28
+  ],
+  [
+   2299,
+   2097,
+   34,
+   51
+  ],
+  [
+   2231,
+   2034,
+   25,
+   37
+  ],
+  [
+   2215,
+   2025,
+   52,
+   56
+  ],
+  [
+   2322,
+   2033,
+   39,
+   32
+  ],
+  [
+   2289,
+   2333,
+   43,
+   35
+  ],
+  [
+   2281,
+   2332,
+   32,
+   29
+  ],
+  [
+   2277,
+   2331,
+   23,
+   33
+  ],
+  [
+   2256,
+   2215,
+   49,
+   32
+  ],
+  [
+   2263,
+   2277,
+   36,
+   41
+  ],
+  [
+   2233,
+   2264,
+   37,
+   36
+  ],
+  [
+   2217,
+   2441,
+   28,
+   32
+  ],
+  [
+   2315,
+   2500,
+   32,
+   23
+  ],
+  [
+   2283,
+   2532,
+   40,
+   38
+  ],
+  [
+   2324,
+   2493,
+   23,
+   24
+  ],
+  [
+   2323,
+   2483,
+   29,
+   52
+  ],
+  [
+   2301,
+   2439,
+   42,
+   29
+  ],
+  [
+   2227,
+   2706,
+   40,
+   22
+  ],
+  [
+   2219,
+   2670,
+   52,
+   51
+  ],
+  [
+   2212,
+   2685,
+   41,
+   45
+  ],
+  [
+   2314,
+   2671,
+   31,
+   55
+  ],
+  [
+   2275,
+   2682,
+   30,
+   41
+  ],
+  [
+   2320,
+   2631,
+   38,
+   27
+  ],
+  [
+   2298,
+   2807,
+   30,
+   50
+  ],
+  [
+   2235,
+   2841,
+   25,
+   48
+  ],
+  [
+   2243,
+   2869,
+   29,
+   32
+  ],
+  [
+   2253,
+   2821,
+   35,
+   39
+  ],
+  [
+   2325,
+   2860,
+   27,
+   43
+  ],
+  [
+   2239,
+   2836,
+   23,
+   53
+  ],
+  [
+   2517,
+   101,
+   51,
+   50
+  ],
+  [
+   2525,
+   155,
+   40,
+   55
+  ],
+  [
+   2482,
+   156,
+   49,
+   32
+  ],
+  [
+   2461,
+   143,
+   46,
+   48
+  ],
+  [
+   2504,
+   169,
+   43,
+   37
+  ],
+  [
+   2537,
+   189,
+   26,
+   24
+  ],
+  [
+   2520,
+   311,
+   46,
+   50
+  ],
+  [
+   2523,
+   273,
+   47,
+   41
+  ],
+  [
+   2545,
+   350,
+   30,
+   34
+  ],
+  [
+   2426,
+   323,
+   46,
+   50
+  ],
+  [
+   2523,
+   334,
+   28,
+   40
+  ],
+  [
+   2424,
+   287,
+   35,
+   49
+  ],
+  [
+   2528,
+   537,
+   40,
+   47
+  ],
+  [
+   2515,
+   471,
+   29,
+   39
+  ],
+  [
+   2483,
+   474,
+   53,
+   50
+  ],
+  [
+   2423,
+   542,
+   33,
+   44
+  ],
+  [
+   2511,
+   483,
+   52,
+   33
+  ],
+  [
+   2501,
+   536,
+   49,
+   31
+  ],
+  [
+   2440,
+   733,
+   45,
+   30
+  ],
+  [
+   2430,
+   694,
+   52,
+   31
+  ],
+  [
+   2463,
+   675,
+   33,
+   29
+  ],
+  [
+   2426,
+   667,
+   40,
+   50
+  ],
+  [
+   2427,
+   665,
+   33,
+   22
+  ],
+  [
+   2526,
+   715,
+   45,
+   52
+  ],
+  [
+   2507,
+   840,
+   41,
+   45
+  ],
+  [
+   2472,
+   838,
+   41,
+   42
+  ],
+  [
+   2501,
+   941,
+   36,
+   36
+  ],
+  [
+   2468,
+   842,
+   38,
+   43
+  ],
+  [
+   2480,
+   905,
+   33,
+   47
+  ],
+  [
+   2433,
+   930,
+   48,
+   35
+  ],
+  [
+   2507,
+   1083,
+   49,
+   54
+  ],
+  [
+   2523,
+   1037,
+   34,
+   55
+  ],
+  [
+   2465,
+   1084,
+   50,
+   57
+  ],
+  [
+   2502,
+   1138,
+   30,
+   44
+  ],
+  [
+   2458,
+   1046,
+   39,
+   56
+  ],
+  [
+   2496,
+   1062,
+   43,
+   46
+  ],
+  [
+   2505,
+   1541,
+   47,
+   50
+  ],
+  [
+   2525,
+   1649,
+   42,
+   43
+  ],
+  [
+   2493,
+   1629,
+   34,
+   42
+  ],
+  [
+   2526,
+   1605,
+   28,
+   23
+  ],
+  [
+   2436,
+   1546,
+   46,
+   40
+  ],
+  [
+   2430,
+   1610,
+   34,
+   44
+  ],
+  [
+   2468,
+   1783,
+   36,
+   55
+  ],
+  [
+   2458,
+   1771,
+   25,
+   34
+  ],
+  [
+   2466,
+   1833,
+   39,
+   48
+  ],
+  [
+   2491,
+   1850,
+   36,
+   57
+  ],
+  [
+   2489,
+   1881,
+   30,
+   33
+  ],
+  [
+   2464,
+   1866,
+   46,
+   26
+  ],
+  [
+   2535,
+   2104,
+   23,
+   36
+  ],
+  [
+   2431,
+   2032,
+   24,
+   26
+  ],
+  [
+   2423,
+   2047,
+   36,
+   28
+  ],
+  [
+   2504,
+   2008,
+   25,
+   46
+  ],
+  [
+   2485,
+   2070,
+   38,
+   38
+  ],
+  [
+   2436,
+   1990,
+   22,
+   39
+  ],
+  [
+   2531,
+   2235,
+   45,
+   38
+  ],
+  [
+   2450,
+   2275,
+   50,
+   24
+  ],
+  [
+   2537,
+   2220,
+   34,
+   55
+  ],
+  [
+   2487,
+   2252,
+   51,
+   40
+  ],
+  [
+   2473,
+   2265,
+   41,
+   50
+  ],
+  [
+   2543,
+   2287,
+   35,
+   52
+  ],
+  [
+   2457,
+   2522,
+   37,
+   29
+  ],
+  [
+   2430,
+   2534,
+   52,
+   26
+  ],
+  [
+   2439,
+   2507,
+   37,
+   50
+  ],
+  [
+   2465,
+   2524,
+   25,
+   24
+  ],
+  [
+   2462,
+   2424,
+   52,
+   50
+  ],
+  [
+   2540,
+   2480,
+   26,
+   49
+  ],
+  [
+   2481,
+   2657,
+   27,
+   46
+  ],
+  [
+   2538,
+   2699,
+   26,
+   28
+  ],
+  [
+   2532,
+   2667,
+   37,
+   32
+  ],
+  [
+   2533,
+   2701,
+   33,
+   49
+  ],
+  [
+   2493,
+   2704,
+   34,
+   45
+  ],
+  [
+   2534,
+   2687,
+   36,
+   22
+  ],
+  [
+   2491,
+   2848,
+   40,
+   43
+  ],
+  [
+   2436,
+   2820,
+   42,
+   54
+  ],
+  [
+   2434,
+   2820,
+   44,
+   36
+  ],
+  [
+   2448,
+   2825,
+   50,
+   26
+  ],
+  [
+   2510,
+   2816,
+   46,
+   26
+  ],
+  [
+   2452,
+   2852,
+   44,
+   53
+  ],
+  [
+   2673,
+   147,
+   28,
+   51
+  ],
+  [
+   2644,
+   143,
+   26,
+   30
+  ],
+  [
+   2700,
+   104,
+   38,
+   36
+  ],
+  [
+   2712,
+   136,
+   29,
+   44
+  ],
+  [
+   2622,
+   163,
+   47,
+   52
+  ],
+  [
+   2638,
+   162,
+   30,
+   40
+  ],
+  [
+   2651,
+   327,
+   48,
+   38
+  ],
+  [
+   2660,
+   324,
+   37,
+   26
+  ],
+  [
+   2646,
+   277,
+   31,
+   45
+  ],
+  [
+   2642,
+   271,
+   38,
+   36
+  ],
+  [
+   2659,
+   308,
+   22,
+   54
+  ],
+  [
+   2691,
+   276,
+   27,
+   39
+  ],
+  [
+   2689,
+   449,
+   49,
+   44
+  ],
+  [
+   2629,
+   449,
+   27,
+   53
+  ],
+  [
+   2678,
+   553,
+   52,
+   43
+  ],
+  [
+   2625,
+   473,
+   49,
+   53
+  ],
+  [
+   2678,
+   538,
+   42,
+   49
+  ],
+  [
+   2689,
+   450,
+   39,
+   45
+  ],
+  [
+   2643,
+   731,
+   41,
+   32
+  ],
+  [
+   2655,
+   702,
+   27,
+   34
+  ],
+  [
+   2726,
+   713,
+   24,
+   40
+  ],
+  [
+   2669,
+   694,
+   36,
+   46
+  ],
+  [
+   2644,
+   721,
+   27,
+   43
+  ],
+  [
+   2698,
+   705,
+   36,
+   42
+  ],
+  [
+   2628,
+   894,
+   44,
+   44
+  ],
+  [
+   2636,
+   887,
+   39,
+   35
+  ],
+  [
+   2709,
+   836,
+   42,
+   43
+  ],
+  [
+   2627,
+   938,
+   29,
+   27
+  ],
+  [
+   2677,
+   900,
+   50,
+   42
+  ],
+  [
+   2637,
+   842,
+   52,
+   29
+  ],
+  [
+   2687,
+   1080,
+   32,
+   25
+  ],
+  [
+   2694,
+   1123,
+   35,
+   43
+  ],
+  [
+   2719,
+   1078,
+   22,
+   50
+  ],
+  [
+   2648,
+   1032,
+   40,
+   44
+  ],
+  [
+   2697,
+   1061,
+   33,
+   27
+  ],
+  [
+   2673,
+   1104,
+   38,
+   55
+  ],
+  [
+   2629,
+   1260,
+   42,
+   25
+  ],
+  [
+   2733,
+   1292,
+   23,
+   29
+  ],
+  [
+   2712,
+   1258,
+   29,
+   45
+  ],
+  [
+   2696,
+   1405,
+   48,
+   33
+  ],
+  [
+   2695,
+   1393,
+   27,
+   51
+  ],
+  [
+   2690,
+   1347,
+   35,
+   32
+  ],
+  [
+   2665,
+   1584,
+   23,
+   29
+  ],
+  [
+   2682,
+   1570,
+   24,
+   51
+  ],
+  [
+   2674,
+   1636,
+   44,
+   56
+  ],
+  [
+   2707,
+   1504,
+   35,
+   54
+  ],
+  [
+   2697,
+   1594,
+   52,
+   40
+  ],
+  [
+   2641,
+   1543,
+   49,
+   24
+  ],
+  [
+   2681,
+   1747,
+   49,
+   29
+  ],
+  [
+   2694,
+   1865,
+   22,
+   28
+  ],
+  [
+   2706,
+   1798,
+   33,
+   53
+  ],
+  [
+   2703,
+   1837,
+   29,
+   40
+  ],
+  [
+   2670,
+   1885,
+   51,
+   35
+  ],
+  [
+   2697,
+   1754,
+   49,
+   42
+  ],
+  [
+   2693,
+   1993,
+   44,
+   33
+  ],
+  [
+   2721,
+   2103,
+   32,
+   57
+  ],
+  [
+   2649,
+   2024,
+   37,
+   27
+  ],
+  [
+   2635,
+   2089,
+   40,
+   27
+  ],
+  [
+   2636,
+   2089,
+   27,
+   50
+  ],
+  [
+   2635,
+   2120,
+   37,
+   45
+  ],
+  [
+   2675,
+   2317,
+   39,
+   27
+  ],
+  [
+   2670,
+   2223,
+   34,
+   27
+  ],
+  [
+   2646,
+   2308,
+   40,
+   34
+  ],
+  [
+   2632,
+   2213,
+   41,
+   56
+  ],
+  [
+   2675,
+   2241,
+   39,
+   45
+  ],
+  [
+   2694,
+   2216,
+   27,
+   38
+  ],
+  [
+   2691,
+   2532,
+   37,
+   39
+  ],
+  [
+   2685,
+   2446,
+   38,
+   29
+  ],
+  [
+   2662,
+   2531,
+   41,
+   28
+  ],
+  [
+   2694,
+   2509,
+   28,
+   29
+  ],
+  [
+   2661,
+   2445,
+   25,
+   56
+  ],
+  [
+   2696,
+   2464,
+   47,
+   23
+  ],
+  [
+   2670,
+   2627,
+   22,
+   22
+  ],
+  [
+   2626,
+   2685,
+   25,
+   42
+  ],
+  [
+   2654,
+   2628,
+   25,
+   56
+  ],
+  [
+   2662,
+   2639,
+   34,
+   30
+  ],
+  [
+   2688,
+   2733,
+   32,
+   24
+  ],
+  [
+   2664,
+   2674,
+   22,
+   23
+  ],
+  [
+   2674,
+   2806,
+   53,
+   53
+  ],
+  [
+   2709,
+   2857,
+   46,
+   29
+  ],
+  [
+   2680,
+   2816,
+   24,
+   35
+  ],
+  [
+   2644,
+   2845,
+   51,
+   29
+  ],
+  [
+   2712,
+   2867,
+   45,
+   37
+  ],
+  [
+   2701,
+   2832,
+   30,
+   28
+  ],
+  [
+   2803,
+   132,
+   47,
+   27
+  ],
+  [
+   2847,
+   164,
+   39,
+   48
+  ],
+  [
+   2806,
+   166,
+   33,
+   41
+  ],
+  [
+   2816,
+   118,
+   40,
+   28
+  ],
+  [
+   2870,
+   180,
+   25,
+   38
+  ],
+  [
+   2833,
+   121,
+   26,
+   38
+  ],
+  [
+   2844,
+   266,
+   36,
+   36
+  ],
+  [
+   2832,
+   288,
+   46,
+   49
+  ],
+  [
+   2803,
+   337,
+   37,
+   48
+  ],
+  [
+   2840,
+   333,
+   35,
+   44
+  ],
+  [
+   2820,
+   326,
+   46,
+   42
+  ],
+  [
+   2840,
+   269,
+   25,
+   22
+  ],
+  [
+   2836,
+   547,
+   44,
+   43
+  ],
+  [
+   2833,
+   448,
+   38,
+   54
+  ],
+  [
+   2814,
+   460,
+   34,
+   26
+  ],
+  [
+   2826,
+   489,
+   35,
+   52
+  ],
+  [
+   2808,
+   453,
+   25,
+   41
+  ],
+  [
+   2864,
+   515,
+   32,
+   40
+  ],
+  [
+   2872,
+   685,
+   31,
+   30
+  ],
+  [
+   2803,
+   667,
+   36,
+   54
+  ],
+  [
+   2833,
+   723,
+   23,
+   24
+  ],
+  [
+   2874,
+   730,
+   22,
+   25
+  ],
+  [
+   2819,
+   728,
+   34,
+   32
+  ],
+  [
+   2855,
+   645,
+   41,
+   34
+  ],
+  [
+   2823,
+   907,
+   47,
+   53
+  ],
+  [
+   2816,
+   898,
+   48,
+   53
+  ],
+  [
+   2843,
+   931,
+   33,
+   34
+  ],
+  [
+   2827,
+   905,
+   33,
+   46
+  ],
+  [
+   2860,
+   866,
+   46,
+   51
+  ],
+  [
+   2882,
+   881,
+   22,
+   51
+  ],
+  [
+   2836,
+   1111,
+   39,
+   43
+  ],
+  [
+   2803,
+   1126,
+   30,
+   52
+  ],
+  [
+   2845,
+   1137,
+   40,
+   40
+  ],
+  [
+   2808,
+   1091,
+   32,
+   39
+  ],
+  [
+   2837,
+   1061,
+   46,
+   26
+  ],
+  [
+   2809,
+   1023,
+   23,
+   28
+  ],
+  [
+   2822,
+   1370,
+   43,
+   38
+  ],
+  [
+   2881,
+   1350,
+   23,
+   49
+  ],
+  [
+   2852,
+   1382,
+   23,
+   37
+  ],
+  [
+   2832,
+   1359,
+   45,
+   46
+  ],
+  [
+   2857,
+   1360,
+   27,
+   39
+  ],
+  [
+   2834,
+   1315,
+   53,
+   52
+  ],
+  [
+   2817,
+   1626,
+   42,
+   47
+  ],
+  [
+   2847,
+   1518,
+   43,
+   50
+  ],
+  [
+   2847,
+   1613,
+   46,
+   56
+  ],
+  [
+   2837,
+   1526,
+   38,
+   51
+  ],
+  [
+   2809,
+   1624,
+   47,
+   29
+  ],
+  [
+   2845,
+   1519,
+   23,
+   55
+  ],
+  [
+   2824,
+   1854,
+   31,
+   46
+  ],
+  [
+   2819,
+   1856,
+   42,
+   56
+  ],
+  [
+   2856,
+   1887,
+   41,
+   36
+  ],
+  [
+   2835,
+   1762,
+   34,
+   45
+  ],
+  [
+   2825,
+   1798,
+   48,
+   32
+  ],
+  [
+   2805,
+   1844,
+   50,
+   47
+  ],
+  [
+   2871,
+   2003,
+   26,
+   52
+  ],
+  [
+   2846,
+   2011,
+   27,
+   32
+  ],
+  [
+   2861,
+   2041,
+   33,
+   53
+  ],
+  [
+   2846,
+   1985,
+   39,
+   31
+  ],
+  [
+   2830,
+   2019,
+   33,
+   43
+  ],
+  [
+   2862,
+   2128,
+   45,
+   32
+  ],
+  [
+   2847,
+   2215,
+   47,
+   36
+  ],
+  [
+   2844,
+   2285,
+   42,
+   23
+  ],
+  [
+   2803,
+   2316,
+   41,
+   23
+  ],
+  [
+   2824,
+   2244,
+   47,
+   38
+  ],
+  [
+   2831,
+   2324,
+   50,
+   41
+  ],
+  [
+   2842,
+   2296,
+   39,
+   29
+  ],
+  [
+   2806,
+   2529,
+   36,
+   42
+  ],
+  [
+   2811,
+   2430,
+   45,
+   43
+  ],
+  [
+   2822,
+   2470,
+   42,
+   33
+  ],
+  [
+   2864,
+   2439,
+   44,
+   34
+  ],
+  [
+   2810,
+   2431,
+   45,
+   54
+  ],
+  [
+   2843,
+   2471,
+   37,
+   53
+  ],
+  [
+   2872,
+   2676,
+   29,
+   43
+  ],
+  [
+   2816,
+   2632,
+   35,
+   43
+  ],
+  [
+   2845,
+   2652,
+   27,
+   44
+  ],
+  [
+   2807,
+   2706,
+   41,
+   42
+  ],
+  [
+   2849,
+   2697,
+   37,
+   48
+  ],
+  [
+   2839,
+   2688,
+   29,
+   46
+  ],
+  [
+   2859,
+   2821,
+   40,
+   25
+  ],
+  [
+   2815,
+   2810,
+   38,
+   35
+  ],
+  [
+   2815,
+   2860,
+   50,
+   32
+  ],
+  [
+   2854,
+   2829,
+   51,
+   54
+  ],
+  [
+   2810,
+   2841,
+   48,
+   41
+  ],
+  [
+   2872,
+   2853,
+   31,
+   52
+  ]
+ ],
+ "houses_note": "Силуэты домов со схемы POGULYAY_MAP.pdf: [x, y, ширина, глубина] в метрах плана; плотность, не коллизии."
+}

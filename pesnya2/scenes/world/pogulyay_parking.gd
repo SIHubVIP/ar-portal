@@ -10,6 +10,8 @@ const EXIT_POS := Vector3(0, 0, -43)
 const KIOSK_POS := Vector3(-13, 0, -55)
 const GARAGE_POS := Vector3(6.5, 0, 13)
 const UFO_POS := Vector3(-25, 55, -70)
+## Арка в торцевом доме — выход со двора на север (ворота в PogulyayDressing._bounds).
+const EXIT_ARCH := Vector3(0, 0, -67)
 
 var player: Player
 var camera: IsoCamera
@@ -31,6 +33,8 @@ var _marker: Node3D
 var _npc_marks: Array = []
 var _objective_tick := 0.0
 var _autotest := false
+var chunks: DistrictChunks
+var _pavel: Node3D
 
 
 func _ready() -> void:
@@ -45,6 +49,8 @@ func _ready() -> void:
 	_build_locals()
 	_build_windows()
 	PogulyayDressing.build(self)
+	ParkingReference.build(self)
+	_build_pavel()
 
 	if OS.get_cmdline_user_args().has("--gender=f"):
 		GameState.gender = "f"
@@ -79,6 +85,10 @@ func _ready() -> void:
 	EventBus.quest_stage_changed.connect(func(_q, _s): _queue_save())
 	EventBus.quest_state_changed.connect(func(_q, _s): _queue_save())
 
+	chunks = DistrictChunks.new()
+	chunks.name = "District"
+	chunks.player = player
+	add_child(chunks)
 	_restore_progress()
 	var args := OS.get_cmdline_user_args()
 	if _autotest:
@@ -90,7 +100,7 @@ func _ready() -> void:
 	for arg in args:
 		if arg.begins_with("--cam="):
 			var dy := arg.trim_prefix("--cam=").split(",")
-			camera.distance = float(dy[0])
+			camera.size = float(dy[0])
 			camera.rotate_by(deg_to_rad(float(dy[1])))
 			if dy.size() > 2:
 				camera.tilt_by(deg_to_rad(float(dy[2])) - camera._pitch_target)
@@ -99,9 +109,16 @@ func _ready() -> void:
 		if arg.begins_with("--spawn="):
 			var xz := arg.trim_prefix("--spawn=").split(",")
 			player.position = Vector3(float(xz[0]), 0, float(xz[1]))
+		if arg.begins_with("--plan="):      # точка по плану района в метрах: --plan=1490,1490
+			var xy := arg.trim_prefix("--plan=").split(",")
+			player.position = District.to_world(Vector2(float(xy[0]), float(xy[1])))
+		if arg == "--free":                 # проверка этапа 1: выход со двора открыт сразу
+			PogulyayDressing.open_exit(self, true)
+	chunks.load_now()
+	hud.setup_map.call_deferred(self, camera, player)
 
 
-## Отладка и скриншоты: --open=bags|hero|abilities|quests|dlg:GLORP, --gender=f
+## Отладка и скриншоты: --open=bags|hero|abilities|quests|map|map:quarter|map:N07|dlg:GLORP, --gender=f
 func _dev_open(what: String) -> void:
 	if GameState.class_id == "":
 		GameState.class_id = "CLASS_1"
@@ -110,6 +127,13 @@ func _dev_open(what: String) -> void:
 	await get_tree().process_frame
 	if what.begins_with("dlg:"):
 		hud.run_dialogue(what.trim_prefix("dlg:"))
+	elif what.begins_with("map"):           # map, map:quarter или map:ID точки реестра
+		hud.open_map()
+		if what == "map:quarter":
+			hud.world_map._tab = "quarter"
+			hud.world_map._render()
+		elif what.begins_with("map:"):
+			hud.world_map.show_point(District.point(what.trim_prefix("map:")))
 	elif what == "quests":
 		hud.open_quests()
 	elif what.begins_with("item:"):
@@ -130,18 +154,18 @@ func _build_environment() -> void:
 	var env := Environment.new()
 	var sky := Sky.new()
 	var sm := ProceduralSkyMaterial.new()
-	# ночь после вторжения: тёмное небо, над городом зарево неона и тарелки
-	sm.sky_top_color = Color(0.03, 0.04, 0.1)
-	sm.sky_horizon_color = Color(0.32, 0.14, 0.3)
-	sm.ground_horizon_color = Color(0.2, 0.1, 0.18)
-	sm.ground_bottom_color = Color(0.03, 0.03, 0.05)
+	# поздний вечер после вторжения (ориентир парковки): тёплые окна и фонари, холодное небо
+	sm.sky_top_color = Color(0.04, 0.05, 0.1)
+	sm.sky_horizon_color = Color(0.42, 0.2, 0.16)
+	sm.ground_horizon_color = Color(0.25, 0.13, 0.1)
+	sm.ground_bottom_color = Color(0.04, 0.03, 0.03)
 	sm.sky_energy_multiplier = 0.8
 	sky.sky_material = sm
 	env.background_mode = Environment.BG_SKY
 	env.sky = sky
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	env.ambient_light_color = Color(0.36, 0.34, 0.46)
-	env.ambient_light_energy = 0.55
+	env.ambient_light_color = Color(0.46, 0.38, 0.36)
+	env.ambient_light_energy = 0.5
 	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
 	env.tonemap_exposure = 1.1
 	env.glow_enabled = true
@@ -149,7 +173,7 @@ func _build_environment() -> void:
 	env.glow_bloom = 0.03
 	env.glow_hdr_threshold = 0.9
 	env.fog_enabled = true
-	env.fog_light_color = Color(0.16, 0.12, 0.26)
+	env.fog_light_color = Color(0.2, 0.13, 0.12)
 	env.fog_density = 0.006
 	env.adjustment_enabled = true
 	env.adjustment_saturation = 1.12
@@ -159,11 +183,19 @@ func _build_environment() -> void:
 	add_child(we)
 	var moon := DirectionalLight3D.new()
 	moon.rotation_degrees = Vector3(-52, 35, 0)
-	moon.light_color = Color(0.55, 0.62, 1.0)
-	moon.light_energy = 0.45
+	moon.light_color = Color(0.6, 0.66, 0.95)
+	moon.light_energy = 0.35
 	moon.shadow_enabled = true
 	moon.directional_shadow_max_distance = 60.0
 	add_child(moon)
+	# мокрая брусчатка отражает фонари и неон: одна статичная проба на весь двор
+	var probe := ReflectionProbe.new()
+	probe.position = Vector3(0, 6, -25)
+	probe.size = Vector3(34, 14, 100)
+	probe.box_projection = true
+	probe.update_mode = ReflectionProbe.UPDATE_ONCE
+	probe.intensity = 0.9
+	add_child(probe)
 
 
 func _build_city() -> void:
@@ -179,23 +211,31 @@ func _build_city() -> void:
 		[Vector3(-19, 0, 6), Vector3(12, 15, 18), Color(0.62, 0.6, 0.56)],
 		[Vector3(-19, 0, -16), Vector3(12, 27, 20), Color(0.7, 0.66, 0.6)],
 		[Vector3(-19, 0, -38), Vector3(12, 15, 16), Color(0.58, 0.6, 0.62)],
-		[Vector3(19, 0, 2), Vector3(12, 18, 20), Color(0.66, 0.62, 0.58)],
+		# низкий кирпичный дом отступает за рынок у канала: камера с юго-востока видит канал
+		# и лотки, а не крышу (композиция ориентира)
+		[Vector3(21, 0, 2), Vector3(8, 6, 20), Color(0.66, 0.62, 0.58), true],
 		[Vector3(19, 0, -22), Vector3(12, 15, 22), Color(0.6, 0.58, 0.6)],
 		[Vector3(19, 0, -46), Vector3(12, 24, 18), Color(0.68, 0.64, 0.6)],
-		[Vector3(0, 0, -72), Vector3(48, 30, 10), Color(0.5, 0.5, 0.56)],
+		[Vector3(-14.5, 0, -72), Vector3(19, 30, 10), Color(0.5, 0.5, 0.56)],
+		[Vector3(14.5, 0, -72), Vector3(19, 30, 10), Color(0.5, 0.5, 0.56)],
 	]
 	for b in blocks:
 		var size: Vector3 = b[1]
 		var floors := roundi(size.y / 3.0)
 		var model := "panel_%d" % floors
-		if Props.exists(model) and absf(b[0].x) > 1.0:
+		if Props.exists(model) and b[0].z > -70.0:
 			# панелька из Blender: подъезды смотрят на улицу, окна и балконы уже в модели
 			var body := Props.collider(self, size, b[0] + Vector3(0, size.y / 2, 0), true)
 			Props.place(body, model, Vector3(0, -size.y / 2, 0), 0.0 if b[0].x < 0 else 180.0,
 					Vector3(size.x / 12.0, 1, size.z / 20.0))
 		else:
-			Kit.solid_box(self, size, b[0] + Vector3(0, size.y / 2, 0), b[2], 0.0, true)
+			var body := Kit.solid_box(self, size, b[0] + Vector3(0, size.y / 2, 0), b[2], 0.0, true)
 			_queue_windows(b[0], size)
+			if b.size() > 3:
+				Surfaces.brick_all(body)
+	# арка в торцевом доме: выход со двора в остальной Погуляй (над проходом — этажи дома)
+	Kit.solid_box(self, Vector3(10, 24, 10), Vector3(0, 18, -72), Color(0.5, 0.5, 0.56), 0.0, true)
+	_queue_windows(Vector3(0, 6, -72), Vector3(10, 24, 10))
 	# вывески и парадоксальная реклама (редакторские надписи вертикального среза)
 	_sign("ПОГУЛЯЙ", Vector3(0, 24, -66.9), 260, Color(1, 0.3, 0.6), 0.0)
 	_sign("ЛОМБАРД «ВЕЧНОСТЬ»", Vector3(-12.9, 5, 6), 90, Color(0.3, 1, 0.8), 90.0)
@@ -269,6 +309,7 @@ func _person(pos: Vector3, color: Color, name_tag := "") -> Node3D:
 	Kit.box(n, Vector3(0.36, 0.8, 0.22), Vector3(0, 0.4, 0), color.darkened(0.5))
 	if name_tag != "":
 		Kit.label(n, name_tag, Vector3(0, 2.4, 0), 36, Color(1, 0.95, 0.7))
+		n.set_meta("map_label", name_tag)
 	return n
 
 
@@ -500,6 +541,7 @@ func _on_choice(key: String) -> void:
 		_battery.queue_free()
 		GameState.grant("main001:choice_b:item", "Батарея с места аварии", {"items": {"ITEM_P1_ALIEN_BATTERY": 1}})
 	QuestService.turn_in(QID)
+	PogulyayDressing.open_exit(self)
 	hud.play_dialog([{"speaker": "journal", "text": "%s." % q.choices[key].result},
 			{"speaker": "journal", "text": "Поворот: %s" % q.twist}], func():
 		var next := GameData.quest("MAIN_002")
@@ -540,15 +582,37 @@ func _build_locals() -> void:
 		hud.run_dialogue("ZINA"), "enabled": func(): return true})
 
 
-# ---------- дорога в Деловой (следующая сборка) ----------
+# ---------- Павел Тарелкин у временного киоска «НЛО напрокат» ----------
+
+## ТЗ п. 5: Павел в начальной сцене стоит у прокатного киоска, пока идёт MAIN_001; потом
+## уходит в парк (N07). Одна копия: видимость решает переопределение из данных района.
+func _build_pavel() -> void:
+	_pavel = _person(ParkingReference.PAVEL_POS, Color(0.42, 0.3, 0.22), "Павел Тарелкин")
+	_pavel.name = "Pavel"
+	_pavel.rotation_degrees.y = 110.0
+	Kit.box(_pavel, Vector3(0.38, 0.5, 0.05), Vector3(0, 1.25, 0.24), Color(0.92, 0.9, 0.85))   # футболка с пришельцем
+	Kit.sphere(_pavel, 0.09, Vector3(0, 1.3, 0.27), Color(0.45, 0.85, 0.35))
+	_npc_mark(_pavel, "PAVEL")
+	_interactables.append({"pos": ParkingReference.PAVEL_POS, "radius": 2.6, "label": "Говорить",
+			"cb": func(): hud.run_dialogue("PAVEL"), "enabled": func(): return _pavel.visible})
+	EventBus.quest_state_changed.connect(func(_q, _s): _update_pavel())
+	_update_pavel()
+
+
+func _update_pavel() -> void:
+	_pavel.visible = not District.override_for("N07").is_empty()
+	if not _pavel.visible:
+		_pavel.remove_from_group("map_npc")
+
+
+# ---------- арка: выход со двора в остальной Погуляй ----------
 
 func _build_exit_to_delovoy() -> void:
-	var p := Vector3(10, 0, -60)
-	Kit.box(self, Vector3(3, 0.05, 3), p + Vector3(0, 0.03, 0), Color(0.2, 0.6, 1, 0.6), 1.0)
-	Kit.label(self, "В Деловой →", p + Vector3(0, 2.2, 0), 48, Color(0.6, 0.85, 1))
-	_interactables.append({"pos": p, "radius": 3.0, "label": "Деловой", "cb": func():
-		hud.show_toast("Деловой и MAIN_002 появятся в следующей сборке."),
-		"enabled": func(): return QuestService.state_of("MAIN_002") != QuestService.LOCKED})
+	# выход со двора — арка в торцевом доме на севере; ворота открываются после MAIN_001
+	Kit.label(self, "АРКА · ВЫХОД В ПОГУЛЯЙ", EXIT_ARCH + Vector3(0, 6.6, 1.2), 54, Color(1, 0.85, 0.5), false).outline_size = 0
+	_interactables.append({"pos": EXIT_ARCH + Vector3(0, 0, 3), "radius": 3.0, "label": "Ворота", "cb": func():
+		hud.show_toast("Ворота откроются, когда разберёшься с киоском."),
+		"enabled": func(): return QuestService.state_of(QID) != QuestService.COMPLETED})
 
 
 # ---------- MAIN_001: вступление и восстановление ----------
@@ -578,6 +642,7 @@ func _restore_progress() -> void:
 			_pickups[id].queue_free()
 			_pickups.erase(id)
 	if state == QuestService.COMPLETED:
+		PogulyayDressing.open_exit(self, true)
 		if QuestService.records[QID].choice == "A":
 			_kiosk_wreck.position += Vector3(3, 0, 2)
 		else:
@@ -631,13 +696,39 @@ func _npc_mark(npc: Node3D, dialogue_id: String) -> void:
 	tw.tween_property(m, "position:y", 3.25, 0.5).set_trans(Tween.TRANS_SINE)
 	tw.tween_property(m, "position:y", 3.0, 0.5).set_trans(Tween.TRANS_SINE)
 	_npc_marks.append([m, dialogue_id])
+	npc.add_to_group("map_npc")
+
+
+const _MAP_KIND := {"npc": "npc", "boss": "enemy", "mob": "enemy", "underground": "transport", "safe": "base"}
+
+
+## Живые точки для мини-карты и карты квартала: [{pos, kind, label}]. Плюс точки реестра района
+## в 120 м от героя — разметка этапа 1 (их персонажей и бои подключит этап 4).
+func map_points() -> Array:
+	var out: Array = []
+	for n in get_tree().get_nodes_in_group("map_npc"):
+		if n is Node3D and n.is_visible_in_tree():
+			out.append({"pos": n.global_position, "kind": "npc", "label": String(n.get_meta("map_label", ""))})
+	for d in _drones:
+		if is_instance_valid(d):
+			out.append({"pos": d.global_position, "kind": "enemy", "label": ""})
+	out.append({"pos": EXIT_ARCH, "kind": "transport", "label": "Арка"})
+	out.append({"pos": GARAGE_POS, "kind": "base", "label": "Гараж"})
+	out.append({"pos": KIOSK_POS, "kind": "shop", "label": "Киоск"})
+	var here := District.to_plan(player.global_position)
+	for p in District.points():
+		var at := District.pos(p)
+		if _MAP_KIND.has(p.type) and at.distance_to(here) < 120.0 and not District.start_area().has_point(at) \
+				and District.override_for(p.id).is_empty():
+			out.append({"pos": District.to_world(at), "kind": _MAP_KIND[p.type], "label": String(p.name)})
+	return out
 
 
 ## Текущая цель отслеживаемого задания: [позиция, подпись, прогресс]. INF — цели нет.
 func objective() -> Array:
 	var state := QuestService.state_of(QID)
 	if state == QuestService.COMPLETED:
-		return [Vector3(10, 0, -60), "В Деловой", ""]
+		return [EXIT_ARCH + Vector3(0, 0, -14), "Погуляй", "Двор пройден. Через арку — в остальной Погуляй"]
 	if state != QuestService.ACTIVE and state != QuestService.TURN_IN_READY:
 		return [Vector3.INF, "", ""]
 	if QuestService.is_on_stage(QID, "MAIN_001_S01"):
@@ -790,6 +881,16 @@ func _run_autotest() -> void:
 		await _frames(3)
 		hud.dialog.skip()
 	log.call("этап 1: %s" % QuestService.current_stage(QID).get("id", "-"))
+	# Павел Тарелкин у «НЛО напрокат» — только пока идёт MAIN_001; карта района
+	var pavel_seen := _pavel.visible
+	hud.run_dialogue("PAVEL")
+	hud.dialog.skip()
+	await _frames(2)
+	hud.open_map()
+	await _frames(2)
+	log.call("Павел у киоска: %s, поручение услышано: %s; мини-карта %s, карта открыта %s, участков %d" % [pavel_seen,
+			GameState.has_flag("offered:NPC_07_1"), hud.minimap.visible, hud.world_map.visible, chunks.loaded.size()])
+	hud.world_map.close_panel()
 	# Гл'орп по-рубински
 	hud.run_dialogue("GLORP")
 	hud.dialog.pick_tone("purple")
@@ -837,6 +938,9 @@ func _run_autotest() -> void:
 			str(GameState.flags.keys())])
 	log.call("ресурсы: бабки %d, репутация %d, уровень %d" % [GameState.babki, GameState.reputation, GameState.level])
 	log.call("MAIN_002: %s" % QuestService.state_of("MAIN_002"))
+	log.call("Павел после MAIN_001 ушёл в парк: %s" % (not _pavel.visible))
+	if not pavel_seen or _pavel.visible or not GameState.has_flag("offered:NPC_07_1"):
+		print("AUTOTEST_FAIL")
 	if QuestService.state_of(QID) != QuestService.COMPLETED:
 		print("AUTOTEST_FAIL")
 		get_tree().quit(1)
