@@ -187,7 +187,7 @@ func take_hit(damage: float) -> void:
 		damage *= 0.3
 	damage = maxf(1.0, damage - GameState.stat("armor"))
 	GameState.damage(damage)
-	Juice.shake(get_tree(), clampf(damage / 40.0, 0.12, 0.45))
+	Juice.shake(get_tree(), clampf(damage / 80.0, 0.06, 0.2))
 	play_action("Hit", 0.3)
 	if GameState.hp <= 0.0:
 		died.emit()

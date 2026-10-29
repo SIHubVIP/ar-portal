@@ -38,6 +38,8 @@ var mobs: DistrictMobs
 var street_life: StreetLife
 var _pavel: Node3D
 var _safe_tick := 0.0
+var _cine_hidden: Array = []
+var _cine_turned: Array = []
 
 const SAFE_HEAL_PER_S := 6.0
 
@@ -90,6 +92,18 @@ func _ready() -> void:
 	EventBus.quest_stage_changed.connect(func(_q, _s): _queue_save())
 	EventBus.quest_state_changed.connect(func(_q, _s): _queue_save())
 
+	hud.dialog.closed.connect(func() -> void:
+		# реплики могут идти цепочкой: камера возвращается, только если разговор правда кончился
+		await get_tree().process_frame
+		if not hud.dialog.is_open():
+			camera.end_cinematic()
+			for h in _cine_hidden:
+				if is_instance_valid(h):
+					h.visible = true
+			_cine_hidden.clear()
+			if not _cine_turned.is_empty() and is_instance_valid(_cine_turned[0]):
+				_cine_turned[0].rotation.y = _cine_turned[1]
+			_cine_turned = [])
 	chunks = DistrictChunks.new()
 	chunks.name = "District"
 	chunks.player = player
@@ -123,6 +137,18 @@ func _ready() -> void:
 		if arg.begins_with("--plan="):      # точка по плану района в метрах: --plan=1490,1490
 			var xy := arg.trim_prefix("--plan=").split(",")
 			player.position = District.to_world(Vector2(float(xy[0]), float(xy[1])))
+		if arg.begins_with("--talk="):     # скриншот кинокамеры: --talk=Зина подходит и заговаривает
+			var who := arg.trim_prefix("--talk=")
+			get_tree().create_timer(1.0).timeout.connect(func() -> void:
+				for it in _interactables:
+					if it.has("face") and (it.face.name == who or it.label == who):
+						player.global_position = it.pos
+						if (it.face.global_position * Vector3(1, 0, 1)).distance_to(it.pos) < 1.0:
+							player.global_position = it.pos + Vector3(1.2, 0, 1.4)   # шаг в сторону, как подходит игрок
+						_on_interact()
+						if OS.get_cmdline_user_args().has("--nodlg"):
+							hud.dialog.modulate.a = 0.0
+						break)
 		if arg == "--fight":                # скриншот боя: через секунду герой встаёт рядом с появившейся группой
 			get_tree().create_timer(1.2).timeout.connect(func() -> void:
 				var m := mobs.get_children().filter(func(n: Node) -> bool: return n is EnemyDrone)
@@ -324,6 +350,10 @@ func _person(pos: Vector3, color: Color, name_tag := "") -> Node3D:
 	add_child(n)
 	Kit.capsule(n, 0.3, 1.0, Vector3(0, 1.1, 0), color)
 	Kit.sphere(n, 0.22, Vector3(0, 1.8, 0), Color(0.9, 0.74, 0.6))
+	# лицо: в кинокамере разговора собеседник смотрит прямо на героя
+	for side in [-1.0, 1.0]:
+		Kit.sphere(n, 0.035, Vector3(side * 0.08, 1.85, 0.195), Color(0.08, 0.06, 0.05))
+	Kit.box(n, Vector3(0.1, 0.025, 0.02), Vector3(0, 1.72, 0.205), Color(0.45, 0.15, 0.15))
 	Kit.box(n, Vector3(0.36, 0.8, 0.22), Vector3(0, 0.4, 0), color.darkened(0.5))
 	if name_tag != "":
 		Kit.label(n, name_tag, Vector3(0, 2.4, 0), 36, Color(1, 0.95, 0.7))
@@ -418,7 +448,7 @@ func _build_queue() -> void:
 		tw.tween_property(p, "rotation_degrees:z", -3.0, 1.2 + i * 0.1)
 	var passer := _person(Vector3(-2, 0, 10), Color(0.6, 0.5, 0.35), "Прохожий")
 	_npc_mark(passer, "PASSER")
-	_interactables.append({"pos": passer.position, "radius": 2.5, "label": "Говорить", "cb": func():
+	_interactables.append({"pos": passer.position, "radius": 2.5, "label": "Говорить", "face": passer, "cb": func():
 		hud.run_dialogue("PASSER"), "enabled": func(): return true})
 
 
@@ -585,10 +615,10 @@ func _build_locals() -> void:
 	var shake := glorp.create_tween().set_loops()
 	shake.tween_property(glorp, "rotation_degrees:z", 4.0, 0.15)
 	shake.tween_property(glorp, "rotation_degrees:z", -4.0, 0.15)
-	_interactables.append({"pos": glorp.position, "radius": 2.5, "label": "Говорить", "cb": func():
+	_interactables.append({"pos": glorp.position, "radius": 2.5, "label": "Говорить", "face": glorp, "cb": func():
 		hud.run_dialogue("GLORP"), "enabled": func(): return true})
 	# тётя Зина: балкон второго этажа над ломбардом
-	var balcony := Vector3(-12.6, 3.2, 1.5)
+	var balcony := Vector3(-11.8, 3.2, 1.5)   # выступает перед балконами панельки, иначе её не видно снизу
 	Kit.solid_box(self, Vector3(1.4, 0.15, 3), balcony, Color(0.55, 0.52, 0.5))
 	Kit.box(self, Vector3(0.08, 1.0, 3), balcony + Vector3(0.7, 0.55, 0), Color(0.4, 0.3, 0.3))
 	var zina := _person(balcony + Vector3(0, 0.08, 0), Color(0.7, 0.2, 0.3), "Тётя Зина")
@@ -596,7 +626,7 @@ func _build_locals() -> void:
 	_npc_mark(zina, "ZINA")
 	for i in 5:
 		Kit.sphere(zina, 0.06, Vector3(-0.2 + i * 0.1, 2.0, 0), Color(0.95, 0.4, 0.6))
-	_interactables.append({"pos": Vector3(-9.5, 0, 1.5), "radius": 3.0, "label": "Зина", "cb": func():
+	_interactables.append({"pos": Vector3(-8.2, 0, 1.5), "radius": 3.5, "label": "Зина", "face": zina, "cb": func():
 		hud.run_dialogue("ZINA"), "enabled": func(): return true})
 
 
@@ -611,7 +641,7 @@ func _build_pavel() -> void:
 	Kit.box(_pavel, Vector3(0.38, 0.5, 0.05), Vector3(0, 1.25, 0.24), Color(0.92, 0.9, 0.85))   # футболка с пришельцем
 	Kit.sphere(_pavel, 0.09, Vector3(0, 1.3, 0.27), Color(0.45, 0.85, 0.35))
 	_npc_mark(_pavel, "PAVEL")
-	_interactables.append({"pos": ParkingReference.PAVEL_POS, "radius": 2.6, "label": "Говорить",
+	_interactables.append({"pos": ParkingReference.PAVEL_POS, "radius": 2.6, "label": "Говорить", "face": _pavel,
 			"cb": func(): hud.run_dialogue("PAVEL"), "enabled": func(): return _pavel.visible})
 	EventBus.quest_state_changed.connect(func(_q, _s): _update_pavel())
 	_update_pavel()
@@ -843,6 +873,23 @@ func _on_interact() -> void:
 			best = it
 	if not best.is_empty():
 		best.cb.call()
+		# с собеседником — кинокамера: переезд к герою, взгляд на лицо говорящего
+		if best.has("face") and hud.dialog.is_open():
+			var who: Node3D = best.face
+			camera.cinematic(who.global_position + who.global_transform.basis.y * 1.8)
+			# крупным планом подписи и «!» над головой только мешают
+			for l in who.find_children("*", "Label3D", true, false):
+				if l.visible:
+					_cine_hidden.append(l)
+					l.visible = false
+			# собеседник поворачивается к герою (перед у фигур — +Z)
+			var to_hero := (player.global_position - who.global_position) * Vector3(1, 0, 1)
+			if to_hero.length() > 0.3 and who.global_position.y < 1.0:
+				_cine_turned = [who, who.rotation.y]
+				who.rotation.y = atan2(to_hero.x, to_hero.z)
+			# почти от первого лица: свою голову герой не видит
+			_cine_hidden.append(player)
+			player.visible = false
 
 
 func _on_player_died() -> void:
@@ -1013,6 +1060,26 @@ func _run_autotest() -> void:
 		print("AUTOTEST_FAIL")
 	player.global_position = back
 	await _frames(20)
+	# 0.8: кинокамера разговора и возврат в изометрию
+	for it in _interactables:
+		if it.has("face") and it.label == "Зина":
+			player.global_position = it.pos
+	await _frames(5)
+	_on_interact()
+	await _frames(70)
+	var cine_ok := camera.projection == Camera3D.PROJECTION_PERSPECTIVE and not player.visible
+	for i in 30:
+		if not hud.dialog.is_open():
+			break
+		if not hud.dialog.pick_tone():
+			hud.dialog.skip()
+		await _frames(3)
+	await _frames(80)
+	var back_ok := camera.projection == Camera3D.PROJECTION_ORTHOGONAL and player.visible \
+			and is_equal_approx(camera.size, IsoCamera.DEFAULT_SIZE)
+	log.call("кинокамера у Зины: %s, вернулась в изометрию: %s" % [cine_ok, back_ok])
+	if not cine_ok or not back_ok:
+		print("AUTOTEST_FAIL")
 	if QuestService.state_of(QID) != QuestService.COMPLETED:
 		print("AUTOTEST_FAIL")
 		get_tree().quit(1)

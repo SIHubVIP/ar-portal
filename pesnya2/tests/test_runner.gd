@@ -549,6 +549,22 @@ func test_no_mob_spawn_in_safe_zones() -> void:
 	check(ok, "ни одна точка спавна не стоит в безопасной зоне")
 
 
+func test_camera_fade_works_without_vulkan_and_restores() -> void:
+	var cam := IsoCamera.new()
+	var body := Kit.solid_box(self, Vector3(2, 2, 2), Vector3.ZERO, Color(0.5, 0.5, 0.5), 0.0, true)
+	var mi: MeshInstance3D = body.find_children("*", "MeshInstance3D", true, false)[0]
+	var orig := mi.material_override
+	cam._set_alpha(body, 0.25)
+	var faded := mi.material_override as BaseMaterial3D
+	check(faded != orig and faded.transparency == BaseMaterial3D.TRANSPARENCY_ALPHA and is_equal_approx(faded.albedo_color.a, 0.25),
+			"дом тает подменой материала (работает и в OpenGL)")
+	cam._set_alpha(body, 1.0)
+	check(mi.material_override == orig and not mi.has_meta("fade_orig"), "после ухода героя материал дома прежний")
+	check(IsoCamera.DEFAULT_SIZE == 12.0, "кадр камеры 12 м")
+	body.queue_free()
+	cam.free()
+
+
 func test_pavel_single_copy_by_quest_state() -> void:
 	var c := "MAIN_001_started_and_not_completed"
 	check(not District.condition_met(c, QuestService.AVAILABLE), "до MAIN_001 Павла у киоска нет")

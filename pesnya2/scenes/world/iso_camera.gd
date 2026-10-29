@@ -1,15 +1,17 @@
 class_name IsoCamera
 extends Camera3D
 ## Изометрическая камера по ТЗ «Погуляй» п. 7: ортографическая проекция, 45° по сторонам,
-## наклон 55°. Кадр 18 м (ТЗ — 24 м; владелец попросил ближе, D-033). Зум меняет размер кадра. По дополнению владельца к ТЗ
+## наклон 55°. Кадр 12 м (ТЗ — 24 м; владелец дважды просил ближе, D-033, D-043). Зум меняет размер кадра. По дополнению владельца к ТЗ
 ## камеру можно крутить вокруг героя и наклонять вверх-вниз (свайп по свободной части экрана
 ## или кнопки ⟲ ⟳); ТЗ запрещало вращение, решение D-029. Здания между камерой и героем
 ## становятся полупрозрачными. Ввод стика всегда относительно камеры.
 
 const PITCH_MIN := deg_to_rad(28.0)
 const PITCH_MAX := deg_to_rad(80.0)
-const ZOOM_MIN := 12.0
+const ZOOM_MIN := 8.0
 const ZOOM_MAX := 40.0
+## Кадр по умолчанию: 12 м (D-043, владелец: «камера слишком далеко», было 18).
+const DEFAULT_SIZE := 12.0
 ## Камера стоит на этом расстоянии от героя: в ортографике оно не меняет масштаб,
 ## только то, что попадает между камерой и героем.
 const ARM := 60.0
@@ -21,12 +23,35 @@ var _pitch_target := deg_to_rad(55.0)
 var _yaw_target := deg_to_rad(45.0)
 var _faded: Array = []
 var _shake := 0.0
+var _tube := BoxShape3D.new()
+# кинокамера разговора: 0 — изометрия, 1 — почти от лица героя
+var _cine := 0.0
+var _cine_dir := 0
+var _cine_eye := Vector3.ZERO
+var _cine_look := Vector3.ZERO
+var _iso_size := DEFAULT_SIZE
+
+## Ширина и высота «прозрачного коридора» от камеры к герою, метры: всё, что в нём, тает.
+const SEE_THROUGH := Vector2(9.0, 7.0)
+const CINE_TIME := 0.9
+const CINE_FOV := 50.0
+const CINE_MIN_DIST := 1.8
+## Свет «как в кино»: тёплая лампа у камеры подсвечивает лицо собеседника ночью.
+var _key_light: OmniLight3D
 
 
 func _ready() -> void:
 	add_to_group("iso_camera")
+	# разговор ставит дерево на паузу, а кинокамера должна доехать
+	process_mode = Node.PROCESS_MODE_ALWAYS
+	_key_light = OmniLight3D.new()
+	_key_light.light_color = Color(1.0, 0.86, 0.7)
+	_key_light.light_energy = 0.0
+	_key_light.omni_range = 9.0
+	_key_light.visible = false
+	add_child(_key_light)
 	projection = PROJECTION_ORTHOGONAL
-	size = 18.0
+	size = DEFAULT_SIZE
 	near = 1.0
 	far = 400.0
 	if target:
@@ -37,6 +62,65 @@ func _ready() -> void:
 ## Тряска при ударе: смещение кадра гаснет за ~0,3 с.
 func shake(amount: float) -> void:
 	_shake = maxf(_shake, amount)
+
+
+## Кинокамера разговора (D-044): из изометрии камера переезжает к голове героя и смотрит
+## на собеседника почти от первого лица. Если он на балконе — смотрим вверх.
+func cinematic(npc_head: Vector3) -> void:
+	if target == null:
+		return
+	var head := target.global_position + Vector3(0, 1.65, 0)
+	var flat := (npc_head - head) * Vector3(1, 0, 1)
+	var d := flat.normalized() if flat.length() > 0.1 else Vector3.FORWARD
+	var right := d.cross(Vector3.UP).normalized()
+	# глаза героя (его модель на время разговора скрыта), но не ближе CINE_MIN_DIST к собеседнику
+	# собеседник выше (балкон): шаг назад, чтобы перила не закрыли лицо
+	var back := maxf(maxf(flat.length() + 0.15, CINE_MIN_DIST), (npc_head.y - head.y) * 1.5)
+	var stand := npc_head * Vector3(1, 0, 1) - d * back
+	_cine_eye = Vector3(stand.x, head.y, stand.z) + right * 0.12
+	# точка взгляда ниже головы: лицо встаёт в верхнюю треть, низ кадра занимает реплика
+	_cine_look = npc_head - Vector3(0, 0.35, 0)
+	if _cine_dir == 0 and _cine <= 0.0:
+		_iso_size = size
+	_cine_dir = 1
+
+
+func end_cinematic() -> void:
+	if _cine > 0.0 or _cine_dir > 0:
+		_cine_dir = -1
+
+
+func in_cinematic() -> bool:
+	return _cine > 0.0 or _cine_dir != 0
+
+
+func _update_cinematic(delta: float) -> void:
+	_cine = clampf(_cine + _cine_dir * delta / CINE_TIME, 0.0, 1.0)
+	var iso_pos := _desired()
+	var iso_look := target.global_position + Vector3(0, 1, 0)
+	if _cine <= 0.0 and _cine_dir < 0:
+		_cine_dir = 0
+		projection = PROJECTION_ORTHOGONAL
+		size = _iso_size
+		near = 1.0
+		_key_light.visible = false
+		global_position = iso_pos
+		look_at(iso_look, Vector3.UP)
+		return
+	if _cine >= 1.0 and _cine_dir > 0:
+		_cine_dir = 0
+	var e := smoothstep(0.0, 1.0, _cine)
+	# из ортографики в перспективу без скачка: начальный угол обзора даёт тот же кадр
+	var fov0 := rad_to_deg(2.0 * atan(_iso_size / 2.0 / ARM))
+	projection = PROJECTION_PERSPECTIVE
+	near = 0.05
+	fov = lerpf(fov0, CINE_FOV, e)
+	_key_light.visible = e > 0.3
+	_key_light.light_energy = 2.2 * e
+	global_position = iso_pos.lerp(_cine_eye, 1.0 - pow(1.0 - e, 2.0))
+	look_at(iso_look.lerp(_cine_look, e), Vector3.UP)
+	h_offset = 0.0
+	v_offset = 0.0
 
 
 func zoom_by(amount: float) -> void:
@@ -78,6 +162,11 @@ func _desired() -> Vector3:
 func _physics_process(delta: float) -> void:
 	if target == null:
 		return
+	if in_cinematic():
+		_update_cinematic(delta)
+		return
+	if get_tree().paused:
+		return
 	yaw = lerp_angle(yaw, _yaw_target, clampf(12.0 * delta, 0.0, 1.0))
 	pitch = lerpf(pitch, _pitch_target, clampf(12.0 * delta, 0.0, 1.0))
 	if "camera_yaw" in target:
@@ -100,16 +189,19 @@ func _update_occluders() -> void:
 	var hits: Array = []
 	var from := global_position
 	var to := target.global_position + Vector3(0, 1, 0)
-	var exclude: Array[RID] = []
-	for i in 4:
-		var q := PhysicsRayQueryParameters3D.create(from, to, 1, exclude)
-		var r := space.intersect_ray(q)
-		if r.is_empty():
-			break
-		var c: Object = r.collider
-		if c is Node and c.is_in_group("occluders"):
-			hits.append(c)
-		exclude.append(r.rid)
+	# не один луч, а коридор SEE_THROUGH: тает всё, что закрывает героя и то, что рядом с ним
+	var dir := to - from
+	var length := dir.length() - 2.0
+	if length > 1.0:
+		_tube.size = Vector3(SEE_THROUGH.x, SEE_THROUGH.y, length)
+		var q := PhysicsShapeQueryParameters3D.new()
+		q.shape = _tube
+		q.collision_mask = 1
+		q.transform = Transform3D(Basis.looking_at(dir, Vector3.UP), from + dir.normalized() * length / 2.0)
+		for r in space.intersect_shape(q, 48):
+			var c: Object = r.collider
+			if c is Node and c.is_in_group("occluders") and not hits.has(c):
+				hits.append(c)
 	for c in _faded:
 		if is_instance_valid(c) and not hits.has(c):
 			_set_alpha(c, 1.0)
@@ -118,6 +210,48 @@ func _update_occluders() -> void:
 	_faded = hits
 
 
+## Прозрачность здания. GeometryInstance3D.transparency работает только в Forward+ и Mobile,
+## поэтому стандартные материалы подменяются полупрозрачными копиями: так дом тает и в
+## режиме совместимости (OpenGL), на который телефон переходит без Vulkan.
 func _set_alpha(body: Node, alpha: float) -> void:
-	for mi in body.find_children("*", "GeometryInstance3D", true, false):
+	for gi in body.find_children("*", "GeometryInstance3D", true, false):
+		if not gi is MeshInstance3D:
+			gi.transparency = 1.0 - alpha
+			continue
+		var mi := gi as MeshInstance3D
+		if alpha >= 1.0:
+			if mi.has_meta("fade_orig"):
+				var orig: Array = mi.get_meta("fade_orig")
+				mi.material_override = orig[0]
+				for k in mi.get_surface_override_material_count():
+					mi.set_surface_override_material(k, orig[1][k] if k < orig[1].size() else null)
+				mi.remove_meta("fade_orig")
+			mi.transparency = 0.0
+			continue
+		if mi.has_meta("fade_orig") or mi.mesh == null:
+			continue
+		var surf: Array = []
+		for k in mi.get_surface_override_material_count():
+			surf.append(mi.get_surface_override_material(k))
+		mi.set_meta("fade_orig", [mi.material_override, surf])
 		mi.transparency = 1.0 - alpha
+		if mi.material_override:
+			mi.material_override = _faded_mat(mi.material_override, alpha)
+		else:
+			for k in mi.get_surface_override_material_count():
+				mi.set_surface_override_material(k, _faded_mat(mi.get_active_material(k), alpha))
+
+
+static var _fade_cache: Dictionary = {}
+
+
+static func _faded_mat(m: Material, alpha: float) -> Material:
+	if not m is BaseMaterial3D:
+		return m          # шейдерные дома района тают через transparency
+	if not _fade_cache.has(m):
+		var d := (m as BaseMaterial3D).duplicate() as BaseMaterial3D
+		d.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		d.albedo_color.a = alpha
+		d.cull_mode = BaseMaterial3D.CULL_BACK
+		_fade_cache[m] = d
+	return _fade_cache[m]

@@ -112,7 +112,7 @@ func take_hit(damage: float, from: Vector3) -> void:
 		return
 	hp -= damage
 	AbilityFx.damage_number(get_parent(), global_position + Vector3(0, 2.0, 0), damage, damage >= 30.0)
-	AbilityFx.sparks(get_parent(), global_position + Vector3(0, 1.2, 0), Color(0.6, 1, 0.9))
+	AbilityFx.sparks(get_parent(), global_position + Vector3(0, 1.2, 0), Color(0.6, 1, 0.9), 4)
 	var push := (global_position - from) * Vector3(1, 0, 1)
 	if push.length() > 0.01:
 		_knock = push.normalized() * (7.0 if damage >= 30.0 else 4.5)
@@ -121,11 +121,10 @@ func take_hit(damage: float, from: Vector3) -> void:
 	create_tween().tween_property(_body, "scale", Vector3.ONE, 0.15)
 	_update_bar()
 	if hp <= 0.0:
-		Juice.hit_stop(get_tree(), 0.07)
-		Juice.shake(get_tree(), 0.25)
+		Juice.shake(get_tree(), 0.08)
 		_die()
 	elif damage >= 30.0:
-		Juice.shake(get_tree(), 0.15)
+		Juice.shake(get_tree(), 0.08)
 
 
 func _die() -> void:
@@ -133,7 +132,6 @@ func _die() -> void:
 	remove_from_group("enemies")
 	remove_from_group(_group)
 	defeated.emit(self)
-	AbilityFx.burst(get_parent(), global_position + Vector3(0, _base_y, 0), MobTypes.profile(mob_type).get("color", Color(0.6, 1, 0.9)))
 	var tw := create_tween()
 	tw.tween_property(_body, "position:y", 0.2, 0.3)
 	tw.parallel().tween_property(_body, "scale", Vector3(1.4, 0.2, 1.4), 0.3)
