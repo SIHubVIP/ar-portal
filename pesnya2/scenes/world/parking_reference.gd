@@ -69,13 +69,12 @@ static func _ufo_kiosk(w: Node3D) -> void:
 	var neon := _sign(w, "НЛО\nнапрокат", _at(UFO_KIOSK_POS, Vector3(0, 3.15, 1.5), yaw), yaw, 64, NEON_PINK)
 	neon.modulate = Color(1.6, 0.8, 1.6)
 	PogulyayDressing._blink(neon)
-	for p in [Vector3(0, 2.2, 2.2), Vector3(0, 4.0, 0.3)]:
-		var l := OmniLight3D.new()
-		l.position = _at(UFO_KIOSK_POS, p, yaw)
-		l.light_color = NEON_PINK if p.y > 3.0 else NEON_WARM
-		l.light_energy = 2.2
-		l.omni_range = 7.0
-		w.add_child(l)
+	var l := OmniLight3D.new()
+	l.position = _at(UFO_KIOSK_POS, Vector3(0, 3.0, 2.0), yaw)
+	l.light_color = Color(1.0, 0.5, 0.8)
+	l.light_energy = 2.6
+	l.omni_range = 7.0
+	w.add_child(l)
 
 
 static func _taxi_stop(w: Node3D) -> void:
@@ -151,12 +150,12 @@ static func _market(w: Node3D) -> void:
 	for st: Vector3 in STALLS:
 		Props.collider(w, Vector3(3.0, 1.2, 1.4), st + Vector3(0, 0.6, 0))
 		Props.place(w, "market_stall", st, 0.0)
-		var l := OmniLight3D.new()
-		l.position = st + Vector3(0, 2.3, 1.0)
-		l.light_color = NEON_WARM
-		l.light_energy = 1.8
-		l.omni_range = 6.0
-		w.add_child(l)
+	var l := OmniLight3D.new()          # один свет на оба лотка
+	l.position = (STALLS[0] + STALLS[1]) / 2.0 + Vector3(0, 2.6, 1.0)
+	l.light_color = NEON_WARM
+	l.light_energy = 2.0
+	l.omni_range = 8.0
+	w.add_child(l)
 	for c in [Vector3(16.0, 0, -0.8), Vector3(13.6, 0, 7.5), Vector3(16.1, 0, -9.0)]:
 		Props.place(w, "beer_crate" if c.z > 0 else "boxes", c, randf_range(-30, 30))
 	var board := Vector3(9.3, 0, -14.6)
@@ -211,13 +210,6 @@ static func _string_lights(w: Node3D) -> void:
 		for i in 33:
 			var t := i / 32.0
 			points.append(a.lerp(b, t) - Vector3(0, 1.4 * 4.0 * t * (1.0 - t), 0))
-		var mid := a.lerp(b, 0.5) - Vector3(0, 1.6, 0)
-		var l := OmniLight3D.new()
-		l.position = mid
-		l.light_color = NEON_WARM
-		l.light_energy = 1.2
-		l.omni_range = 9.0
-		w.add_child(l)
 	var sphere := SphereMesh.new()
 	sphere.radius = 0.08
 	sphere.height = 0.16

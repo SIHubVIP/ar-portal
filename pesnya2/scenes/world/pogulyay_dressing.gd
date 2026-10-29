@@ -65,11 +65,12 @@ static func _ground(w: Node3D) -> void:
 
 static func _lamps(w: Node3D) -> void:
 	for z in range(0, -62, -12):
-		_lamp(w, Vector3(LAMPS_LEFT_X, 0, z), 90.0)
-		_lamp(w, Vector3(LAMPS_RIGHT_X, 0, z - 6), -90.0)
+		_lamp(w, Vector3(LAMPS_LEFT_X, 0, z), 90.0, true)
+		_lamp(w, Vector3(LAMPS_RIGHT_X, 0, z - 6), -90.0, false)
 
 
-static func _lamp(w: Node3D, pos: Vector3, yaw: float) -> void:
+## Мошкара у фонарей — только на левой стороне: каждая система частиц — отдельный проход на телефоне.
+static func _lamp(w: Node3D, pos: Vector3, yaw: float, bugs: bool) -> void:
 	Props.collider(w, Vector3(0.3, 3, 0.3), pos + Vector3(0, 1.5, 0))
 	Props.place(w, "streetlamp", pos, yaw)
 	# голова фонаря в модели: 1.55 м вперёд по «лицу» и 5.7 м вверх
@@ -81,8 +82,9 @@ static func _lamp(w: Node3D, pos: Vector3, yaw: float) -> void:
 	light.omni_range = 12.0
 	light.omni_attenuation = 1.8
 	w.add_child(light)
-	particles(w, head - Vector3(0, 0.6, 0), Color(1, 0.85, 0.5, 0.8), 10, 4.0, Vector3(0, 0.15, 0), 0.4, 0.05,
-			Vector3(1.0, 0.8, 1.0))
+	if bugs:
+		particles(w, head - Vector3(0, 0.6, 0), Color(1, 0.85, 0.5, 0.8), 10, 4.0, Vector3(0, 0.15, 0), 0.4, 0.05,
+				Vector3(1.0, 0.8, 1.0))
 
 
 static func _neon(w: Node3D) -> void:
@@ -112,7 +114,7 @@ static func _blink(n: Node3D) -> void:
 
 ## Прожекторы тарелки шарят по улице: напоминание, что за тобой следят.
 static func _ufo_searchlights(w: Node3D) -> void:
-	for i in 2:
+	for i in 1:                     # один прожектор: на телефоне каждый луч освещает весь двор
 		var pivot := Node3D.new()
 		pivot.position = Vector3(-10 + i * 20, 45, -40)
 		w.add_child(pivot)

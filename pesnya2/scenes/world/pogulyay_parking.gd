@@ -186,7 +186,9 @@ func _build_environment() -> void:
 	moon.light_color = Color(0.6, 0.66, 0.95)
 	moon.light_energy = 0.35
 	moon.shadow_enabled = true
-	moon.directional_shadow_max_distance = 60.0
+	# ортографическая камера видит пятно ~40 м: одного каскада теней хватает (на телефоне каскады — 4 прохода)
+	moon.directional_shadow_mode = DirectionalLight3D.SHADOW_ORTHOGONAL
+	moon.directional_shadow_max_distance = 45.0
 	add_child(moon)
 	# мокрая брусчатка отражает фонари и неон: одна статичная проба на весь двор
 	var probe := ReflectionProbe.new()
@@ -666,6 +668,8 @@ func _build_marker() -> void:
 	var torus := TorusMesh.new()
 	torus.inner_radius = 1.15
 	torus.outer_radius = 1.3
+	torus.rings = 32
+	torus.ring_segments = 6
 	ring.mesh = torus
 	ring.position.y = 0.05
 	ring.scale.y = 0.15

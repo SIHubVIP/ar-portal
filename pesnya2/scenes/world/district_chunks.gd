@@ -194,6 +194,8 @@ func _point_marker(root: Node3D, p: Dictionary) -> void:
 			var radius := float(p.get("radius_m", 45))
 			torus.inner_radius = radius - 0.4
 			torus.outer_radius = radius
+			torus.rings = 48
+			torus.ring_segments = 4
 			ring.mesh = torus
 			ring.scale.y = 0.1
 			ring.position.y = 0.05

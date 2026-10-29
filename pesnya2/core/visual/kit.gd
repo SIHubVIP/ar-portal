@@ -35,6 +35,9 @@ static func cylinder(parent: Node, radius: float, height: float, pos: Vector3, c
 	mesh.bottom_radius = radius
 	mesh.top_radius = radius if top_radius < 0.0 else top_radius
 	mesh.height = height
+	# по умолчанию 64 грани — для мобильного кадра это тысячи треугольников на каждый столбик
+	mesh.radial_segments = 24 if maxf(radius, mesh.top_radius) > 3.0 else 12
+	mesh.rings = 1
 	return _add(parent, mesh, pos, color, emission)
 
 
@@ -42,6 +45,8 @@ static func sphere(parent: Node, radius: float, pos: Vector3, color: Color, emis
 	var mesh := SphereMesh.new()
 	mesh.radius = radius
 	mesh.height = radius * 2.0
+	mesh.radial_segments = 24 if radius > 3.0 else 12
+	mesh.rings = 12 if radius > 3.0 else 6
 	return _add(parent, mesh, pos, color, emission)
 
 
@@ -49,6 +54,8 @@ static func capsule(parent: Node, radius: float, height: float, pos: Vector3, co
 	var mesh := CapsuleMesh.new()
 	mesh.radius = radius
 	mesh.height = height
+	mesh.radial_segments = 12
+	mesh.rings = 2
 	return _add(parent, mesh, pos, color, 0.0)
 
 
@@ -91,6 +98,10 @@ static func _add(parent: Node, mesh: Mesh, pos: Vector3, color: Color, emission:
 	mi.mesh = mesh
 	mi.material_override = mat(color, emission)
 	mi.position = pos
+	# мелочь и светящееся тень не отбрасывают: на телефоне каждая тень — ещё один проход
+	var extent := mesh.get_aabb().size
+	if emission > 0.0 or maxf(extent.x, maxf(extent.y, extent.z)) < 1.2:
+		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	parent.add_child(mi)
 	return mi
 

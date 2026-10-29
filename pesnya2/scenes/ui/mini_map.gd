@@ -56,7 +56,7 @@ func _gui_input(event: InputEvent) -> void:
 
 func _process(delta: float) -> void:
 	_tick += delta
-	if _tick < 0.05 or player == null or not is_instance_valid(player):
+	if _tick < 0.1 or player == null or not is_instance_valid(player):
 		return
 	_tick = 0.0
 	_canvas.origin = Vector2(player.global_position.x, player.global_position.z)

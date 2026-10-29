@@ -487,3 +487,44 @@ func test_parking_reference_assets_exist() -> void:
 		for k in ["albedo", "normal", "rough"]:
 			ok = ok and ResourceLoader.exists("res://assets/textures/%s_%s.png" % [t, k])
 	check(ok, "текстуры брусчатки и кирпича на месте")
+
+
+# ---------- инвентарь: перенос из клетки в клетку ----------
+
+func test_inventory_move_between_cells() -> void:
+	GameState.add_item("ITEM_P2_BEER", 3)
+	GameState.add_item("ITEM_P1_SCRAP", 2)
+	var cells := GameState.bag_cells("backpack")
+	check(cells.size() == GameState.BACKPACK_SLOTS and cells[0] == "ITEM_P2_BEER", "новые вещи — в первые клетки")
+	check(GameState.move_item("backpack", "ITEM_P2_BEER", "backpack", 10) == "", "пиво в клетку 10")
+	cells = GameState.bag_cells("backpack")
+	check(cells[10] == "ITEM_P2_BEER" and cells[0] == "", "клетка запомнилась, старая освободилась")
+	GameState.move_item("backpack", "ITEM_P1_SCRAP", "backpack", 10)
+	cells = GameState.bag_cells("backpack")
+	check(cells[10] == "ITEM_P1_SCRAP" and cells[1] == "ITEM_P2_BEER", "на занятую клетку — меняются местами")
+	check(GameState.move_item("backpack", "ITEM_P2_BEER", "pockets", 2) == "", "пиво в карман")
+	check(int(GameState.pockets.get("ITEM_P2_BEER", 0)) == 3 and not GameState.backpack.has("ITEM_P2_BEER")
+			and GameState.bag_cells("pockets")[2] == "ITEM_P2_BEER", "вся стопка переехала в карман")
+	GameState.add_item("ITEM_P1_PHONE")
+	check(GameState.move_item("pockets", "ITEM_P1_PHONE", "storage", 0) != "", "квестовое в сундук не кладётся")
+	check(GameState.move_item("pockets", "ITEM_P2_BEER", "storage", 5) == "" and GameState.bag_cells("storage")[5] == "ITEM_P2_BEER",
+			"в сундук — в выбранную клетку")
+	var saved := JSON.stringify(GameState.to_dict())
+	GameState.reset("CLASS_1")
+	GameState.from_dict(JSON.parse_string(saved))
+	check(GameState.bag_cells("backpack")[10] == "ITEM_P1_SCRAP" and GameState.bag_cells("storage")[5] == "ITEM_P2_BEER",
+			"раскладка сохраняется")
+
+
+func test_inventory_drag_to_doll_and_back() -> void:
+	GameState.give_starter_kit()
+	var panel := InventoryPanel.new()
+	add_child(panel)
+	var cap: String = GameState.equipment.get("head", "")
+	panel.drop({"id": cap, "from": "equip", "slot": "head"}, {"id": "", "from": "backpack", "index": 7})
+	check(not GameState.equipment.has("head") and GameState.bag_cells("backpack")[7] == cap, "кепка снята прямо в клетку 7")
+	panel.drop({"id": cap, "from": "backpack", "index": 7}, {"id": "", "from": "equip", "slot": "weapon"})
+	check(not GameState.equipment.has("head"), "кепку не надеть в слот оружия")
+	panel.drop({"id": cap, "from": "backpack", "index": 7}, {"id": "", "from": "equip", "slot": "head"})
+	check(GameState.equipment.get("head", "") == cap, "перетащил на голову — надета")
+	panel.queue_free()

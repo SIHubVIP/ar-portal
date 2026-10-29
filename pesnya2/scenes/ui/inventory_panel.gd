@@ -220,11 +220,12 @@ func _bag_grid(parent: Node, bag: Dictionary, slots: int, from: String, columns:
 	return grid
 
 
-func _fill(grid: GridContainer, bag: Dictionary, slots: int, from: String) -> void:
-	var ids := bag.keys()
-	for i in maxi(slots, ids.size()):
-		var id: String = ids[i] if i < ids.size() else ""
-		_cell(grid, id, int(bag.get(id, 0)), {"id": id, "from": from}, "карман" if from == "pockets" else "")
+## Клетки по раскладке GameState: вещь лежит там, куда её положил игрок.
+func _fill(grid: GridContainer, bag: Dictionary, _slots: int, from: String) -> void:
+	var cells := GameState.bag_cells(from)
+	for i in cells.size():
+		var id: String = cells[i]
+		_cell(grid, id, int(bag.get(id, 0)), {"id": id, "from": from, "index": i}, "карман" if from == "pockets" else "")
 
 
 ## Клетка с иконкой: рамка цвета редкости, количество в углу, выбранная — золотая.
@@ -249,9 +250,17 @@ func _cell(parent: Node, id: String, count: int, sel: Dictionary, hint := "") ->
 			sb.shadow_size = 4
 		b.add_theme_stylebox_override(st, sb)
 	parent.add_child(b)
+	b.pressed.connect(func():
+		if not _sel.is_empty() and _sel.get("id", "") != "" and not picked and (id == "" or sel.from == "equip"):
+			drop(_sel, sel)
+			return
+		_sel = {} if picked else sel
+		_render())
+	_droppable(b, sel)
 	if id == "":
 		if hint != "":
 			var l := _lbl(b, hint, 13, Color(0.4, 0.37, 0.33))
+			l.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			l.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 			l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 			l.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
@@ -282,10 +291,53 @@ func _cell(parent: Node, id: String, count: int, sel: Dictionary, hint := "") ->
 	for n in b.get_children():
 		if n is Control:
 			n.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	b.pressed.connect(func():
-		_sel = {} if picked else sel
-		_render())
 	return b
+
+
+## Перетаскивание: вещь тянется пальцем на любую клетку, слот куклы или в сундук.
+## Без перетаскивания: выбери вещь касанием, потом коснись пустой клетки или слота.
+func _droppable(b: Button, sel: Dictionary) -> void:
+	b.set_drag_forwarding(func(_at: Vector2) -> Variant:
+		if sel.id == "":
+			return null
+		var ghost := TextureRect.new()
+		if ResourceLoader.exists(ICONS % sel.id):
+			ghost.texture = load(ICONS % sel.id)
+		ghost.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		ghost.size = Vector2(CELL, CELL)
+		ghost.modulate.a = 0.85
+		var holder := Control.new()
+		holder.add_child(ghost)
+		ghost.position = -ghost.size / 2.0
+		b.set_drag_preview(holder)
+		return sel,
+	func(_at: Vector2, data: Variant) -> bool:
+		return data is Dictionary and data.has("from") and data != sel,
+	func(_at: Vector2, data: Variant) -> void:
+		drop(data, sel))
+
+
+## Перенос вещи src → dst (обе — описания клеток). Публичный, чтобы тесты и касания шли одним путём.
+func drop(src: Dictionary, dst: Dictionary) -> void:
+	var why := ""
+	if dst.from == "equip":
+		var it: Dictionary = GameData.item_by_id.get(src.id, {})
+		if src.from == "equip":
+			why = ""
+		elif src.from == "storage":
+			why = "Сначала возьми из сундука"
+		elif it.get("slot", "") != dst.slot:
+			why = "Сюда это не надеть"
+		elif not GameState.equip(src.id):
+			why = "Не получилось надеть"
+	elif src.from == "equip":
+		why = GameState.unequip_to(src.slot, dst.from, int(dst.index))
+	else:
+		why = GameState.move_item(src.from, src.id, dst.from, int(dst.index))
+	if why != "":
+		_say(why)
+	_sel = {}
+	_render()
 
 
 ## Карточка выбранной вещи с действиями. Без выбора — подсказка.
@@ -294,7 +346,7 @@ func _detail(parent: Node) -> void:
 	p.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	var id: String = _sel.get("id", "")
 	if id == "":
-		var hint := _lbl(p, "Нажми на вещь, чтобы рассмотреть. Свет тут хороший — в отличие от жизни.", 18,
+		var hint := _lbl(p, "Тащи вещь пальцем в любую клетку, на куклу или в сундук. Или нажми на вещь, потом на пустую клетку. Нажми — и рассмотри: свет тут хороший, в отличие от жизни.", 18,
 				Color(0.6, 0.57, 0.52))
 		hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		return

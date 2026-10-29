@@ -271,6 +271,20 @@ for act in bpy.data.actions:
         tr.mute = True
 pose()
 
+# ---------------- облегчение для телефона ----------------
+# Исходник ~50 тыс. треугольников; при камере сверху герой занимает ~80 px, хватает ~15 тыс.
+# Decimate ставится первым (до Armature) и применяется — веса костей интерполируются.
+for o in [o for o in bpy.data.objects if o.type == "MESH" and len(o.data.polygons) > 1500]:
+    if o.data.shape_keys:
+        continue
+    bpy.ops.object.select_all(action="DESELECT")
+    o.select_set(True)
+    bpy.context.view_layer.objects.active = o
+    dec = o.modifiers.new("Decimate", "DECIMATE")
+    dec.ratio = 0.3
+    bpy.ops.object.modifier_move_to_index(modifier=dec.name, index=0)
+    bpy.ops.object.modifier_apply(modifier=dec.name)
+
 # ---------------- экспорт ----------------
 bpy.ops.object.select_all(action="DESELECT")
 for o in bpy.data.objects:

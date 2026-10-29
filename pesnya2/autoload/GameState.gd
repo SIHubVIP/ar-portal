@@ -4,6 +4,7 @@ extends Node
 
 const POCKET_SLOTS := 4
 const BACKPACK_SLOTS := 24
+const STORAGE_SLOTS := 24
 
 var class_id := ""
 ## Пол героя: "m" или "f". Меняет модель, портрет и обращения в разговорах.
@@ -25,6 +26,9 @@ var pockets: Dictionary = {}
 var backpack: Dictionary = {}
 var equipment: Dictionary = {}
 var storage: Dictionary = {}
+## Порядок клеток в сумках: имя сумки → [id или "" для пустой клетки]. Счёт вещей — в самих сумках,
+## здесь только где что лежит (игрок перекладывает вещи пальцем).
+var layout: Dictionary = {}
 ## Сколько раз герой отвечал каждым тоном (green, orange, cyan, purple): из этого складывается характер.
 var tones: Dictionary = {}
 ## Где герой был в мире (для возврата с базы и после загрузки)
@@ -50,6 +54,7 @@ func reset(new_class := "") -> void:
 	backpack.clear()
 	equipment.clear()
 	storage.clear()
+	layout.clear()
 	tones.clear()
 	world_scene = ""
 	world_position = Vector3.ZERO
@@ -192,6 +197,107 @@ func from_storage(item_id: String, count := 1) -> bool:
 	return true
 
 
+# ---------- клетки сумок: перенос из клетки в клетку ----------
+
+func _bag(name: String) -> Dictionary:
+	match name:
+		"pockets":
+			return pockets
+		"backpack":
+			return backpack
+		"storage":
+			return storage
+	return {}
+
+
+func bag_slots(name: String) -> int:
+	return {"pockets": POCKET_SLOTS, "backpack": BACKPACK_SLOTS, "storage": STORAGE_SLOTS}.get(name, 0)
+
+
+## Клетки сумки по порядку: пропавшие вещи освобождают клетку, новые встают в первую свободную.
+func bag_cells(name: String) -> Array:
+	var bag := _bag(name)
+	var cells: Array = []
+	for id in layout.get(name, []):
+		cells.append(id if id != "" and bag.has(id) and not cells.has(id) else "")
+	for id in bag:
+		if not cells.has(id):
+			var free := cells.find("")
+			if free < 0:
+				cells.append(id)
+			else:
+				cells[free] = id
+	while cells.size() < bag_slots(name):
+		cells.append("")
+	layout[name] = cells
+	return cells
+
+
+## Можно ли положить вещь в сумку: квестовое не уходит в сундук, в сумке есть место для новой стопки.
+func can_put(item_id: String, name: String) -> bool:
+	if name == "storage" and GameData.item_by_id.get(item_id, {}).get("type", "") == "quest":
+		return false
+	var bag := _bag(name)
+	return bag.has(item_id) or bag.size() < bag_slots(name)
+
+
+## Перенести всю стопку item_id из сумки from в клетку to_index сумки to.
+## Если клетка занята другой вещью — вещи меняются местами. Возвращает "" или причину отказа.
+func move_item(from: String, item_id: String, to: String, to_index: int) -> String:
+	var src := _bag(from)
+	var dst := _bag(to)
+	if not src.has(item_id) or to_index < 0:
+		return "Нечего переносить"
+	var src_cells := bag_cells(from)
+	var dst_cells := bag_cells(to)
+	if to_index >= dst_cells.size():
+		return "Нет такой клетки"
+	var src_index := src_cells.find(item_id)
+	var other: String = dst_cells[to_index]
+	if from == to:
+		dst_cells[to_index] = item_id
+		dst_cells[src_index] = other
+		EventBus.inventory_changed.emit()
+		return ""
+	if other == item_id:
+		other = ""
+	if to == "storage" and GameData.item_by_id.get(item_id, {}).get("type", "") == "quest":
+		return "Квестовое всегда при себе"
+	if other != "" and from == "storage" and GameData.item_by_id.get(other, {}).get("type", "") == "quest":
+		return "Квестовое всегда при себе"
+	if other == "" and not dst.has(item_id) and dst.size() >= bag_slots(to):
+		return "Места нет"
+	var count := int(src[item_id])
+	src.erase(item_id)
+	var merged := dst.has(item_id)
+	dst[item_id] = int(dst.get(item_id, 0)) + count
+	if not merged:
+		var old := dst_cells.find(item_id)
+		if old >= 0:
+			dst_cells[old] = ""
+		dst_cells[to_index] = item_id
+	src_cells[src_index] = ""
+	if other != "" and not merged:
+		var back := int(dst[other])
+		dst.erase(other)
+		src[other] = int(src.get(other, 0)) + back
+		src_cells[src_index] = other
+	EventBus.inventory_changed.emit()
+	return ""
+
+
+## Снять вещь прямо в выбранную клетку сумки. Снятое попадает в ранец, оттуда — в нужную клетку;
+## если туда нельзя, вещь остаётся в ранце. Возвращает "" или причину.
+func unequip_to(slot: String, to: String, to_index: int) -> String:
+	if not equipment.has(slot):
+		return "Слот пуст"
+	if to == "storage":
+		return "Сначала сними, потом в сундук"
+	var item_id: String = equipment[slot]
+	unequip(slot)
+	return move_item("backpack", item_id, to, to_index)
+
+
 ## Бонус характеристики от надетого: damage, armor, max_hp.
 func stat(name: String) -> float:
 	var total := 0.0
@@ -283,7 +389,7 @@ func heal(amount: float) -> void:
 func to_dict() -> Dictionary:
 	return {"class_id": class_id, "gender": gender, "level": level, "xp": xp, "babki": babki, "reputation": reputation,
 			"kukukha": kukukha, "hp": hp, "flags": flags.keys(), "granted": granted.keys(), "ledger": ledger,
-			"pockets": pockets, "backpack": backpack, "equipment": equipment, "storage": storage, "tones": tones,
+			"pockets": pockets, "backpack": backpack, "equipment": equipment, "storage": storage, "layout": layout, "tones": tones,
 			"world_scene": world_scene, "world_position": [world_position.x, world_position.y, world_position.z],
 			"playtime": playtime}
 
@@ -309,6 +415,7 @@ func from_dict(d: Dictionary) -> void:
 	pockets = _int_dict(d.get("pockets", {}))
 	backpack = _int_dict(d.get("backpack", {}))
 	storage = _int_dict(d.get("storage", {}))
+	layout = d.get("layout", {})
 	tones = _int_dict(d.get("tones", {}))
 	world_scene = d.get("world_scene", "")
 	var p: Array = d.get("world_position", [0, 0, 0])
