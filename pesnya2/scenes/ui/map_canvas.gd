@@ -68,6 +68,9 @@ static func _load_district() -> void:
 		for q in r.polyline_plan_m:
 			pts.append(District.m(q) - o)
 		_roads.append({"pts": pts, "w": float(r.corridor_width_m)})
+	for s in District.road_segments():
+		if s.id == "lane":
+			_roads.append({"pts": PackedVector2Array([s.a - o, s.b - o]), "w": float(s.w)})
 	for h in District.houses():
 		_houses.append(Rect2(h.position - o, h.size))
 

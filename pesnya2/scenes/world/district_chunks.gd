@@ -139,9 +139,10 @@ func _road_piece(root: Node3D, s: Dictionary, rect: Rect2, start: Rect2) -> void
 	var overlap: float = s.w / 2.0
 	bm.size = Vector3(length + overlap, 0.04, float(s.w))
 	mi.mesh = bm
-	mi.position = District.to_world(mid, 0.02 if s.major else 0.01)
+	var lane: bool = s.id == "lane"
+	mi.position = District.to_world(mid, 0.02 if s.major else (0.005 if lane else 0.01))
 	mi.rotation.y = -atan2(dir.y, dir.x)
-	mi.material_override = _mat("road" if s.major else "street")
+	mi.material_override = _mat("road" if s.major else ("lane" if lane else "street"))
 	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	root.add_child(mi)
 
@@ -220,6 +221,9 @@ func _mat(kind: String) -> Material:
 		"street":
 			m.albedo_color = Color(0.16, 0.16, 0.17)
 			m.roughness = 0.45
+		"lane":
+			m.albedo_color = Color(0.24, 0.22, 0.2)
+			m.roughness = 0.8
 		_:
 			var palette := [Color(0.55, 0.36, 0.3), Color(0.6, 0.58, 0.54), Color(0.48, 0.5, 0.55), Color(0.62, 0.5, 0.4)]
 			m.albedo_color = palette[int(kind.right(1)) % palette.size()]

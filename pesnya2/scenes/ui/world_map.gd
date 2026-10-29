@@ -60,6 +60,10 @@ func _ready() -> void:
 	_area.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_area.clip_contents = true
 	v.add_child(_area)
+	# при первом открытии сразу на квартале размер области ещё ноль: подгоняем, когда он появится
+	_area.resized.connect(func() -> void:
+		if _tab == "quarter":
+			_fit_quarter())
 	_district = _DistrictCanvas.new()
 	_district.map = self
 	_district.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -129,8 +133,9 @@ func _render() -> void:
 
 func _fit_quarter() -> void:
 	var r := PogulyayDressing.BOUNDS
+	if _area.size.x < 1.0 or _area.size.y < 1.0:
+		return
 	_quarter.origin = r.get_center()
-	_quarter.scale_px = minf(_area.size.x / r.size.x, _area.size.y / r.size.y) * 0.95
 	_quarter.rot = -PI / 2.0     # квартал вытянут на север: кладём его вдоль экрана, север слева
 	_quarter.scale_px = minf(_area.size.x / r.size.y, _area.size.y / r.size.x) * 0.95
 	_quarter.queue_redraw()
@@ -282,9 +287,12 @@ class _DistrictCanvas extends Control:
 				draw_rect(r, Color(0.27, 0.23, 0.2))
 			draw_rect(r, Color(0.5, 0.52, 0.5, 0.5), false, 1.5)
 		# дома со схемы
-		for h in d.get("houses_plan_m", []):
-			var r := Rect2(to_px(Vector2(h[0], h[1])), Vector2(h[2], h[3]) * kk)
-			draw_rect(r, Color(0.33, 0.35, 0.38))
+		for h in District.houses():
+			draw_rect(Rect2(to_px(h.position), h.size * kk), Color(0.33, 0.35, 0.38))
+		# переулки внутри кварталов (этап 3)
+		for s in District.road_segments():
+			if s.id == "lane":
+				draw_line(to_px(s.a), to_px(s.b), Color(0.36, 0.33, 0.3), maxf(1.0, s.w * kk))
 		# дороги с шириной коридора
 		for road in d.get("road_centerlines", []):
 			var pts := PackedVector2Array()

@@ -35,6 +35,9 @@ var _objective_tick := 0.0
 var _autotest := false
 var chunks: DistrictChunks
 var _pavel: Node3D
+var _safe_tick := 0.0
+
+const SAFE_HEAL_PER_S := 6.0
 
 
 func _ready() -> void:
@@ -775,6 +778,12 @@ func _physics_process(delta: float) -> void:
 		_objective_tick = 0.2
 		_update_objective()
 	var pp := player.global_position
+	_safe_tick -= delta
+	if _safe_tick <= 0.0:
+		_safe_tick = 0.5
+		_update_safe_zone()
+	if player.safe_zone != "" and GameState.hp < GameState.max_hp:
+		GameState.heal(SAFE_HEAL_PER_S * delta)
 	for z in _zones:
 		if z.get("done", false) or not z.when.call():
 			continue
@@ -795,6 +804,19 @@ func _physics_process(delta: float) -> void:
 		_drone_respawn -= delta
 		if _drone_respawn <= 0.0:
 			_spawn_drones()
+
+
+## Безопасные зоны S0–S4 (этап 3 ТЗ): мобы не нападают и отстают, здоровье восстанавливается.
+func _update_safe_zone() -> void:
+	var z := District.safe_zone_at(District.to_plan(player.global_position))
+	var id: String = z.get("id", "")
+	if id == player.safe_zone:
+		return
+	if id != "":
+		hud.show_toast("Безопасная зона «%s»: здесь не нападают, здоровье восстанавливается" % z.get("name", id))
+	elif player.safe_zone != "":
+		hud.show_toast("Ты вышел из безопасной зоны")
+	player.safe_zone = id
 
 
 func _on_interact() -> void:
@@ -944,6 +966,21 @@ func _run_autotest() -> void:
 	log.call("MAIN_002: %s" % QuestService.state_of("MAIN_002"))
 	log.call("Павел после MAIN_001 ушёл в парк: %s" % (not _pavel.visible))
 	if not pavel_seen or _pavel.visible or not GameState.has_flag("offered:NPC_07_1"):
+		print("AUTOTEST_FAIL")
+	# этап 3: безопасная зона S1 — вход, лечение, удар не проходит, выход
+	var back := player.global_position
+	player.global_position = District.to_world(District.pos(District.point("S1")), 0.5)
+	GameState.damage(30)
+	var hp_in := GameState.hp
+	await _frames(40)
+	var healed := GameState.hp > hp_in
+	var hp_hit := GameState.hp
+	player.take_hit(25.0)
+	var no_hit := is_equal_approx(GameState.hp, hp_hit)
+	log.call("безопасная зона %s: лечит %s, удар не прошёл %s" % [player.safe_zone, healed, no_hit])
+	player.global_position = back
+	await _frames(40)
+	if player.safe_zone != "" or not healed or not no_hit:
 		print("AUTOTEST_FAIL")
 	if QuestService.state_of(QID) != QuestService.COMPLETED:
 		print("AUTOTEST_FAIL")

@@ -460,6 +460,51 @@ func test_district_houses_avoid_roads_points_and_arenas() -> void:
 	check(ok, "ни один дом не стоит на дороге, арене или во дворе")
 
 
+func test_lanes_cut_through_blocks_without_houses() -> void:
+	var lanes := District.road_segments().filter(func(s: Dictionary) -> bool: return s.id == "lane")
+	check(lanes.size() > 200, "в кварталах проложены переулки (%d)" % lanes.size())
+	var clear := true
+	var ends_on_streets := true
+	for s in lanes:
+		var lane := Rect2(s.a, Vector2.ZERO).expand(s.b).grow(s.w / 2.0)
+		for h in District.houses():
+			clear = clear and not lane.intersects(h)
+		ends_on_streets = ends_on_streets and not District.start_area().has_point(s.a) and not District.start_area().has_point(s.b)
+	check(clear, "ни один дом не стоит в переулке")
+	check(ends_on_streets, "переулки не заходят во двор старта")
+
+
+func test_every_point_reachable_from_yard_exit() -> void:
+	var r := District.reachability()
+	var bad: Array = []
+	for id in r:
+		if not r[id].reachable:
+			bad.append(id)
+	check(r.size() == 75 and bad.is_empty(), "до всех 75 точек можно дойти от выхода из двора, недоступны: %s" % [bad])
+
+
+func test_safe_zones_cover_their_points() -> void:
+	var ok := true
+	for p in District.points("safe"):
+		ok = ok and District.safe_zone_at(District.pos(p)).get("id", "") == p.id
+	check(District.points("safe").size() == 5 and ok, "S0–S4 распознаются по своей точке")
+	check(District.safe_zone_at(District.yard_exit()).is_empty(), "выход из двора не в безопасной зоне")
+
+
+func test_safe_zone_blocks_hits() -> void:
+	var pl := Player.new()
+	add_child(pl)
+	var before := GameState.hp
+	pl.safe_zone = "S1"
+	pl.take_hit(30.0)
+	check(is_equal_approx(GameState.hp, before), "в безопасной зоне удар не проходит")
+	pl.safe_zone = ""
+	pl.take_hit(30.0)
+	check(GameState.hp < before, "вне зоны удар проходит")
+	GameState.heal(GameState.max_hp)
+	pl.queue_free()
+
+
 func test_pavel_single_copy_by_quest_state() -> void:
 	var c := "MAIN_001_started_and_not_completed"
 	check(not District.condition_met(c, QuestService.AVAILABLE), "до MAIN_001 Павла у киоска нет")

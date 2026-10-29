@@ -27,6 +27,8 @@ var t := 0.0
 var facing := Vector3(0, 0, 1)
 var guard_until := 0.0
 var buff_until := 0.0
+## id безопасной зоны района (S0–S4), где стоит герой; пусто снаружи. Там по нему не бьют.
+var safe_zone := ""
 
 var _attack_ready_at := 0.0
 var _dodge_left := 0.0
@@ -179,7 +181,7 @@ func is_dodging() -> bool:
 
 
 func take_hit(damage: float) -> void:
-	if is_dodging() or GameState.hp <= 0.0:
+	if is_dodging() or GameState.hp <= 0.0 or safe_zone != "":
 		return
 	if is_guarding():
 		damage *= 0.3

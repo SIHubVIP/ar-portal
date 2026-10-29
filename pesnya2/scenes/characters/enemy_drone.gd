@@ -109,7 +109,7 @@ func _physics_process(delta: float) -> void:
 	var to_player := player.global_position - global_position
 	to_player.y = 0.0
 	var target := home
-	if to_player.length() < aggro_radius and player.controls_enabled:
+	if to_player.length() < aggro_radius and player.controls_enabled and player.safe_zone == "":
 		target = player.global_position
 		if to_player.length() <= attack_radius and _attack_cd <= 0.0:
 			_start_telegraph()
