@@ -209,6 +209,68 @@ def cosy_fill(windows, buildings, plots, trees, streets, site_rects, yard, point
     return plots, trees
 
 
+# 0.19 (D-061): двор старта — диорама 74 × 79 м (scenes/world/start_yard.gd, data/yard_diorama.txt)
+# у северной кромки прежнего двора 222 × 208 м; освободившееся место — лесопарк «Похмельный».
+DIORAMA = (-37.0, -154.0, 37.0, -75.0)            # мир: x0, z0, x1, z1 — как District.start_area()
+DIORAMA_HOUSES = [((-36, -153, 33, 12), 15.4, "brick"), ((3, -153, 33, 12), 15.4, "brick"),
+                  ((-36, -135, 9, 36), 15.4, "plaster"), ((30, -135, 6, 40), 3.0, "brick")]
+DIORAMA_POINTS = {"P0": (-9.0, -109.5), "P13": (19.0, -119.0)}
+DIORAMA_PAVEL = (10.0, -118.0)
+
+
+def diorama_yard(origin, old_yard, buildings, trees, streets, district):
+    ox, oy = origin
+    new_yard = (ox + DIORAMA[0], oy + DIORAMA[1], ox + DIORAMA[2], oy + DIORAMA[3])
+    proto = next((b for b in buildings if b.get("site") == "start"), None)
+    buildings[:] = [b for b in buildings if b.get("site") != "start"]
+    for (x, z, w, d), h, mat in DIORAMA_HOUSES:
+        nb = dict(proto) if proto else {"kind": "site", "site": "start"}
+        nb.update({"r": [r2(ox + x), r2(oy + z), w, d], "h": h, "mat": mat, "kind": "site", "site": "start"})
+        buildings.append(nb)
+    for p in district["points"]:
+        if p["id"] in DIORAMA_POINTS:
+            x, z = DIORAMA_POINTS[p["id"]]
+            p["plan_position_m"] = [r2(ox + x), r2(oy + z)]
+            p["godot_position_m"] = [r2(x), 0, r2(z)]
+            p["chunk"] = [int((ox + x) // CHUNK), int((oy + z) // CHUNK)]
+    for o in district.get("npc_position_overrides", []):
+        if "yard_plan_position_m" in o:
+            o["yard_plan_position_m"] = [r2(ox + DIORAMA_PAVEL[0]), r2(oy + DIORAMA_PAVEL[1])]
+    # лесопарк на месте прежнего двора: густые кроны, кусты, валуны, тропинки остаются меж деревьев
+    import random
+    rnd = random.Random(61)
+    x0, y0, x1, y1 = old_yard
+    forest = 0
+    y = y0 + 4
+    while y < y1 - 4:
+        x = x0 + 4
+        while x < x1 - 4:
+            px, py = x + rnd.uniform(-2.5, 2.5), y + rnd.uniform(-2.5, 2.5)
+            near_road = any(seg_point(px, py, s["a"], s["b"]) < s["w"] / 2 + 3 for s in streets)
+            if not overlaps((px, py, px, py), new_yard, 5.0) and not near_road:
+                roll = rnd.random()
+                if roll < 0.45:
+                    trees.append([r2(px), r2(py), r2(rnd.uniform(3.5, 6.0)), r2(rnd.uniform(7, 12)), "tree"])
+                    forest += 1
+                elif roll < 0.75:
+                    trees.append([r2(px), r2(py), r2(rnd.uniform(1.2, 2.6)), r2(rnd.uniform(0.8, 1.8)), "bush"])
+                    forest += 1
+                elif roll < 0.8:
+                    trees.append([r2(px), r2(py), r2(rnd.uniform(1.2, 2.2)), 1.0, "rock"])
+                    forest += 1
+            x += 7.0
+        y += 7.0
+    print(f"двор-диорама: {new_yard}, лесопарк +{forest}")
+    return new_yard
+
+
+def seg_point(px, py, a, b):
+    dx, dy = b[0] - a[0], b[1] - a[1]
+    L = dx * dx + dy * dy
+    t = 0.0 if L == 0 else max(0.0, min(1.0, ((px - a[0]) * dx + (py - a[1]) * dy) / L))
+    return math.hypot(px - a[0] - dx * t, py - a[1] - dy * t)
+
+
 def main():
     layout = json.loads(LAYOUT.read_text(encoding="utf-8"))
     district = json.loads(DISTRICT.read_text(encoding="utf-8"))
@@ -428,6 +490,7 @@ def main():
 
     global SITES
     SITES = sites
+    yard = diorama_yard(origin, yard, kept_b, kept_t, kept_s, district)
     kept_p, kept_t = cosy_fill(windows, kept_b, kept_p, kept_t, kept_s, site_rects, yard, district["points"])
 
     layout["districts"] = new_districts

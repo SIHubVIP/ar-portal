@@ -1,0 +1,33 @@
+; Двор «Похмельная» — диорама на сетке (0.19, D-061). Клетка 3 × 3 м, 24 × 26 клеток = 72 × 78 м.
+; Левый верхний угол — мир (−36, −153), север сверху, арка выхода — две «c» в верхних рядах.
+; Земля:  . газон   , тропа   c мощение плитами   a асфальт парковки   ~ пруд
+;         H дом (землю не кладём)   G гаражи
+; Зелень на газоне:  T дерево   b куст   r валун   f клумба   h живая изгородь   P дерево в кадке на мощении
+; Терраса +1,2 м с подпорной стеной:  # газон   Y дерево   B куст   F клумба
+; Лестница с террасы, стрелка — куда спускаться:  ^ север   v юг   < запад   > восток
+HHHHHHHHHHHccHHHHHHHHHHH
+HHHHHHHHHHHccHHHHHHHHHHH
+HHHHHHHHHHHccHHHHHHHHHHH
+HHHHHHHHHHHccHHHHHHHHHHH
+bccccccccccccccccccccccb
+cccPccccPcccccccPccccccc
+HHH,,YF#BY#T.cccccccccGG
+HHH,,B#####.bcccccccccGG
+HHH,,F##Y##T.cccccccccGG
+HHH,,Y#vv#B..cccccccccGG
+HHH,,,,,,,,,,cccccccccGG
+HHH,,,,,,,,,,cccccccccGG
+HHH,,aaaaaaaacccccccccGG
+HHH,,aaaaaaaacccccccccGG
+HHH,,aaaaaaaacccccccccGG
+HHH,,aaaaaaaaccccccccPGG
+HHH,,aaaaaaaacccccccccGG
+HHH,,,,,,,,,,PccccccccGG
+Tb.,,,,,,,,,,cccccccccGG
+.T.,B^^Y##F.b..T,,,,,,,,
+b..,#F####Y.r~~r,,,,,,,,
+T..,Y#####B.f~~.,,,,,,,,
+...,B##Y##F..~~b,,,,,,,,
+b..,F####Y>..T..b.....,,
+T..,,.b...T....b...T.,,,
+hhh,,hhhhhhhhhhh...hhh,,

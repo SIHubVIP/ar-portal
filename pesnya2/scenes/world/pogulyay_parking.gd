@@ -5,13 +5,13 @@ extends Node3D
 ## киоск «НЛО напрокат» → разговор и выбор → выход через арку или восточный проход.
 
 const QID := "MAIN_001"
-const CONVERTIBLE_POS := Vector3(-53, 0, -2)
-const SPAWN := Vector3(-49, 0, 3)
-const CHECKPOINT_POS := Vector3(38, 0, 2)
-const EXIT_POS := Vector3(38, 0, -8)
+const CONVERTIBLE_POS := Vector3(-12, 0, -110)
+const SPAWN := Vector3(-8, 0, -106)
+const CHECKPOINT_POS := Vector3(16, 0, -104)
+const EXIT_POS := Vector3(16, 0, -113)
 const KIOSK_POS := StartYard.KIOSK
 const GARAGE_POS := StartYard.GARAGE_13
-const UFO_POS := Vector3(70, 62, -230)
+const UFO_POS := Vector3(14, 58, -168)
 ## Арка в северном корпусе — выход со двора (ворота в StartYard._bounds).
 const EXIT_ARCH := StartYard.EXIT_ARCH
 ## Такси «Межрайон» (0.14, три района с 0.15): у будки во дворе, у площади «Последний талон»
@@ -128,10 +128,11 @@ func _ready() -> void:
 	physics_props = PhysicsProps.new()
 	physics_props.player = player
 	# двор: конусы у шлагбаума и места посадки, урны у парковки, коробки у киоска, шины у гаражей
-	physics_props.extra = [[Vector3(16.5, 0, 12.8), "cone"], [Vector3(17.3, 0, 13.4), "cone"], [Vector3(18.1, 0, 12.8), "cone"],
-			[Vector3(-46, 0, 8), "bin"], [Vector3(-60, 0, -8), "bin"], [Vector3(10, 0, -55), "bin"],
-			[Vector3(-14, 0, -64), "cone"], [Vector3(-6, 0, -64), "cone"], [Vector3(38.5, 0, -15.5), "box"],
-			[Vector3(39.4, 0, -15.0), "box"], [Vector3(88, 0, -40), "tire"], [Vector3(88, 0, -70), "tire"]]
+	physics_props.extra = [[StartYard.BARRIER + Vector3(-1.5, 0, -1.2), "cone"], [StartYard.BARRIER + Vector3(-0.7, 0, -0.6), "cone"],
+			[StartYard.BARRIER + Vector3(0.1, 0, -1.2), "cone"], [Vector3(-23, 0, -101), "bin"], [Vector3(4.5, 0, -116), "bin"],
+			[Vector3(-3, 0, -121), "bin"], [Vector3(6, 0, -127), "cone"], [Vector3(10, 0, -127), "cone"],
+			[StartYard.KIOSK + Vector3(-5.5, 0, 2.5), "box"], [StartYard.KIOSK + Vector3(-4.6, 0, 3.0), "box"],
+			[Vector3(27, 0, -100), "tire"], [Vector3(27, 0, -124), "tire"]]
 	add_child(physics_props)
 	var pigeons := Pigeons.new()
 	pigeons.player = player
@@ -140,7 +141,7 @@ func _ready() -> void:
 	leaves.target = player
 	add_child(leaves)
 	# дворовые коты: рыжий у будки и серый у гаражей
-	for c: Array in [[Rect2(8, 16, 30, 22), Color(0.9, 0.5, 0.18)], [Rect2(62, -125, 22, 60), Color(0.45, 0.45, 0.48)]]:
+	for c: Array in [[Rect2(12, -95, 16, 8), Color(0.9, 0.5, 0.18)], [Rect2(24, -132, 4, 34), Color(0.45, 0.45, 0.48)]]:
 		var cat := YardCat.new()
 		cat.area = c[0]
 		cat.fur = c[1]
@@ -399,12 +400,13 @@ func _build_parking() -> void:
 		_repaint(model, Color(0.12, 0.52, 0.55))     # по концепту кабриолет бирюзовый
 	Kit.label(car, "ИМУЩЕСТВО ФЛОТА №0001", Vector3(0, 1.0, 2.21), 28, Color(0.4, 1, 0.6), false)
 	# скамейка у машины, автомат с газировкой
-	Props.collider(self, Vector3(2.4, 0.5, 0.7), CONVERTIBLE_POS + Vector3(8, 0.25, 6))
-	Props.place(self, "bench", CONVERTIBLE_POS + Vector3(8, 0, 6), 180.0)
-	Kit.solid_box(self, Vector3(1.2, 2.0, 0.8), CONVERTIBLE_POS + Vector3(-12, 1.0, -8), Color(0.3, 0.3, 0.6), 0.2)
-	_add_pickup("ITEM_P1_PHONE", Vector3(-54, 0.6, -4.6))
-	_add_pickup("ITEM_P1_SHOE", Vector3(-42, 0.3, 6.5))
-	_add_pickup("ITEM_P1_DEBT_NOTICE", Vector3(-31, 0.4, -12))
+	Props.collider(self, Vector3(2.4, 0.5, 0.7), CONVERTIBLE_POS + Vector3(2, 0.25, 9.5))
+	Props.place(self, "bench", CONVERTIBLE_POS + Vector3(2, 0, 9.5), 180.0)
+	Kit.solid_box(self, Vector3(1.2, 2.0, 0.8), CONVERTIBLE_POS + Vector3(-6, 1.0, -9), Color(0.3, 0.3, 0.6), 0.2)
+	# 0.19: двор-диорама — находки в пределах дюжины шагов от кабриолета
+	_add_pickup("ITEM_P1_PHONE", CONVERTIBLE_POS + Vector3(-1, 0.6, -2.6))
+	_add_pickup("ITEM_P1_SHOE", CONVERTIBLE_POS + Vector3(8, 0.3, 5.5))
+	_add_pickup("ITEM_P1_DEBT_NOTICE", CONVERTIBLE_POS + Vector3(12, 0.4, -4))
 	# гараж №13 — вход на личную базу
 	_interactables.append({"pos": GARAGE_POS, "radius": 3.0, "label": "База", "cb": _enter_base,
 			"enabled": func(): return true})

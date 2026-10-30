@@ -446,6 +446,29 @@ func test_district_coordinates_round_trip() -> void:
 	check(ok, "план ↔ мир без искажений, сдвиг постоянный")
 
 
+func test_yard_diorama_is_compact_grid() -> void:
+	var g := StartYard.grid()
+	StartYard._grid = g
+	check(g.size() == 26 and Array(g).all(func(r: String) -> bool: return r.length() == 24), "двор — сетка 24 × 26 клеток по 3 м")
+	var sa := District.start_area()
+	check(sa.size.x * sa.size.y < 222.0 * 208.0 / 6.0, "двор старта больше чем вшестеро меньше прежнего 222 × 208 м")
+	var ok := true
+	for p: Vector3 in [StartYard.KIOSK, StartYard.PAVEL, StartYard.BOOTH, StartYard.GARAGE_13, StartYard.QUEUE,
+			StartYard.EXIT_ARCH + Vector3(0, 0, 2), StartYard.BARRIER]:
+		var ch := StartYard.tile_at(int(floor((p.x - StartYard.GRID_ORIGIN.x) / StartYard.CELL)),
+				int(floor((p.z - StartYard.GRID_ORIGIN.y) / StartYard.CELL)))
+		ok = ok and not StartYard.is_terrace(ch) and not ch in ["H", "G", "~", " "]
+	check(ok, "сюжетные точки двора на ровной земле, не в домах, не на террасах и не в пруду")
+	var stairs := 0
+	for r in g:
+		for k in r.length():
+			stairs += 1 if StartYard.is_stair(r[k]) else 0
+	check(stairs >= 3 and is_equal_approx(StartYard.ground_y(-12, -129), StartYard.TERRACE_H) and StartYard.ground_y(-8, -106) == 0.0,
+			"на террасы ведут лестницы, сквер поднят на 1,2 м, парковка на земле")
+	var yard := Rect2(District.to_plan(Vector3(StartYard.BOUNDS.position.x, 0, StartYard.BOUNDS.position.y)), StartYard.BOUNDS.size)
+	check(sa.encloses(yard), "диорама целиком в отведённом месте района")
+
+
 func test_start_yard_sits_between_roads() -> void:
 	var yard := District.start_area()
 	var ok := true
