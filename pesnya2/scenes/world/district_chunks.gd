@@ -215,6 +215,9 @@ func _house(root: Node3D, b: Dictionary, batch: DistrictDressing.Batch = null) -
 	mi.position = Vector3(0, -height / 2.0, 0)
 	body.add_child(mi)
 	if batch != null:
+		# 0.18: каменный цоколь чуть шире стены — дом стоит на земле, а не воткнут в неё
+		batch.box("plinth", at + Vector3(0, 0.22, 0), Vector3(h.size.x + 0.5, 0.44, h.size.y + 0.5), 0.0,
+				[Color(0.5, 0.48, 0.44), Color(0.56, 0.52, 0.46), Color(0.44, 0.44, 0.42)][rng.randi() % 3])
 		for e: Vector3 in built.entrances:
 			batch.lamps.append(e + Vector3(0, 2.4, -0.0))
 			batch.add("spill", Transform3D(Basis().scaled(Vector3(3.6, 1.0, 3.6)), e + Vector3(0, 0.07, 0)), Color(0.8, 0.62, 0.4))
@@ -249,6 +252,8 @@ func _small_houses(root: Node3D, list: Array, batch: DistrictDressing.Batch) -> 
 			groups[key] = [BuildingKit.unit(b.kind, floors, brick, variant), []]
 		var tint := BuildingKit.small_wall_color(String(b.mat), rng)
 		groups[key][1].append([xf, tint])
+		batch.box("plinth", District.to_world(r.get_center(), 0.15), Vector3(size.x + 0.36, 0.3, size.y + 0.36), 0.0,
+				Color(0.5, 0.47, 0.42))
 		var cs := CollisionShape3D.new()
 		var bs := BoxShape3D.new()
 		var hh := float(b.h)
@@ -397,16 +402,22 @@ func _mat(kind: String) -> Material:
 	match kind:
 		# 0.10: текстуры вместо ровной заливки — земля дворов, мокрый асфальт, переулки
 		# 0.16: без видимой сетки — две выборки текстуры, крупные пятна и проплешины
+		# 0.18: рисованная земля — текстура почти ровная (detail), сверху мазки светлого и тёмного
 		"ground":
-			m = Surfaces.ground("dirt", 4.0, Color(1.45, 1.5, 0.95), Color(0.62, 0.52, 0.4), 0.8)  # газон и голая земля
+			m = Surfaces.ground("dirt", 4.0, Color(1.32, 1.8, 1.05), Color(1.25, 0.69, 1.33), 0.45, 0.35,
+					[Color(1.2, 1.14, 0.84), Color(0.74, 0.86, 0.9), 0.9])      # сочный газон и редкие проплешины
 		"road":
-			m = Surfaces.ground("asphalt", 4.0, Color.WHITE, Color(0.7, 0.7, 0.72), 0.5)              # тёмные заплатки
+			m = Surfaces.ground("asphalt", 4.0, Color(1.55, 1.58, 1.72), Color(0.8, 0.8, 0.84), 0.5, 0.3,
+					[Color(1.08, 1.06, 1.02), Color(0.86, 0.9, 0.95), 0.6])
 		"street":
-			m = Surfaces.ground("asphalt", 4.0, Color(1.12, 1.1, 1.1), Color(0.75, 0.74, 0.74), 0.4)
+			m = Surfaces.ground("asphalt", 4.0, Color(1.68, 1.68, 1.8), Color(0.82, 0.82, 0.84), 0.4, 0.3,
+					[Color(1.08, 1.06, 1.02), Color(0.86, 0.9, 0.95), 0.6])
 		"lane":
-			m = Surfaces.ground("asphalt", 4.0, Color(1.45, 1.35, 1.25), Color(1.15, 1.08, 0.95), 0.4)  # пыль
+			m = Surfaces.ground("asphalt", 4.0, Color(2.3, 2.1, 1.8), Color(1.1, 1.05, 0.95), 0.4, 0.35,
+					[Color(1.1, 1.06, 0.95), Color(0.85, 0.92, 0.85), 0.6])   # укатанная пыльная дорожка
 		"path":
-			m = Surfaces.ground("slabs", 2.0, Color(0.92, 0.88, 0.82), Color(0.8, 0.85, 0.7), 0.35)     # мох в швах
+			m = Surfaces.ground("slabs", 2.0, Color(1.25, 1.2, 1.1), Color(0.8, 0.95, 0.7), 0.45, 0.55,
+					[Color(1.1, 1.06, 0.95), Color(0.8, 0.92, 0.8), 0.6])     # мох в швах
 		_:
 			# прежние «house_N» (прогрев шейдеров): стены домов BuildingKit
 			m = BuildingKit.wall_material(int(kind.right(1)) % 2 == 0)

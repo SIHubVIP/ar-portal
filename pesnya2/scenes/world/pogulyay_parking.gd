@@ -282,50 +282,52 @@ func _build_environment() -> void:
 	var env := Environment.new()
 	var sky := Sky.new()
 	var sm := ProceduralSkyMaterial.new()
-	# 0.11: тёплый осенний вечер концептов «Рубин» — низкое солнце, золотой свет, окна горят
-	sm.sky_top_color = Color(0.3, 0.38, 0.62)
-	sm.sky_horizon_color = Color(0.98, 0.68, 0.42)
-	sm.ground_horizon_color = Color(0.62, 0.42, 0.3)
-	sm.ground_bottom_color = Color(0.2, 0.15, 0.12)
+	# 0.18: рисованный стиль по референсам Руслана — сочная зелень, тёплое солнце,
+	# бирюзовые тени и мягкая сине-зелёная дымка вдали (D-060)
+	sm.sky_top_color = Color(0.36, 0.6, 0.78)
+	sm.sky_horizon_color = Color(0.78, 0.9, 0.86)
+	sm.ground_horizon_color = Color(0.5, 0.62, 0.55)
+	sm.ground_bottom_color = Color(0.16, 0.24, 0.22)
 	sm.sun_angle_max = 20.0
 	sm.sky_energy_multiplier = 1.0
 	sky.sky_material = sm
 	env.background_mode = Environment.BG_SKY
 	env.sky = sky
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	env.ambient_light_color = Color(0.52, 0.56, 0.7)      # голубоватые тени против золотого солнца
-	env.ambient_light_energy = 0.62
+	env.ambient_light_color = Color(0.42, 0.62, 0.66)      # тени не серые, а бирюзовые, как на референсах
+	env.ambient_light_energy = 0.58
 	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
-	env.tonemap_exposure = 0.9
+	env.tonemap_exposure = 0.88
 	env.glow_enabled = true
-	env.glow_intensity = 0.7
-	env.glow_bloom = 0.04
-	env.glow_hdr_threshold = 1.0
-	# дымка только вдали (по глубине от 120 м): двор у героя чистый, дальние кварталы — в золоте
+	env.glow_intensity = 0.6
+	env.glow_bloom = 0.05
+	env.glow_hdr_threshold = 1.35
+	# дымка только вдали: двор у героя чистый, дальние кварталы тонут в сине-зелёном воздухе
 	env.fog_enabled = true
 	env.fog_mode = Environment.FOG_MODE_DEPTH
-	env.fog_depth_begin = 120.0
-	env.fog_depth_end = 700.0
-	env.fog_density = 0.6
-	env.fog_light_color = Color(0.85, 0.66, 0.5)
-	env.fog_sun_scatter = 0.1
+	env.fog_depth_begin = 90.0
+	env.fog_depth_end = 420.0
+	env.fog_density = 0.75
+	env.fog_light_color = Color(0.55, 0.74, 0.72)
+	env.fog_sun_scatter = 0.15
 	env.adjustment_enabled = true
-	env.adjustment_saturation = 1.14
-	env.adjustment_contrast = 1.12
+	env.adjustment_saturation = 1.15
+	env.adjustment_contrast = 1.16
 	var we := WorldEnvironment.new()
 	we.environment = env
 	add_child(we)
-	# закатное солнце с запада-юго-запада: длинные тёплые тени, фасады в золоте
+	# тёплое солнце после полудня: выше, чем закат 0.11, — тени короче, кроны светятся сверху
 	var sun := DirectionalLight3D.new()
 	sun.name = "Sun"
-	sun.rotation_degrees = Vector3(-36, -118, 0)
-	sun.light_color = Color(1.0, 0.86, 0.7)
-	sun.light_energy = 1.3
+	sun.rotation_degrees = Vector3(-48, -128, 0)
+	sun.light_color = Color(1.0, 0.9, 0.72)
+	sun.light_energy = 1.4
 	sun.shadow_enabled = true
 	# камера на плече 60 м видит пятно ~40 м: одного каскада до 110 м хватает (на телефоне каскады — 4 прохода)
 	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_ORTHOGONAL
 	sun.directional_shadow_max_distance = 110.0
-	sun.shadow_opacity = 0.8
+	sun.shadow_opacity = 0.85
+	sun.shadow_blur = 1.6           # 0.18: мягкий край тени, как кистью; без ступенек на газоне
 	add_child(sun)
 
 

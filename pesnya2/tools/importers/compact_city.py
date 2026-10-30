@@ -117,6 +117,8 @@ def cosy_fill(windows, buildings, plots, trees, streets, site_rects, yard, point
     # и каждый объект пакета, по краям площадки можно сажать
     blocked = [yard] + arenas
     for s in SITES:
+        if s["id"] == "start":
+            continue                  # 0.18: двор старта закрыт целиком (yard), кольцо газона вокруг — сажаем
         dx, dy = s["shift"]
         x0, y0, x1, y1 = s["r"][0] + dx, s["r"][1] + dy, s["r"][2] + dx, s["r"][3] + dy
         if x1 - x0 < 150:
@@ -135,7 +137,16 @@ def cosy_fill(windows, buildings, plots, trees, streets, site_rects, yard, point
         t = 0.0 if L == 0 else max(0.0, min(1.0, ((px - a[0]) * dx + (py - a[1]) * dy) / L))
         return math.hypot(px - a[0] - dx * t, py - a[1] - dy * t)
 
-    added_t = added_p = 0
+    added_t = added_p = added_b = 0
+    sgrid = {}
+    for st in streets:
+        (ax, ay), (bx, by) = st["a"], st["b"]
+        for gx in range(int(min(ax, bx) // 50) - 1, int(max(ax, bx) // 50) + 2):
+            for gy in range(int(min(ay, by) // 50) - 1, int(max(ay, by) // 50) + 2):
+                sgrid.setdefault((gx, gy), []).append(st)
+
+    def streets_near(px, py):
+        return sgrid.get((int(px // 50), int(py // 50)), [])
     for w in windows:
         nx0, ny0, nx1, ny1 = w["new"]
         roads = [s for s in streets if seg_dist((nx0 + nx1) / 2, (ny0 + ny1) / 2, s["a"], s["b"]) < W]
@@ -163,9 +174,38 @@ def cosy_fill(windows, buildings, plots, trees, streets, site_rects, yard, point
                         jx, jy = rnd.uniform(-2.5, 2.5), rnd.uniform(-2.5, 2.5)
                         trees.append([r2(x + jx), r2(y + jy), r2(rnd.uniform(3.5, 6.0)), r2(rnd.uniform(7.0, 12.0)), "tree"])
                         added_t += 1
+                    elif roll < 0.78:
+                        # 0.18: кусты и замшелые валуны — газон в рисованном стиле не бывает голым
+                        jx, jy = rnd.uniform(-3, 3), rnd.uniform(-3, 3)
+                        kind = "rock" if rnd.random() < 0.18 else "bush"
+                        trees.append([r2(x + jx), r2(y + jy), r2(rnd.uniform(1.2, 2.6)), r2(rnd.uniform(0.8, 1.8)), kind])
+                        added_b += 1
                 x += cell
             y += cell
-    print(f"уют: деревьев +{added_t}, дворовых участков +{added_p}")
+    # живая изгородь вдоль стен домов: куст через 4 м в 1.6 м от стены, где рядом газон
+    hedge = 0
+    for b in buildings:
+        if rnd.random() < 0.3:
+            continue
+        x0, y0, x1, y1 = rect_of(b["r"])
+        for (ax, ay, bx, by, nx, ny) in ((x0, y0, x1, y0, 0, -1), (x0, y1, x1, y1, 0, 1), (x0, y0, x0, y1, -1, 0), (x1, y0, x1, y1, 1, 0)):
+            L = math.hypot(bx - ax, by - ay)
+            t = 2.0
+            while t < L - 2.0:
+                px = ax + (bx - ax) * t / L + nx * 1.6
+                py = ay + (by - ay) * t / L + ny * 1.6
+                t += rnd.uniform(3.0, 5.0)
+                if rnd.random() < 0.35:
+                    continue
+                box = (px - 1, py - 1, px + 1, py + 1)
+                near = grid.get((int(px // 50), int(py // 50)), [])
+                if any(overlaps(box, r, 0.3) for r in near) or any(overlaps(box, r, 1.0) for r in blocked):
+                    continue
+                if any(seg_dist(px, py, s["a"], s["b"]) < s["w"] / 2 + 1.8 for s in streets_near(px, py)):
+                    continue
+                trees.append([r2(px), r2(py), r2(rnd.uniform(0.9, 1.5)), r2(rnd.uniform(0.9, 1.6)), "bush"])
+                hedge += 1
+    print(f"уют: деревьев +{added_t}, кустов и камней +{added_b}, изгородь +{hedge}, дворовых участков +{added_p}")
     return plots, trees
 
 

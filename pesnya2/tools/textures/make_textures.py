@@ -10,10 +10,14 @@
 Асфальт: 4 × 4 м, зерно, трещины, заплатки и лужи (почти зеркальные).
 Плитка: 2 × 2 м, плиты 50 × 50 см, у каждой свой тон, часть с трещиной.
 Земля: 4 × 4 м, утоптанная земля с пятнами травы и старого асфальта.
+
+0.18, рисованный стиль (D-060): перед записью альбедо проходит «кисть» — мелкое зерно
+размыто, контраст сжат к среднему тону, рисунок (швы, плиты, трещины) остаётся читаемым;
+нормали вдвое мягче. Без зерна текстура не спорит с ровными заливками моделей.
 """
 from pathlib import Path
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageFilter
 
 ROOT = Path(__file__).resolve().parents[2]
 OUT = ROOT / "assets" / "textures"
@@ -41,6 +45,7 @@ def rounded_cells(cell_w, cell_h, gap, radius, offset_rows):
 
 
 def normal_from(height, strength):
+    strength *= 0.5                                   # 0.18: рисованный стиль — рельеф мягче
     gx = np.roll(height, -1, 1) - np.roll(height, 1, 1)
     gy = np.roll(height, -1, 0) - np.roll(height, 1, 0)
     nx, ny, nz = -gx * strength, -gy * strength, np.ones_like(height)
@@ -70,7 +75,18 @@ def per_id(ids, lo, hi):
     return vals[inv].reshape(ids.shape)
 
 
+def painted(albedo, blur=2.5, keep=0.5):
+    """Рисованная версия: бесшовное размытие зерна и сжатие контраста к среднему."""
+    img = Image.fromarray(np.clip(albedo * 255, 0, 255).astype(np.uint8))
+    pad = 16
+    wrapped = Image.fromarray(np.pad(np.asarray(img), ((pad, pad), (pad, pad), (0, 0)), mode="wrap"))
+    soft = np.asarray(wrapped.filter(ImageFilter.GaussianBlur(blur)), np.float32)[pad:-pad, pad:-pad] / 255.0
+    mean = soft.reshape(-1, 3).mean(0)
+    return mean + (soft - mean) * keep
+
+
 def save(name, albedo, normal, rough):
+    albedo = painted(albedo)
     Image.fromarray(np.clip(albedo * 255, 0, 255).astype(np.uint8)).save(OUT / f"{name}_albedo.png")
     normal.save(OUT / f"{name}_normal.png")
     Image.fromarray(np.clip(rough * 255, 0, 255).astype(np.uint8)).save(OUT / f"{name}_rough.png")

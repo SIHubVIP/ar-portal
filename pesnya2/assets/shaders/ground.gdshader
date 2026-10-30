@@ -12,6 +12,12 @@ uniform vec4 patch_color : source_color = vec4(1.0);
 uniform float patch_amount = 0.0;
 uniform float tile = 4.0;
 uniform float macro = 0.26;
+// 0.18, рисованный стиль: detail — сколько фотодеталей текстуры оставить (0 — ровная краска),
+// paint_a / paint_b — светлые и тёмные мазки поверх, как кисть на референсах
+uniform float detail = 1.0;
+uniform vec4 paint_a : source_color = vec4(1.0);
+uniform vec4 paint_b : source_color = vec4(1.0);
+uniform float paint_amount = 0.0;
 
 varying vec3 wpos;
 
@@ -36,6 +42,8 @@ void fragment() {
 	vec2 uv2 = mat2(vec2(0.8, 0.6), vec2(-0.6, 0.8)) * uv * 0.77 + vec2(0.37, 0.71);
 	float blend = smoothstep(0.3, 0.7, vnoise(wpos.xz * 0.07));
 	vec3 col = mix(texture(albedo_tex, uv).rgb, texture(albedo_tex, uv2).rgb, blend);
+	vec3 mean = textureLod(albedo_tex, vec2(0.5), 12.0).rgb;
+	col = mean * mix(vec3(1.0), col / max(mean, vec3(0.02)), detail);
 	float m = vnoise(wpos.xz * 0.013) * 0.6 + vnoise(wpos.xz * 0.09) * 0.4;
 	col *= mix(1.0 - macro, 1.0 + macro, m);
 	float p = smoothstep(0.55, 0.8, vnoise(wpos.xz * 0.035 + vec2(17.0, 5.0)));
@@ -43,8 +51,13 @@ void fragment() {
 	// вторая россыпь пятен — холоднее и темнее: тень от деревьев, сырость
 	float q = smoothstep(0.6, 0.85, vnoise(wpos.xz * 0.05 + vec2(-31.0, 47.0)));
 	col = mix(col, col * vec3(0.82, 0.9, 0.86), q * patch_amount * 0.6);
+	// мазки: крупные светлые пятна солнца и тёмные — тени крон, с мягким краем
+	float sa = smoothstep(0.52, 0.7, vnoise(wpos.xz * 0.045 + vec2(5.0, -13.0)) * 0.75 + vnoise(wpos.xz * 0.21) * 0.25);
+	float sb = smoothstep(0.58, 0.76, vnoise(wpos.xz * 0.06 + vec2(-23.0, 9.0)) * 0.75 + vnoise(wpos.xz * 0.27 + 3.0) * 0.25);
+	col = mix(col, col * paint_a.rgb, sa * paint_amount);
+	col = mix(col, col * paint_b.rgb, sb * paint_amount);
 	ALBEDO = col * tint.rgb;
-	NORMAL_MAP = mix(texture(normal_tex, uv).rgb, texture(normal_tex, uv2).rgb, blend);
+	NORMAL_MAP = mix(vec3(0.5, 0.5, 1.0), mix(texture(normal_tex, uv).rgb, texture(normal_tex, uv2).rgb, blend), detail);
 	ROUGHNESS = 0.95;
 	SPECULAR = 0.2;
 }

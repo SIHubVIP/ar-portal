@@ -23,9 +23,10 @@ const PLAIN := {
 	"play": Color(0.8, 0.3, 0.2), "cloth": Color(0.9, 0.9, 0.85), "awning": Color(0.6, 0.2, 0.2),
 	"leaves": Color(0.75, 0.45, 0.15), "picket": Color(0.5, 0.38, 0.24), "bed": Color(0.24, 0.17, 0.12),
 	"pole": Color(0.32, 0.24, 0.18), "greenhouse": Color(0.8, 0.88, 0.85, 0.85),
-	"site": Color(0.6, 0.6, 0.6), "glow": Color(1.0, 0.85, 0.55, 0.0),
+	"site": Color(0.6, 0.6, 0.6), "glow": Color(1.0, 0.85, 0.55, 0.0), "plinth": Color(0.5, 0.48, 0.44),
 }
-const SHADOW_KINDS := ["crown", "plain"]     # тень кроны под ногами и тени машин, ларьков, лавок — двор живой
+const FOLIAGE_SHADER := preload("res://assets/shaders/foliage.gdshader")
+const SHADOW_KINDS := ["crown", "plain", "rock"]     # тень кроны под ногами и тени машин, ларьков, лавок — двор живой
 const MODELS := ["streetlamp", "bench", "kiosk", "dumpster", "car_wreck", "taxi", "convertible", "billboard", "ac_unit",
 	"trash_bags", "boxes", "fence", "garage", "tires"]
 const SHOPS := [
@@ -293,29 +294,71 @@ static func _crossings(root: Node3D, rect: Rect2, segments: Array, batch: Batch,
 
 
 ## Осенние цвета крон концептов: золото, охра, медь, остатки зелени.
+## 0.18: рисованное лето по референсам — сочные зелёные кроны, тёплые светлые и холодные
+## тёмные; осенние (AUTUMN) остались редкими акцентами, примерно каждое пятое дерево.
+const GREEN := [Color(0.22, 0.4, 0.12), Color(0.3, 0.46, 0.14), Color(0.17, 0.34, 0.15), Color(0.36, 0.5, 0.16),
+	Color(0.14, 0.3, 0.18), Color(0.42, 0.52, 0.18)]
+const BUSH := [Color(0.16, 0.32, 0.12), Color(0.22, 0.38, 0.13), Color(0.13, 0.28, 0.15), Color(0.27, 0.42, 0.15)]
+const ROCK := [Color(0.52, 0.52, 0.5), Color(0.58, 0.55, 0.5), Color(0.46, 0.48, 0.47)]
 const AUTUMN := [Color(0.85, 0.55, 0.12), Color(0.9, 0.68, 0.2), Color(0.75, 0.36, 0.12), Color(0.62, 0.26, 0.1),
 	Color(0.55, 0.55, 0.18), Color(0.36, 0.42, 0.16), Color(0.95, 0.75, 0.3)]
 
 
-## Дерево: ствол и две-три кроны разного тона (осень), иногда кольцо-приствольник.
+## Дерево: ствол и пышная крона из шапок разного тона; верхние светлее (шейдер foliage).
 static func _tree(batch: Batch, pos: Vector3, rng: RandomNumberGenerator, scale := 1.0, planter := true) -> void:
-	var h := rng.randf_range(3.5, 5.5) * scale
-	batch.box("trunk", pos + Vector3(0, h * 0.35, 0), Vector3(0.28, h * 0.7, 0.28) * Vector3(scale, 1, scale))
-	var base: Color = AUTUMN[rng.randi() % AUTUMN.size()]
-	# пышная крона: 4–6 шапок разного тона вокруг ствола, верхние светлее
-	for i in rng.randi_range(4, 6):
-		var off := Vector3(rng.randf_range(-1.3, 1.3), rng.randf_range(-0.5, 1.2), rng.randf_range(-1.3, 1.3)) * scale
-		var col := base.lerp(AUTUMN[rng.randi() % AUTUMN.size()], 0.35).darkened(rng.randf_range(0.0, 0.25))
-		col = col.lightened(clampf(off.y / scale, 0.0, 1.0) * 0.12)
-		batch.add("crown", Transform3D(Basis(Vector3.UP, rng.randf() * TAU) * Basis.from_scale(Vector3(2.1, 1.8, 2.1) * scale * rng.randf_range(0.7, 1.05)),
-				pos + Vector3(0, h * 0.8, 0) + off), col)
+	var h := rng.randf_range(3.4, 4.8) * scale
+	var trunk_col := Color(0.34, 0.24, 0.16).darkened(rng.randf_range(0.0, 0.2))
+	batch.box("trunk", pos + Vector3(0, h * 0.35, 0), Vector3(0.36, h * 0.7, 0.36) * Vector3(scale, 1, scale), rng.randf() * TAU, trunk_col)
+	var autumn := rng.randf() < 0.2
+	var pal: Array = AUTUMN if autumn else GREEN
+	var base: Color = pal[rng.randi() % pal.size()]
+	# 0.18: крона — большой центральный ком и 5–8 шапок вокруг, как на референсах
+	batch.add("crown", Transform3D(Basis(Vector3.UP, rng.randf() * TAU) * Basis.from_scale(Vector3(3.9, 3.0, 3.9) * scale),
+			pos + Vector3(0, h * 0.9, 0)), base.darkened(0.08))
+	for i in rng.randi_range(5, 8):
+		var a := rng.randf() * TAU
+		var off := Vector3(cos(a) * rng.randf_range(1.1, 2.0), rng.randf_range(-0.7, 1.4), sin(a) * rng.randf_range(1.1, 2.0)) * scale
+		var col := base.lerp(pal[rng.randi() % pal.size()], 0.35).darkened(rng.randf_range(0.0, 0.18))
+		col = col.lightened(clampf(off.y / scale, 0.0, 1.0) * 0.1)
+		batch.add("crown", Transform3D(Basis(Vector3.UP, rng.randf() * TAU) * Basis.from_scale(Vector3(2.6, 2.2, 2.6) * scale * rng.randf_range(0.75, 1.05)),
+				pos + Vector3(0, h * 0.9, 0) + off), col)
 	if planter:
 		batch.box("planter", pos + Vector3(0, 0.12, 0), Vector3(1.3, 0.24, 1.3))
-	# опавшие листья под кроной
+	# под кроной — кустик у ствола, у осенних — опавшие листья
+	if autumn:
+		for i in rng.randi_range(2, 4):
+			batch.box("leaves", pos + Vector3(rng.randf_range(-2.2, 2.2), 0.04, rng.randf_range(-2.2, 2.2)),
+					Vector3(rng.randf_range(0.8, 1.8), 0.02, rng.randf_range(0.6, 1.4)), rng.randf() * TAU,
+					base.lerp(Color(0.6, 0.35, 0.12), 0.4))
+	elif not planter and rng.randf() < 0.5:
+		_bush(batch, pos + Vector3(rng.randf_range(-1.2, 1.2), 0, rng.randf_range(-1.2, 1.2)), rng, 0.9)
+
+
+## Куст (0.18): 2–4 приплюснутых кома, иногда с цветами — жёлтыми, белыми, розовыми.
+static func _bush(batch: Batch, pos: Vector3, rng: RandomNumberGenerator, r: float) -> void:
+	var base: Color = BUSH[rng.randi() % BUSH.size()]
 	for i in rng.randi_range(2, 4):
-		batch.box("leaves", pos + Vector3(rng.randf_range(-2.2, 2.2), 0.04, rng.randf_range(-2.2, 2.2)),
-				Vector3(rng.randf_range(0.8, 1.8), 0.02, rng.randf_range(0.6, 1.4)), rng.randf() * TAU,
-				base.lerp(Color(0.6, 0.35, 0.12), 0.4))
+		var off := Vector3(rng.randf_range(-0.6, 0.6), 0, rng.randf_range(-0.6, 0.6)) * r
+		var k := rng.randf_range(0.75, 1.1) * r
+		batch.add("bush", Transform3D(Basis(Vector3.UP, rng.randf() * TAU) * Basis.from_scale(Vector3(1.9, 1.3, 1.9) * k),
+				pos + off + Vector3(0, 0.45 * k, 0)), base.darkened(rng.randf_range(0.0, 0.15)).lightened(rng.randf_range(0.0, 0.08)))
+	if rng.randf() < 0.3:
+		var flower: Color = [Color(1.0, 0.85, 0.3), Color(0.95, 0.95, 0.9), Color(1.0, 0.5, 0.65), Color(0.75, 0.5, 1.0)][rng.randi() % 4]
+		for i in rng.randi_range(3, 6):
+			batch.add("veg", Transform3D(Basis().scaled(Vector3(0.22, 0.22, 0.22)),
+					pos + Vector3(rng.randf_range(-0.8, 0.8) * r, 0.75 * r + rng.randf_range(0.0, 0.25), rng.randf_range(-0.8, 0.8) * r)), flower)
+
+
+## Замшелый валун (0.18): гранёный серый камень, сверху шапка мха, у подножия травка.
+static func _rock(batch: Batch, pos: Vector3, rng: RandomNumberGenerator, r: float) -> void:
+	var col: Color = ROCK[rng.randi() % ROCK.size()]
+	var s := Vector3(rng.randf_range(1.2, 1.8), rng.randf_range(0.7, 1.1), rng.randf_range(1.0, 1.5)) * r
+	var yaw := rng.randf() * TAU
+	batch.add("rock", Transform3D(Basis(Vector3.UP, yaw) * Basis.from_scale(s), pos + Vector3(0, s.y * 0.3, 0)), col)
+	batch.add("bush", Transform3D(Basis(Vector3.UP, yaw) * Basis.from_scale(Vector3(s.x * 0.8, s.y * 0.35, s.z * 0.75)),
+			pos + Vector3(0, s.y * 0.68, 0)), Color(0.36, 0.56, 0.18))
+	if rng.randf() < 0.6:
+		_bush(batch, pos + Vector3(s.x * 0.5, 0, s.z * 0.3).rotated(Vector3.UP, yaw), rng, 0.6)
 
 
 ## Дворы по макету «Рубин» (0.11): деревья и рощи пакета, огороды, детские площадки и бельё
@@ -327,7 +370,14 @@ static func layout_fill(root: Node3D, rect: Rect2, batch: Batch) -> void:
 			continue
 		var rng := RandomNumberGenerator.new()
 		rng.seed = hash(Vector2i(int(c.x), int(c.y)))
-		if String(t[4]) == "grove":
+		var tk := String(t[4])
+		if tk == "bush":
+			_bush(batch, District.to_world(c), rng, float(t[2]) * 0.8)
+			continue
+		if tk == "rock":
+			_rock(batch, District.to_world(c), rng, float(t[2]) * 0.7)
+			continue
+		if tk == "grove":
 			# роща: несколько деревьев в круге кроны пакета, под ними скамейка
 			var r := float(t[2])
 			for i in rng.randi_range(6, 10):
@@ -616,7 +666,7 @@ static func warm() -> void:
 	for m in MODELS:
 		_parts(m)
 	# текстуры асфальта, плитки и земли грузятся при первом материале — тоже заранее
-	for kind in ["plain", "sidewalk", "path", "lawn", "pocket", "curb", "paint", "zebra", "trunk", "crown", "veg", "planter", "pipe",
+	for kind in ["plain", "sidewalk", "path", "lawn", "pocket", "curb", "paint", "zebra", "trunk", "crown", "bush", "rock", "veg", "planter", "pipe",
 			"roof_block", "tank", "antenna", "awning", "puddle", "pool", "spill", "lamp_post", "cloth", "play", "door",
 			"canopy", "doorlamp"]:
 		_material(kind)
@@ -721,6 +771,22 @@ static func _mesh(kind: String) -> Mesh:
 			sp.radial_segments = 7
 			sp.rings = 4
 			m = sp
+		"bush":
+			# куст: меньше граней, чем у кроны, и без тени — их тысячи (0.18)
+			var bs := SphereMesh.new()
+			bs.radius = 0.5
+			bs.height = 1.0
+			bs.radial_segments = 6
+			bs.rings = 3
+			m = bs
+		"rock":
+			# гранёный камень: мало сегментов — рубленые грани, как на референсе
+			var rk := SphereMesh.new()
+			rk.radius = 0.5
+			rk.height = 1.0
+			rk.radial_segments = 6
+			rk.rings = 3
+			m = rk
 		"tank":
 			var cy2 := CylinderMesh.new()
 			cy2.top_radius = 0.5
@@ -741,7 +807,12 @@ static var _mats: Dictionary = {}
 static func _material(kind: String) -> Material:
 	if _mats.has(kind):
 		return _mats[kind]
-	if kind == "plain" or kind == "crown" or kind == "tank" or kind == "veg":
+	if kind == "crown" or kind == "bush":
+		var fm := ShaderMaterial.new()
+		fm.shader = FOLIAGE_SHADER
+		_mats[kind] = fm
+		return fm
+	if kind == "plain" or kind == "rock" or kind == "tank" or kind == "veg":
 		var sm := ShaderMaterial.new()
 		sm.shader = Signboard.PLAIN_SHADER
 		sm.set_shader_parameter("roughness_value", 0.9 if kind == "crown" else 0.7)

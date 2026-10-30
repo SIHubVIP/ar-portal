@@ -56,8 +56,10 @@ static func _material(name: String, normal_scale: float, tile := TILE_M, tint :=
 
 ## Земля района без повторов (0.16, assets/shaders/ground.gdshader): только для плоских
 ## поверхностей — газона кварталов, дорог и дорожек. patch — цвет проплешин, amount — их сила.
-static func ground(name: String, tile: float, tint := Color.WHITE, patch := Color.WHITE, amount := 0.0) -> ShaderMaterial:
-	var key := "ground:%s|%s|%s|%s" % [name, tint.to_html(), patch.to_html(), amount]
+## 0.18: detail — доля фотодеталей текстуры, paint — [светлый мазок, тёмный мазок, сила].
+static func ground(name: String, tile: float, tint := Color.WHITE, patch := Color.WHITE, amount := 0.0,
+		detail := 1.0, paint := []) -> ShaderMaterial:
+	var key := "ground:%s|%s|%s|%s|%s|%s" % [name, tint.to_html(), patch.to_html(), amount, detail, str(paint)]
 	if _cache.has(key):
 		return _cache[key]
 	var m := ShaderMaterial.new()
@@ -68,6 +70,11 @@ static func ground(name: String, tile: float, tint := Color.WHITE, patch := Colo
 	m.set_shader_parameter("tile", tile)
 	m.set_shader_parameter("patch_color", patch)
 	m.set_shader_parameter("patch_amount", amount)
+	m.set_shader_parameter("detail", detail)
+	if paint.size() == 3:
+		m.set_shader_parameter("paint_a", paint[0])
+		m.set_shader_parameter("paint_b", paint[1])
+		m.set_shader_parameter("paint_amount", paint[2])
 	_cache[key] = m
 	return m
 

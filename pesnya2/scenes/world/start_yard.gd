@@ -98,11 +98,13 @@ static func _sign(w: Node3D, text: String, pos: Vector3, yaw_deg: float, height:
 static func _ground(w: Node3D) -> void:
 	# мощение двора: плитка, по ней — асфальт парковки; земля под деревьями
 	var court := Kit.box(w, Vector3(COURT.size.x, 0.06, COURT.size.y), _c3(COURT, 0.03), Color.WHITE)
-	court.material_override = Surfaces.slabs(Color(1.0, 0.95, 0.88))
+	court.material_override = Surfaces.ground("slabs", 2.0, Color(1.02, 0.94, 0.84), Color(0.8, 0.95, 0.7), 0.5, 0.6,
+			[Color(1.1, 1.05, 0.92), Color(0.78, 0.86, 0.84), 0.8])     # 0.18: рисованная плитка, мох и тени пятнами
 	court.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	court.set_meta("map_skip", true)
 	var lawn := Kit.box(w, Vector3(150, 0.07, 26), Vector3(-2, 0.035, -100), Color.WHITE)
-	lawn.material_override = Surfaces.dirt(Color(1.25, 1.45, 0.8))
+	lawn.material_override = Surfaces.ground("dirt", 4.0, Color(1.32, 1.8, 1.05), Color(1.25, 0.69, 1.33), 0.45, 0.35,
+			[Color(1.2, 1.14, 0.84), Color(0.74, 0.86, 0.9), 0.9])       # 0.18: сочный газон, как в районе
 	lawn.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	lawn.set_meta("map_skip", true)
 	# листья россыпью по всему двору
@@ -249,7 +251,8 @@ static func _lot(w: Node3D) -> void:
 	var p := _sw(lot.position)
 	var r := Rect2(Vector2(p.x, p.z), lot.size)
 	var asphalt := Kit.box(w, Vector3(r.size.x, 0.05, r.size.y), _c3(r, 0.06), Color.WHITE)
-	asphalt.material_override = Surfaces.asphalt(Color(1.75, 1.72, 1.75))
+	asphalt.material_override = Surfaces.ground("asphalt", 4.0, Color(1.6, 1.6, 1.72), Color(0.8, 0.8, 0.84), 0.5, 0.35,
+			[Color(1.08, 1.06, 1.02), Color(0.84, 0.88, 0.94), 0.7])
 	asphalt.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	asphalt.set_meta("map_skip", true)
 	# места по 2,8 м вдоль северного и южного края, бордюр по периметру
@@ -300,13 +303,9 @@ static func _lot(w: Node3D) -> void:
 		DistrictDressing._tree(_yb, c, rng, 1.3)
 
 
-## Осенний куст: две-три кроны цвета листвы.
+## Куст у парковки (0.18): общий рисованный куст района, иногда с цветами.
 static func _bush(at: Vector3, rng: RandomNumberGenerator) -> void:
-	for i in rng.randi_range(2, 3):
-		var s := rng.randf_range(0.9, 1.6)
-		var c: Color = DistrictDressing.AUTUMN[rng.randi() % DistrictDressing.AUTUMN.size()]
-		_yb.add("veg", Transform3D(Basis().scaled(Vector3(s * 1.2, s * 0.9, s)),
-				at + Vector3(rng.randf_range(-0.6, 0.6), s * 0.4, rng.randf_range(-0.5, 0.5))), c.darkened(rng.randf() * 0.3))
+	DistrictDressing._bush(_yb, at, rng, rng.randf_range(0.8, 1.2))
 
 
 ## Машина двора (CarKit): тело — коллизия, сетка копится по цвету и виду, после парковки
