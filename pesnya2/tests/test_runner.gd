@@ -654,6 +654,19 @@ func test_signboard_styles_build_real_objects() -> void:
 	root.queue_free()
 
 
+func test_car_kit_builds_cached_cars() -> void:
+	var a := CarKit.mesh(Color(0.3, 0.45, 0.42))
+	check(a == CarKit.mesh(Color(0.3, 0.45, 0.42)), "машина одного цвета и вида — одна сетка")
+	check(a != CarKit.mesh(Color(0.3, 0.45, 0.42), true), "машина с горящими фарами — своя сетка")
+	var aabb := a.get_aabb()
+	check(absf(aabb.size.z - CarKit.LENGTH) < 0.3 and aabb.position.y > -0.01 and aabb.end.y < 1.6,
+			"машина 4,3 м, стоит колёсами на земле: %s" % aabb)
+	var glow := false
+	for c: Color in CarKit.mesh(Color.RED, true).surface_get_arrays(0)[Mesh.ARRAY_COLOR]:
+		glow = glow or c.a < 0.01
+	check(glow, "у машины на ходу фары светятся")
+
+
 func test_district_chunk_is_dressed() -> void:
 	var root := Node3D.new()
 	add_child(root)

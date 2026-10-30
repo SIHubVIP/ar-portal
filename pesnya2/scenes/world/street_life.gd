@@ -76,10 +76,7 @@ func _make_car() -> Dictionary:
 	var n := Node3D.new()
 	add_child(n)
 	var c: Color = CAR_COLORS[_rng.randi() % CAR_COLORS.size()]
-	Kit.box(n, Vector3(1.9, 0.75, 4.3), Vector3(0, 0.6, 0), c)
-	Kit.box(n, Vector3(1.7, 0.6, 2.2), Vector3(0, 1.25, -0.2), c.darkened(0.45))
-	Kit.box(n, Vector3(1.5, 0.18, 0.05), Vector3(0, 0.7, 2.16), Color(1, 0.95, 0.8), 4.0)
-	Kit.box(n, Vector3(1.5, 0.14, 0.05), Vector3(0, 0.75, -2.16), Color(1, 0.1, 0.1), 3.0)
+	CarKit.make(n, c, true, _rng.randi() % 3)
 	n.visible = false
 	return {"node": n, "a": Vector2.ZERO, "b": Vector2.ZERO, "t": 1.0, "len": 1.0, "speed": 0.0,
 			"cruise": _rng.randf_range(8.0, 12.0), "lane": 0.0, "honk": 0.0}

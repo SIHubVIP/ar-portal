@@ -40,10 +40,10 @@ static func _material(name: String, normal_scale: float, tile := TILE_M, tint :=
 	m.normal_enabled = true
 	m.normal_texture = load("res://assets/textures/%s_normal.png" % name)
 	m.normal_scale = normal_scale
-	m.roughness_texture = load("res://assets/textures/%s_rough.png" % name)
-	m.roughness_texture_channel = BaseMaterial3D.TEXTURE_CHANNEL_RED
-	m.metallic_specular = 0.2            # 0.11: сухой осенний вечер — без мокрых бликов
-	m.roughness = 1.0
+	# 0.12: сухой осенний вечер — ровная матовая поверхность; карта шероховатости (мокрые
+	# пятна из 0.10) давала россыпь бликов на плитке рынка и площади
+	m.metallic_specular = 0.2
+	m.roughness = 0.95
 	m.uv1_triplanar = true
 	m.uv1_world_triplanar = true
 	m.uv1_scale = Vector3.ONE / tile

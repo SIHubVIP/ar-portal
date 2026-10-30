@@ -343,10 +343,10 @@ static func _square(root: Node3D, site: Dictionary, batch: DistrictDressing.Batc
 	ufo.position = District.to_world(ufo_o.get_center(), 14.5)
 	ufo.rotation_degrees = Vector3(14, 25, -18)
 	root.add_child(ufo)
-	Kit.cylinder(ufo, 17.0, 2.4, Vector3.ZERO, Color(0.2, 0.21, 0.25), 0.0, 28)
-	Kit.cylinder(ufo, 13.5, 0.5, Vector3(0, 1.4, 0), Color(0.26, 0.28, 0.33), 0.0, 28)         # верхнее кольцо брони
-	Kit.cylinder(ufo, 9.5, 0.4, Vector3(0, 1.8, 0), Color(0.5, 0.52, 0.58), 0.0, 24)
-	Kit.cylinder(ufo, 11.0, 2.0, Vector3(0, -2.0, 0), Color(0.22, 0.23, 0.27), 0.0, 24)
+	Kit.cylinder(ufo, 17.0, 2.4, Vector3.ZERO, Color(0.3, 0.32, 0.37), 0.0, 14.5)
+	Kit.cylinder(ufo, 13.5, 0.5, Vector3(0, 1.4, 0), Color(0.22, 0.24, 0.28), 0.0, 12.5)         # верхнее кольцо брони
+	Kit.cylinder(ufo, 9.5, 0.4, Vector3(0, 1.8, 0), Color(0.45, 0.47, 0.52), 0.0, 9.0)
+	Kit.cylinder(ufo, 8.0, 2.0, Vector3(0, -2.0, 0), Color(0.22, 0.23, 0.27), 0.0, 13.0)
 	# пробоина и копоть с той стороны, которой тарелка легла на крыло
 	Kit.box(ufo, Vector3(7, 0.3, 4), Vector3(-9, 1.25, -4), Color(0.08, 0.07, 0.07)).rotation_degrees.y = 25
 	Kit.box(ufo, Vector3(2.4, 0.32, 1.4), Vector3(-9.5, 1.3, -3.6), Color(1.0, 0.45, 0.15), 2.5).rotation_degrees.y = 25
@@ -356,6 +356,20 @@ static func _square(root: Node3D, site: Dictionary, batch: DistrictDressing.Batc
 		Kit.box(ufo, Vector3(1.2, 0.35, 0.6), Vector3(cos(a) * 16.6, 0.2, sin(a) * 16.6), Color(0.3, 1.0, 0.85), 3.5 if i % 3 else 0.0) \
 				.rotation.y = -a
 	Kit.box(ufo, Vector3(3.5, 3.5, 0.1), Vector3(6, 1.3, 10.5), Color(0.75, 0.15, 0.12)).rotation_degrees.y = 30    # эмблема
+	# 0.12: броня по секторам, огни по верхнему кольцу, мигающий маяк и дым из пробоины
+	# (в общем пакете площадки: 24 детали — два вызова отрисовки вместо 24)
+	var ux := ufo.transform
+	for i in 12:
+		var a3 := TAU * i / 12.0
+		batch.add("site", ux * Transform3D(Basis(Vector3.UP, PI / 2.0 - a3).scaled(Vector3(0.3, 0.3, 2.4)),
+				Vector3(cos(a3) * 15.6, 0.32, sin(a3) * 15.6)), Color(0.12, 0.13, 0.16))
+		batch.add("glow", ux * Transform3D(Basis().scaled(Vector3.ONE * 0.6), Vector3(cos(a3 + 0.26) * 13.0, 1.75, sin(a3 + 0.26) * 13.0)),
+				Color(1.0, 0.75, 0.3) if i % 2 else Color(0.3, 1.0, 0.85))
+	var beacon := Kit.sphere(ufo, 0.6, Vector3(0, 9.3, 0), Color(1.0, 0.2, 0.15), 5.0)
+	beacon.create_tween().set_loops().tween_property(beacon, "scale", Vector3.ONE * 0.2, 0.6).from(Vector3.ONE)
+	var smoke := Kit.particles(ufo, Vector3(-9.5, 1.6, -3.6), Color(0.22, 0.2, 0.2, 0.55), 24, 6.0, Vector3(0, 2.2, 0), 0.25, 4.0,
+			Vector3(1.2, 0.2, 0.8))
+	smoke.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	for k in 4:
 		var leg := ufo.position + Vector3(-6 + k * 4.0, -7.5, 9 - k * 2.0)
 		_b(batch, leg, Vector3(0.25, 15.0, 0.25), Color(0.85, 0.65, 0.15))

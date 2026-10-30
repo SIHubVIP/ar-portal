@@ -29,6 +29,7 @@ const LAMPS_KEY := Vector2i(-99, -99)
 
 static var _site: Dictionary = {}
 static var _extra_lamps := PackedVector3Array()
+static var _parked: Dictionary = {}          # сетка машины → её места
 static var _yb: DistrictDressing.Batch       # общий пакет двора: машины, кусты, деревья — несколько MultiMesh
 
 
@@ -44,6 +45,7 @@ static func build(w: Node3D) -> void:
 	_kiosk(w)
 	_booth(w)
 	_drain(w)
+	_yard_life(w)
 	_courtyard(w)
 	_story(w)
 	_walls_talk(w)
@@ -261,7 +263,8 @@ static func _lot(w: Node3D) -> void:
 	# машины пакета (кроме кабриолета — его ставит сцена) и ещё пара у бордюра
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 2672
-	var cars := [Color(0.9, 0.88, 0.82), Color(0.25, 0.32, 0.5), Color(0.55, 0.2, 0.16), Color(0.4, 0.42, 0.36)]
+	var cars := [Color(0.9, 0.88, 0.82), Color(0.25, 0.32, 0.5), Color(0.55, 0.2, 0.16), Color(0.4, 0.42, 0.36),
+		Color(0.75, 0.62, 0.3), Color(0.3, 0.45, 0.42)]
 	var i := 0
 	for o in DistrictSites._all(_site, "PG_C1_car"):
 		if String(o.name) != "PG_C1_car":
@@ -276,8 +279,9 @@ static func _lot(w: Node3D) -> void:
 			var near_story := row > r.get_center().y and slot > -62.0 and slot < -34.0
 			if not near_story and rng.randf() < 0.55:
 				_car(w, Vector3(slot, 0, row), rng.randf_range(-0.1, 0.1) + (PI if rng.randf() < 0.5 else 0.0),
-						cars[rng.randi() % cars.size()].lerp(Color(0.3, 0.6, 0.55), rng.randf() * 0.3))
+						cars[rng.randi() % cars.size()])
 		slot += 2.8
+	_flush_cars(w)
 	# кусты и деревья по краю парковки, как на концепте: осенние клумбы за бордюром
 	for t in range(0, int(r.size.x), 3):
 		if rng.randf() < 0.8:
@@ -299,22 +303,30 @@ static func _bush(at: Vector3, rng: RandomNumberGenerator) -> void:
 				at + Vector3(rng.randf_range(-0.6, 0.6), s * 0.4, rng.randf_range(-0.5, 0.5))), c.darkened(rng.randf() * 0.3))
 
 
-## Машина двора: кузов, салон со стёклами, колёса, фары — коробки общего пакета, тело — коллизия.
+## Машина двора (CarKit): тело — коллизия, сетка копится по цвету и виду, после парковки
+## каждая группа — один MultiMesh с тенью.
 static func _car(w: Node3D, pos: Vector3, yaw: float, color: Color) -> void:
 	var car := Props.collider(w, Vector3(1.9, 1.4, 4.3), pos + Vector3(0, 0.7, 0))
 	car.rotation.y = yaw
-	var b := Basis(Vector3.UP, yaw)
-	var part := func(local: Vector3, size: Vector3, col: Color, kind := "site") -> void:
-		_yb.box(kind, pos + b * local, size, yaw, col)
-	part.call(Vector3(0, 0.65, 0), Vector3(1.85, 0.7, 4.3), color)
-	part.call(Vector3(0, 1.3, -0.2), Vector3(1.6, 0.6, 2.2), color.darkened(0.08))
-	part.call(Vector3(0, 1.3, -0.2), Vector3(1.64, 0.42, 2.04), Color(0.2, 0.25, 0.3))
-	for sx: float in [-1.0, 1.0]:
-		for sz: float in [-1.0, 1.0]:
-			part.call(Vector3(sx * 0.86, 0.34, sz * 1.35), Vector3(0.24, 0.66, 0.66), Color(0.07, 0.07, 0.07))
-		part.call(Vector3(sx * 0.6, 0.7, 2.16), Vector3(0.4, 0.15, 0.05), Color(0.95, 0.9, 0.78))
-		part.call(Vector3(sx * 0.6, 0.7, -2.16), Vector3(0.35, 0.12, 0.05), Color(0.75, 0.12, 0.08))
-	part.call(Vector3(0, 0.5, 2.17), Vector3(0.5, 0.12, 0.03), Color(0.95, 0.95, 0.92))
+	var mesh := CarKit.mesh(color, false, (_parked.size() * 7) % 3)
+	if not _parked.has(mesh):
+		_parked[mesh] = []
+	_parked[mesh].append(Transform3D(Basis(Vector3.UP, yaw), pos))
+
+
+static func _flush_cars(w: Node3D) -> void:
+	for mesh: Mesh in _parked:
+		var list: Array = _parked[mesh]
+		var mm := MultiMesh.new()
+		mm.transform_format = MultiMesh.TRANSFORM_3D
+		mm.mesh = mesh
+		mm.instance_count = list.size()
+		for i in list.size():
+			mm.set_instance_transform(i, list[i])
+		var mmi := MultiMeshInstance3D.new()
+		mmi.multimesh = mm
+		w.add_child(mmi)
+	_parked.clear()
 
 
 # ---------- киоск «НЛО напрокат» и будка ----------
@@ -392,6 +404,87 @@ static func _drain(w: Node3D) -> void:
 
 
 # ---------- двор: деревья, скамейки, площадка, мусорки, бельё ----------
+
+## Середина двора (0.12): хоккейная коробка, клумбы из крашеных шин, выбивалка с ковром,
+## доминошный стол с мужиками, бетонный теннисный стол, бабушки на лавках у подъездов.
+static func _yard_life(w: Node3D) -> void:
+	var b := _yb
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 2612
+	# коробка 30 × 15 м: борта с калиткой, зелёное поле, ворота, разметка
+	var box := Vector3(28, 0, -70)
+	DistrictSites._b(b, box + Vector3(0, 0.05, 0), Vector3(30, 0.06, 15), Color(0.24, 0.38, 0.3))
+	for side: float in [-1.0, 1.0]:
+		DistrictSites._b(b, box + Vector3(0, 0.6, side * 7.5), Vector3(30, 1.1, 0.12), Color(0.9, 0.9, 0.86))
+		DistrictSites._b(b, box + Vector3(0, 1.1, side * 7.5), Vector3(30, 0.1, 0.16), Color(0.25, 0.4, 0.75))
+		DistrictSites._b(b, box + Vector3(side * 15, 0.6, side * 2.0), Vector3(0.12, 1.1, 11), Color(0.9, 0.9, 0.86))
+		Props.collider(w, Vector3(30, 1.2, 0.2), box + Vector3(0, 0.6, side * 7.5))
+		Props.collider(w, Vector3(0.2, 1.2, 11), box + Vector3(side * 15, 0.6, side * 2.0))
+		# ворота: рама с сеткой
+		var g := box + Vector3(side * 13.2, 0, 0)
+		DistrictSites._b(b, g + Vector3(0, 0.6, -1.0), Vector3(0.08, 1.2, 0.08), Color(0.85, 0.15, 0.12))
+		DistrictSites._b(b, g + Vector3(0, 0.6, 1.0), Vector3(0.08, 1.2, 0.08), Color(0.85, 0.15, 0.12))
+		DistrictSites._b(b, g + Vector3(0, 1.2, 0), Vector3(0.08, 0.08, 2.0), Color(0.85, 0.15, 0.12))
+		DistrictSites._b(b, g + Vector3(side * 0.5, 0.6, 0), Vector3(0.02, 1.1, 1.9), Color(0.85, 0.85, 0.85, 1.0))
+		DistrictSites._b(b, box + Vector3(side * 7.5, 0.09, 0), Vector3(0.25, 0.01, 15), Color(0.85, 0.3, 0.3), 0.0, "paint")
+	DistrictSites._b(b, box + Vector3(0, 0.09, 0), Vector3(0.25, 0.01, 15), Color(0.85, 0.3, 0.3), 0.0, "paint")
+	_sign(w, "ХОККЕЙ ПО ТАЛОНАМ", box + Vector3(0, 1.9, 7.6), 0.0, 0.45, Color(0.15, 0.2, 0.4), "board",
+			{"bg": Color(0.95, 0.95, 0.9)})
+	for k in 4:
+		DistrictSites._person(w, box + Vector3(-8 + k * 5.0, 0, rng.randf_range(-3, 3)), rng.randf() * TAU, rng)
+	# клумбы из шин, крашеных в цвета светофора и чужого флага
+	var tyre_cols := [Color(0.95, 0.85, 0.2), Color(0.9, 0.25, 0.2), Color(0.25, 0.55, 0.9), Color(0.95, 0.95, 0.92),
+		Color(0.4, 0.85, 0.5)]
+	for row in 3:
+		var at := Vector3(-14 + row * 8.0, 0, -58)
+		for k in 6:
+			var p := at + Vector3(cos(TAU * k / 6.0) * 1.6, 0, sin(TAU * k / 6.0) * 1.6)
+			b.add("tank", Transform3D(Basis().scaled(Vector3(0.9, 0.32, 0.9)), p + Vector3(0, 0.16, 0)), tyre_cols[(k + row) % tyre_cols.size()])
+			b.add("veg", Transform3D(Basis().scaled(Vector3.ONE * 0.55), p + Vector3(0, 0.45, 0)),
+					[Color(0.95, 0.4, 0.3), Color(0.98, 0.8, 0.25), Color(0.75, 0.4, 0.9)][(k + row) % 3])
+		b.add("tank", Transform3D(Basis().scaled(Vector3(1.6, 0.5, 1.6)), at + Vector3(0, 0.25, 0)), tyre_cols[row])
+		b.add("veg", Transform3D(Basis().scaled(Vector3(1.0, 0.9, 1.0)), at + Vector3(0, 0.8, 0)), Color(0.85, 0.35, 0.2))
+	# выбивалка: П-образная труба и ковёр с узором, рядом таз
+	var beat := Vector3(55, 0, -96)
+	for sx: float in [-1.0, 1.0]:
+		DistrictSites._b(b, beat + Vector3(sx * 2.0, 1.1, 0), Vector3(0.08, 2.2, 0.08), Color(0.3, 0.32, 0.35))
+	DistrictSites._b(b, beat + Vector3(0, 2.2, 0), Vector3(4.1, 0.08, 0.08), Color(0.3, 0.32, 0.35))
+	DistrictSites._b(b, beat + Vector3(0, 1.45, 0.04), Vector3(2.6, 1.5, 0.04), Color(0.62, 0.12, 0.12))
+	DistrictSites._b(b, beat + Vector3(0, 1.45, 0.07), Vector3(1.8, 1.0, 0.02), Color(0.12, 0.2, 0.45))
+	DistrictSites._b(b, beat + Vector3(0, 1.45, 0.09), Vector3(0.8, 0.5, 0.02), Color(0.92, 0.8, 0.35))
+	Props.collider(w, Vector3(4.2, 2.3, 0.3), beat + Vector3(0, 1.15, 0))
+	DistrictSites._person(w, beat + Vector3(0.6, 0, 1.4), PI, rng, {"skirt": true, "style": "bun"})
+	# доминошный стол под деревом: «рыба!»
+	var dom := Vector3(-22, 0, -72)
+	DistrictDressing._tree(b, dom + Vector3(3.5, 0, -3.0), rng, 1.8)
+	DistrictSites._b(b, dom + Vector3(0, 0.75, 0), Vector3(2.2, 0.08, 1.2), Color(0.45, 0.3, 0.18))
+	DistrictSites._b(b, dom + Vector3(0, 0.37, 0), Vector3(0.15, 0.75, 0.15), Color(0.3, 0.3, 0.32))
+	for k in 6:
+		DistrictSites._b(b, dom + Vector3(-0.8 + k * 0.3, 0.8, rng.randf_range(-0.3, 0.3)), Vector3(0.1, 0.02, 0.2), Color(0.95, 0.95, 0.9),
+				rng.randf() * PI)
+	for side: float in [-1.0, 1.0]:
+		DistrictSites._b(b, dom + Vector3(0, 0.45, side * 1.2), Vector3(2.4, 0.08, 0.4), Color(0.5, 0.34, 0.2))
+		DistrictSites._person(w, dom + Vector3(-0.5, 0, side * 1.25), PI if side > 0 else 0.0, rng, {"skirt": false, "style": "bald"})
+		DistrictSites._person(w, dom + Vector3(0.6, 0, side * 1.25), PI if side > 0 else 0.0, rng, {"skirt": false})
+	Props.collider(w, Vector3(2.4, 0.9, 3.0), dom + Vector3(0, 0.45, 0))
+	_sign(w, "КТО ЗАБИЛ — ТОТ И ПРАВ", dom + Vector3(0, 2.2, -1.6), 0.0, 0.32, Color(0.95, 0.9, 0.8), "board",
+			{"bg": Color(0.25, 0.3, 0.25)})
+	# теннисный стол из бетона: сетка — стальной лист
+	var tt := Vector3(58, 0, -45)
+	DistrictSites._b(b, tt + Vector3(0, 0.76, 0), Vector3(1.5, 0.1, 2.7), Color(0.25, 0.45, 0.35))
+	DistrictSites._b(b, tt + Vector3(0, 0.38, 0), Vector3(0.4, 0.76, 1.6), Color(0.6, 0.58, 0.55))
+	DistrictSites._b(b, tt + Vector3(0, 0.93, 0), Vector3(1.6, 0.2, 0.03), Color(0.5, 0.52, 0.55))
+	DistrictSites._b(b, tt + Vector3(0, 0.815, 0), Vector3(0.03, 0.01, 2.7), Color(0.95, 0.95, 0.95), 0.0, "paint")
+	Props.collider(w, Vector3(1.6, 1.0, 2.8), tt + Vector3(0, 0.5, 0))
+	# бабушки на лавках у подъездов северных корпусов
+	for e: Vector3 in _extra_lamps.slice(0, 4):
+		var p := e - Vector3(0, 2.4, 0) + Vector3(2.8, 0, 2.2)
+		b.model("bench", p, PI)
+		Props.collider(w, Vector3(2.4, 0.5, 0.7), p + Vector3(0, 0.25, 0))
+		for k in 2:
+			DistrictSites._person(w, p + Vector3(-0.5 + k * 1.0, 0, 0.2), PI, rng, {"skirt": true, "style": "bun",
+					"hair": Color(0.85, 0.85, 0.82)})
+
 
 static func _courtyard(w: Node3D) -> void:
 	var batch := _yb
