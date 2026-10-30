@@ -694,7 +694,8 @@ static func flush_steps(root: Node3D, c: Vector2i, batch: Batch) -> Array[Callab
 				for part in _parts(model):
 					_multimesh(root, part[0], null, list, part[1], SHADOW_KINDS.has(model))
 			else:
-				_multimesh(root, _mesh(kind), _material(kind), list, Transform3D(), SHADOW_KINDS.has(kind)))
+				_multimesh(root, _mesh(kind), _material(kind), list, Transform3D(), SHADOW_KINDS.has(kind),
+						SMALL_FAR_M if SMALL_FAR_KINDS.has(kind) else 0.0))
 	out.append(func() -> void:
 		if not is_instance_valid(root):
 			return
@@ -706,7 +707,34 @@ static func flush_steps(root: Node3D, c: Vector2i, batch: Batch) -> Array[Callab
 	return out
 
 
-static func _multimesh(root: Node3D, mesh: Mesh, mat: Material, list: Array, local: Transform3D, shadow := false) -> void:
+## Сторона клетки, по которой режется большой MultiMesh (0.20): участок 250 м одной рамкой
+## не отсекается камерой и тенью, и телефон рисовал миллион треугольников крон за кадр.
+const CELL_M := 40.0
+const CELL_MIN := 48
+## Мелочь дальше этого не рисуется: камера сверху её всё равно не различает.
+const SMALL_FAR_M := 140.0
+const SMALL_FAR_KINDS := ["bush", "rock", "veg", "puddle", "spill", "cloth", "paint", "zebra"]
+
+
+static func _multimesh(root: Node3D, mesh: Mesh, mat: Material, list: Array, local: Transform3D, shadow := false,
+		far := 0.0) -> void:
+	if list.size() >= CELL_MIN:
+		var cells := {}
+		for it in list:
+			var o: Vector3 = (it[0] as Transform3D).origin
+			var key := Vector2i(floori(o.x / CELL_M), floori(o.z / CELL_M))
+			if not cells.has(key):
+				cells[key] = []
+			cells[key].append(it)
+		if cells.size() > 1:
+			for key in cells:
+				_multimesh_one(root, mesh, mat, cells[key], local, shadow, far)
+			return
+	_multimesh_one(root, mesh, mat, list, local, shadow, far)
+
+
+static func _multimesh_one(root: Node3D, mesh: Mesh, mat: Material, list: Array, local: Transform3D, shadow: bool,
+		far: float) -> void:
 	var mm := MultiMesh.new()
 	mm.transform_format = MultiMesh.TRANSFORM_3D
 	mm.use_colors = mat != null
@@ -724,6 +752,9 @@ static func _multimesh(root: Node3D, mesh: Mesh, mat: Material, list: Array, loc
 	# рисуется второй раз в проход теней
 	if not shadow:
 		mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	if far > 0.0:
+		mmi.visibility_range_end = far
+		mmi.visibility_range_end_margin = 10.0
 	root.add_child(mmi)
 
 

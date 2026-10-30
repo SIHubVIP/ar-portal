@@ -25,12 +25,7 @@ var _title_font: Font
 func _ready() -> void:
 	visible = false
 	_title_font = load("res://assets/fonts/RussoOne-Regular.ttf")
-	var sb := StyleBoxFlat.new()
-	sb.bg_color = Color(0.08, 0.065, 0.06, 0.97)
-	sb.border_color = Color(0.85, 0.72, 0.5, 0.9)
-	sb.set_border_width_all(2)
-	sb.set_corner_radius_all(14)
-	sb.set_content_margin_all(16)
+	var sb := UiSkin.panel(16)
 	add_theme_stylebox_override("panel", sb)
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 10)
@@ -41,8 +36,9 @@ func _ready() -> void:
 	_tabs.add_theme_constant_override("separation", 8)
 	_tabs.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	head.add_child(_tabs)
-	var close := _btn(head, "  ✕  ", close_panel, 26)
-	close.custom_minimum_size.x = 70
+	var close := UiSkin.icon_button("close", 54, Color(0, 0, 0, 0))
+	close.pressed.connect(close_panel)
+	head.add_child(close)
 	var body := HBoxContainer.new()
 	body.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	body.add_theme_constant_override("separation", 16)
@@ -129,8 +125,7 @@ func _render() -> void:
 			var list := _quests_for(_tab)
 			_selected = list[0].id if not list.is_empty() else ""
 			_render(), 22)
-		b.toggle_mode = true
-		b.button_pressed = _tab == t[0]
+		UiSkin.style_tab(b, _tab == t[0])
 	for c in _list.get_children():
 		c.queue_free()
 	var quests := _quests_for(_tab)
@@ -159,14 +154,14 @@ func _card(q: Dictionary) -> Button:
 	var state := QuestService.state_of(q.id)
 	var chip: Array = STATE_CHIP.get(state, ["", Color.WHITE])
 	for st in ["normal", "hover", "pressed"]:
-		var sb := StyleBoxFlat.new()
-		sb.bg_color = Color(0.16, 0.13, 0.1) if q.id == _selected else Color(0.11, 0.1, 0.09)
+		var sb := UiSkin.card(chip[1] if q.id == _selected else chip[1].darkened(0.45), 1.0)
+		sb.bg_color = UiSkin.INK_LIGHT.lightened(0.08) if q.id == _selected else UiSkin.INK_LIGHT.darkened(0.15)
 		if st == "hover":
 			sb.bg_color = sb.bg_color.lightened(0.06)
-		sb.border_color = chip[1] if q.id == _selected else chip[1].darkened(0.55)
-		sb.set_border_width_all(1)
-		sb.border_width_left = 5
-		sb.set_corner_radius_all(10)
+		if q.id == _selected:
+			sb.border_color = chip[1]
+			sb.set_border_width_all(3)
+			sb.border_width_left = 8
 		b.add_theme_stylebox_override(st, sb)
 	var v := VBoxContainer.new()
 	v.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -190,8 +185,10 @@ func _card(q: Dictionary) -> Button:
 func _render_detail(q: Dictionary) -> void:
 	var state := QuestService.state_of(q.id)
 	var r: Dictionary = QuestService.records.get(q.id, {})
-	var title := _lbl(_detail, q.title, 30, Color(1, 0.85, 0.45))
+	var title := _lbl(_detail, q.title, 30, UiSkin.GOLD)
 	title.add_theme_font_override("font", _title_font)
+	title.add_theme_color_override("font_outline_color", UiSkin.OUTLINE)
+	title.add_theme_constant_override("outline_size", 8)
 	title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	var meta: PackedStringArray = ["Акт %d" % q.act if q.kind == "main" else ("Поручение" if q.kind == "npc" else "Своё дело"),
 			q.location, "рекомендуемый уровень %d" % q.min_level]
@@ -207,9 +204,12 @@ func _render_detail(q: Dictionary) -> void:
 		var done: bool = state == QuestService.COMPLETED or (state != QuestService.AVAILABLE and i < current)
 		var now: bool = state != QuestService.COMPLETED and state != QuestService.AVAILABLE and i == current
 		if done:
-			_lbl(_detail, "✓  %s" % _stage_text(st), 18, Color(0.55, 0.62, 0.55)).autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			_lbl(_detail, "✓  %s" % _stage_text(st), 18, Color(0.55, 0.78, 0.5)).autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		elif now:
-			_lbl(_detail, "●  %s" % _stage_text(st), 20, Color(1, 0.85, 0.3)).autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			# текущий шаг — на жёлтой карточке, чтобы глаз сразу находил, что делать
+			var now_l := _lbl(_detail, "●  %s" % _stage_text(st), 20, UiSkin.GOLD)
+			now_l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			now_l.add_theme_stylebox_override("normal", UiSkin.card(UiSkin.GOLD, 0.9, 8))
 		else:
 			_lbl(_detail, "○  …", 18, Color(0.45, 0.43, 0.4))
 	if state == QuestService.AVAILABLE:
@@ -223,7 +223,19 @@ func _render_detail(q: Dictionary) -> void:
 		_para(q.twist)
 	var rw: Dictionary = q.reward
 	_section("Награда")
-	_para("%d опыта · %d бабок · репутация %+d" % [rw.xp, rw.babki, rw.reputation])
+	# награда значками, как валюты в HUD (0.20)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 8)
+	_detail.add_child(row)
+	_lbl(row, "%d опыта" % rw.xp, 20, UiSkin.BLUE)
+	for it in [["coin", "%d" % rw.babki], ["rep", "%+d" % rw.reputation]]:
+		var ic := TextureRect.new()
+		ic.texture = UiSkin.icon(it[0])
+		ic.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		ic.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		ic.custom_minimum_size = Vector2(30, 30)
+		row.add_child(ic)
+		_lbl(row, it[1], 20, UiSkin.GOLD)
 
 
 static func _stage_text(st: Dictionary) -> String:
@@ -234,7 +246,7 @@ static func _stage_text(st: Dictionary) -> String:
 
 
 func _section(text: String) -> void:
-	var l := _lbl(_detail, text.to_upper(), 15, Color(0.85, 0.72, 0.5))
+	var l := _lbl(_detail, text.to_upper(), 15, Color(1, 0.75, 0.45))
 	l.add_theme_constant_override("line_spacing", 0)
 
 

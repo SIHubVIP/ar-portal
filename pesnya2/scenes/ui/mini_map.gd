@@ -70,8 +70,9 @@ func _draw_overlay() -> void:
 		return
 	var c := Vector2(RADIUS + 4, RADIUS + 4)
 	var off := c - _canvas.size / 2.0 - Vector2(4, 4)
-	_overlay.draw_arc(c, RADIUS, 0, TAU, 64, Color(0, 0, 0, 0.5), 6.0, true)
-	_overlay.draw_arc(c, RADIUS, 0, TAU, 64, Color(0.92, 0.92, 0.9), 2.5, true)
+	# обод как у кнопок: тёмный контур, кремовый кант
+	_overlay.draw_arc(c, RADIUS + 1, 0, TAU, 72, UiSkin.OUTLINE, 9.0, true)
+	_overlay.draw_arc(c, RADIUS, 0, TAU, 72, UiSkin.CREAM, 4.0, true)
 	if source and source.has_method("map_points"):
 		for p in source.map_points():
 			var at: Vector2 = _canvas.to_screen(p.pos) + Vector2(4, 4) + off
@@ -90,8 +91,8 @@ func _draw_overlay() -> void:
 	# север на ободе
 	var yaw := camera.yaw if camera else 0.0
 	var n := c + Vector2(sin(yaw), -cos(yaw)) * RADIUS
-	_overlay.draw_circle(n, 13, Color(0.08, 0.08, 0.09))
-	_overlay.draw_arc(n, 13, 0, TAU, 24, Color(0.92, 0.92, 0.9), 1.5, true)
+	_overlay.draw_circle(n, 14, UiSkin.RED)
+	_overlay.draw_arc(n, 14, 0, TAU, 24, UiSkin.OUTLINE, 3.0, true)
 	var font := get_theme_default_font()
 	_overlay.draw_string(font, n + Vector2(-6, 6), "N", HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color.WHITE)
 

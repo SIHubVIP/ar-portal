@@ -38,11 +38,7 @@ func _ready() -> void:
 	_place(_portrait, Vector2(0, 1), Vector2(28, -420), Vector2(300, -24))
 
 	var box := PanelContainer.new()
-	var sb := StyleBoxFlat.new()
-	sb.bg_color = Color(0.22, 0.17, 0.12, 0.93)
-	sb.border_color = Color(0.85, 0.72, 0.5, 0.9)
-	sb.set_border_width_all(2)
-	sb.set_corner_radius_all(14)
+	var sb := UiSkin.panel(22, 0.95)
 	sb.content_margin_left = 22
 	sb.content_margin_right = 22
 	sb.content_margin_top = 26
@@ -64,12 +60,10 @@ func _ready() -> void:
 
 	_name = Label.new()
 	_name.add_theme_font_size_override("font_size", 22)
-	_name.add_theme_color_override("font_color", Color(1, 0.85, 0.55))
-	var tag := StyleBoxFlat.new()
-	tag.bg_color = Color(0.12, 0.09, 0.07, 0.98)
-	tag.border_color = Color(0.85, 0.72, 0.5)
-	tag.set_border_width_all(2)
-	tag.set_corner_radius_all(8)
+	_name.add_theme_color_override("font_color", UiSkin.BROWN)
+	_name.add_theme_font_override("font", UiSkin.title_font())
+	# имя говорящего — на жёлтой плашке поверх рамки, как бирка
+	var tag := UiSkin.button_box(UiSkin.GOLD, "normal", 12)
 	tag.content_margin_left = 14
 	tag.content_margin_right = 14
 	tag.content_margin_top = 2
@@ -92,13 +86,7 @@ func _ready() -> void:
 	_skip.pressed.connect(skip)
 	add_child(_skip)
 	_place(_skip, Vector2(1, 1), Vector2(-220, -446), Vector2(-40, -404))
-	var ks := StyleBoxFlat.new()
-	ks.bg_color = Color(0.12, 0.09, 0.07, 0.98)
-	ks.border_color = Color(0.85, 0.72, 0.5)
-	ks.set_border_width_all(2)
-	ks.set_corner_radius_all(8)
-	for st in ["normal", "hover", "pressed"]:
-		_skip.add_theme_stylebox_override(st, ks)
+	UiSkin.style_button(_skip, UiSkin.INK_LIGHT, false, 12)
 
 
 func _place(c: Control, anchor: Vector2, tl: Vector2, br: Vector2) -> void:
@@ -220,14 +208,12 @@ func _pill(o: Dictionary) -> Button:
 	var tone: String = o.tone
 	var col: Color = TONE_COLORS.get(tone, TONE_COLORS.plain)
 	for st in ["normal", "hover", "pressed", "disabled"]:
-		var sb := StyleBoxFlat.new()
-		sb.bg_color = Color(0.07, 0.07, 0.09, 0.94) if st != "pressed" else col.darkened(0.6)
+		var sb := UiSkin.button_box(UiSkin.INK, st, 18)
+		sb.bg_color = Color(UiSkin.INK, 0.95) if st != "pressed" else col.darkened(0.55)
 		if st == "hover":
-			sb.bg_color = Color(0.12, 0.11, 0.14, 0.96)
-		sb.border_color = col.darkened(0.2) if st != "disabled" else Color(0.3, 0.3, 0.3)
-		sb.set_border_width_all(1)
-		sb.border_width_left = 5
-		sb.set_corner_radius_all(16)
+			sb.bg_color = UiSkin.INK_LIGHT
+		sb.border_color = col.darkened(0.15) if st != "disabled" else Color(0.3, 0.3, 0.3)
+		sb.border_width_left = 8
 		b.add_theme_stylebox_override(st, sb)
 	var h := HBoxContainer.new()
 	h.mouse_filter = Control.MOUSE_FILTER_IGNORE

@@ -12,6 +12,7 @@ var return_position := Vector3.ZERO
 
 ## Для проверки на ПК: -- --shot=user://shot.png [--shot-frames=90] снимает экран и выходит.
 func _ready() -> void:
+	get_tree().root.theme = UiSkin.theme()    # 0.20: единый мультяшный стиль окон и кнопок
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("--shot="):
 			_take_shot.call_deferred(arg.trim_prefix("--shot="))
@@ -59,6 +60,19 @@ func print_stats() -> void:
 		keys.sort_custom(func(a, b): return tally[a][1] > tally[b][1])
 		for k in keys.slice(0, 15):
 			print("STATS  %s: %d узлов, %d треугольников" % [k, tally[k][0], tally[k][1]])
+		# MultiMesh по сетке: какой вид съедает треугольники
+		var mm_tally := {}
+		for n in root.find_children("*", "MultiMeshInstance3D", true, false):
+			var mm: MultiMesh = n.multimesh
+			if mm == null or mm.mesh == null:
+				continue
+			var key2 := "%s/%d" % [mm.mesh.get_class(), mm.mesh.get_faces().size() / 3]
+			var t2: Array = mm_tally.get(key2, [0, 0])
+			mm_tally[key2] = [t2[0] + mm.instance_count, t2[1] + mm.mesh.get_faces().size() / 3 * mm.instance_count]
+		var k2 := mm_tally.keys()
+		k2.sort_custom(func(a, b): return mm_tally[a][1] > mm_tally[b][1])
+		for k in k2.slice(0, 12):
+			print("STATS  mm %s: %d копий, %d треугольников" % [k, mm_tally[k][0], mm_tally[k][1]])
 
 
 func go_to_world(at := Vector3.INF) -> void:

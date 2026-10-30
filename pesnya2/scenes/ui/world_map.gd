@@ -31,12 +31,7 @@ var _info: Label
 func _ready() -> void:
 	visible = false
 	district = District.data()
-	var sb := StyleBoxFlat.new()
-	sb.bg_color = Color(0.07, 0.08, 0.1, 0.98)
-	sb.border_color = Color(0.85, 0.72, 0.5, 0.9)
-	sb.set_border_width_all(2)
-	sb.set_corner_radius_all(14)
-	sb.set_content_margin_all(14)
+	var sb := UiSkin.panel(14)
 	add_theme_stylebox_override("panel", sb)
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 8)
@@ -54,8 +49,9 @@ func _ready() -> void:
 	head.add_child(_filters)
 	_btn(head, " − ", func(): _zoom(1.0 / 1.4), 26).custom_minimum_size.x = 56
 	_btn(head, " + ", func(): _zoom(1.4), 26).custom_minimum_size.x = 56
-	var close := _btn(head, "  ✕  ", close_panel, 26)
-	close.custom_minimum_size.x = 64
+	var close := UiSkin.icon_button("close", 52, Color(0, 0, 0, 0))
+	close.pressed.connect(close_panel)
+	head.add_child(close)
 	_area = Control.new()
 	_area.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_area.clip_contents = true
@@ -79,7 +75,7 @@ func _ready() -> void:
 	_area.add_child(_quarter_overlay)
 	_info = Label.new()
 	_info.add_theme_font_size_override("font_size", 17)
-	_info.add_theme_color_override("font_color", Color(0.85, 0.83, 0.78))
+	_info.add_theme_color_override("font_color", UiSkin.TEXT_DIM)
 	_info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	v.add_child(_info)
 
@@ -107,8 +103,7 @@ func _render() -> void:
 		var b := _btn(_tabs, "  %s  " % t[1], func():
 			_tab = t[0]
 			_render(), 22)
-		b.toggle_mode = true
-		b.button_pressed = _tab == t[0]
+		UiSkin.style_tab(b, _tab == t[0])
 	for c in _filters.get_children():
 		c.queue_free()
 	if _tab == "district":
@@ -116,9 +111,8 @@ func _render() -> void:
 			var b := _btn(_filters, fl[1], func():
 				_filter = fl[0]
 				_render(), 17)
-			b.toggle_mode = true
-			b.button_pressed = _filter == fl[0]
-			b.custom_minimum_size.y = 40
+			UiSkin.style_tab(b, _filter == fl[0])
+			b.custom_minimum_size.y = 44
 	_district.visible = _tab == "district"
 	_quarter.visible = _tab == "quarter"
 	_quarter_overlay.visible = _tab == "quarter"
@@ -280,33 +274,46 @@ class _DistrictCanvas extends Control:
 		if d.is_empty():
 			return
 		var kk := k()
-		draw_rect(Rect2(Vector2.ZERO, size), Color(0.07, 0.08, 0.1))
+		# 0.20: бумажная карта — лес вокруг, газон районов, коралловые дома с тенью, светлые улицы с кантом
+		draw_rect(Rect2(Vector2.ZERO, size), Color(0.3, 0.48, 0.36))
 		for dd in District.layout().get("districts", []):
 			var dr := District.district_rect(dd)
-			draw_rect(Rect2(to_px(dr.position), dr.size * kk), Color(0.2, 0.22, 0.23))
+			var rr0 := Rect2(to_px(dr.position), dr.size * kk)
+			draw_rect(rr0.grow(3), UiSkin.OUTLINE)
+			draw_rect(rr0, MapCanvas.BG)
 		# сектора: подложка парка и рынка, граница, подпись
 		var sectors: Array = d.get("sectors", []) + District.layout().get("sectors", [])
 		for z in sectors:
 			var b: Array = z.bounds_plan_m
 			var r := Rect2(to_px(Vector2(b[0], b[1])), Vector2(b[2] - b[0], b[3] - b[1]) * kk)
 			if z.id == "A1":
-				draw_rect(r, Color(0.19, 0.29, 0.21))
+				draw_rect(r, Color(0.42, 0.66, 0.35))
 			elif z.id == "C2":
-				draw_rect(r, Color(0.27, 0.23, 0.2))
-			draw_rect(r, Color(0.5, 0.52, 0.5, 0.5), false, 1.5)
+				draw_rect(r, Color(0.86, 0.75, 0.56))
+			draw_rect(r, Color(0.2, 0.32, 0.18, 0.45), false, 2.0)
 		# дома макета «Рубин»: крупные — кирпичным тоном, частный сектор светлее
-		for b in District.buildings():
-			var hr: Rect2 = b.rect
-			var hc := Color(0.42, 0.33, 0.3) if b.kind == "house" or b.kind == "site" else Color(0.33, 0.35, 0.38)
-			draw_rect(Rect2(to_px(hr.position), hr.size * kk), hc)
-		# переулки и дорожки, затем улицы с шириной коридора
+		# переулки и дорожки, затем улицы: кант, потом заливка
 		for s in District.road_segments():
 			if s.id == "lane":
-				draw_line(to_px(s.a), to_px(s.b), Color(0.36, 0.33, 0.3), maxf(1.0, s.w * kk))
+				draw_line(to_px(s.a), to_px(s.b), Color(0.9, 0.84, 0.68), maxf(1.0, s.w * kk))
 		for s in District.road_segments():
 			if s.id != "lane":
-				draw_line(to_px(s.a), to_px(s.b), Color(0.55, 0.58, 0.58) if s.major else Color(0.42, 0.45, 0.46),
+				draw_line(to_px(s.a), to_px(s.b), MapCanvas.COLORS.road_edge, maxf(1.5, s.w * kk) + 3.0)
+		for s in District.road_segments():
+			if s.id != "lane":
+				draw_line(to_px(s.a), to_px(s.b), Color(0.97, 0.94, 0.85) if s.major else MapCanvas.COLORS.road,
 						maxf(1.5, s.w * kk))
+		var sh := Vector2(1, 1) * clampf(kk * 1.6, 1.0, 4.0)
+		for b in District.buildings():
+			var hr: Rect2 = b.rect
+			var px := Rect2(to_px(hr.position), hr.size * kk)
+			if not px.intersects(Rect2(Vector2.ZERO, size)):
+				continue
+			var hc := MapCanvas.COLORS.block if b.kind == "house" or b.kind == "site" else Color(0.64, 0.7, 0.8)
+			draw_rect(Rect2(px.position + sh, px.size), MapCanvas.COLORS.shadow)
+			draw_rect(px, hc)
+			if px.size.x > 6.0:
+				draw_rect(px, UiSkin.OUTLINE, false, 1.0)
 		# названия районов над картой
 		for dd in District.layout().get("districts", []):
 			var dr: Array = dd.r
@@ -331,8 +338,8 @@ class _DistrictCanvas extends Control:
 				draw_rect(Rect2(c - a / 2.0, a), Color(col, 0.25))
 				draw_rect(Rect2(c - a / 2.0, a), col, false, 2.0)
 			elif p.has("radius_m"):
-				draw_circle(c, float(p.radius_m) * kk, Color(col, 0.12))
-				draw_arc(c, float(p.radius_m) * kk, 0, TAU, 40, Color(col, 0.6), 1.5)
+				draw_circle(c, float(p.radius_m) * kk, Color(col, 0.18))
+				draw_arc(c, float(p.radius_m) * kk, 0, TAU, 40, Color(col.darkened(0.2), 0.8), 2.0)
 		# точки
 		var r := clampf(kk * 14.0, 9.0, 16.0)
 		for p in District.points():
@@ -341,8 +348,10 @@ class _DistrictCanvas extends Control:
 			var c := to_px(_pos(p))
 			var col: Color = WorldMap.KINDS.get(p.type, ["", Color.WHITE])[1]
 			var rr := r * (1.4 if p.type == "boss" else (0.75 if p.type == "mob" else 1.0))
-			draw_circle(c + Vector2(1, 2), rr + 2, Color(0, 0, 0, 0.6))
+			draw_circle(c + Vector2(0, 3), rr + 3, Color(0, 0, 0, 0.35))
+			draw_circle(c, rr + 3, UiSkin.OUTLINE)
 			draw_circle(c, rr, col)
+			draw_arc(c, rr - 3, deg_to_rad(200), deg_to_rad(320), 10, Color(1, 1, 1, 0.45), 2.5)
 			if zoom >= 2.0 or p.type == "boss":
 				var id := String(p.id)
 				var fs := int(maxf(10.0, rr * 0.8))
@@ -360,13 +369,19 @@ class _DistrictCanvas extends Control:
 		# масштаб и север
 		var bar := 200.0 * kk
 		var b0 := Vector2(20, size.y - 24)
-		draw_line(b0, b0 + Vector2(bar, 0), Color(0.9, 0.9, 0.85), 2)
+		draw_line(b0, b0 + Vector2(bar, 0), UiSkin.OUTLINE, 6)
+		draw_line(b0, b0 + Vector2(bar, 0), Color(0.97, 0.95, 0.88), 3)
 		WorldMap._text(self, b0 + Vector2(bar / 2, -14), "200 м", 15, Color(0.9, 0.9, 0.85))
 		WorldMap._text(self, Vector2(size.x - 50, 24), "↑ СЕВЕР", 15, Color(1, 0.8, 0.4))
-		# легенда
+		# легенда на плашке
+		var lw := 28.0
+		for kind in WorldMap.KINDS:
+			lw += 28 + ThemeDB.fallback_font.get_string_size(WorldMap.KINDS[kind][0], HORIZONTAL_ALIGNMENT_LEFT, -1, 15).x
+		draw_style_box(UiSkin.card(Color(0, 0, 0, 0), 0.88, 4), Rect2(8, 6, lw, 30))
 		var lx := 20.0
 		for kind in WorldMap.KINDS:
-			draw_circle(Vector2(lx + 7, 20), 7, WorldMap.KINDS[kind][1])
+			draw_circle(Vector2(lx + 7, 21), 8.5, UiSkin.OUTLINE)
+			draw_circle(Vector2(lx + 7, 21), 6.5, WorldMap.KINDS[kind][1])
 			var name: String = WorldMap.KINDS[kind][0]
 			draw_string(ThemeDB.fallback_font, Vector2(lx + 18, 26), name, HORIZONTAL_ALIGNMENT_LEFT, -1, 15,
 					Color(0.85, 0.85, 0.82))

@@ -6,9 +6,17 @@ extends Control
 ## scale (пикселей на метр) и rot (поворот вместе с камерой). С district = true под кварталом
 ## рисуется остальной Погуляй из манифеста: дороги с шириной коридора и дома со схемы.
 
-const COLORS := {"road": Color(0.34, 0.34, 0.36), "walk": Color(0.27, 0.27, 0.29), "mark": Color(0.55, 0.55, 0.55),
-		"prop": Color(0.2, 0.2, 0.22), "block": Color(0.09, 0.09, 0.1), "edge": Color(0.36, 0.36, 0.4)}
-const BG := Color(0.13, 0.13, 0.14)
+## 0.20: карта нарисована как бумажная — газон, светлые дороги с кантом, коралловые дома с тенью.
+const COLORS := {"road": Color(0.87, 0.83, 0.73), "walk": Color(0.94, 0.9, 0.8), "mark": Color(1, 1, 0.96),
+		"prop": Color(0.66, 0.53, 0.42), "block": Color(0.93, 0.58, 0.43), "edge": Color(0.24, 0.15, 0.13),
+		"road_edge": Color(0.5, 0.46, 0.38), "shadow": Color(0.16, 0.26, 0.14, 0.45)}
+const BG := Color(0.55, 0.75, 0.41)
+## Клетки двора-диорамы на карте: знак сетки data/yard_diorama.txt → цвет.
+const YARD := {",": Color(0.9, 0.8, 0.6), "c": Color(0.86, 0.84, 0.78), "a": Color(0.47, 0.49, 0.55),
+		"~": Color(0.42, 0.75, 0.93), "#": Color(0.66, 0.84, 0.48), "Y": Color(0.66, 0.84, 0.48),
+		"B": Color(0.66, 0.84, 0.48), "F": Color(0.66, 0.84, 0.48), "^": Color(0.9, 0.8, 0.6), "v": Color(0.9, 0.8, 0.6),
+		"<": Color(0.9, 0.8, 0.6), ">": Color(0.9, 0.8, 0.6), "f": Color(0.95, 0.6, 0.72), "h": Color(0.3, 0.55, 0.28),
+		"T": Color(0.32, 0.6, 0.3), "b": Color(0.38, 0.66, 0.32), "P": Color(0.32, 0.6, 0.3)}
 
 ## [{xf: Transform2D, size: Vector2, kind: String}]
 var shapes: Array = []
@@ -34,17 +42,51 @@ func _view() -> Transform2D:
 func _draw() -> void:
 	draw_rect(Rect2(Vector2.ZERO, size), BG)
 	var view := _view()
+	var px := 1.0 / scale_px
 	if district:
 		_draw_district(view)
-	for pass_kind in ["walk", "road", "mark", "prop", "block"]:
+	_draw_yard(view)
+	for pass_kind in ["walk", "road", "mark", "prop", "shadow", "block"]:
+		var kind: String = "block" if pass_kind == "shadow" else pass_kind
 		for s in shapes:
-			if s.kind != pass_kind:
+			if s.kind != kind:
+				continue
+			var r := Rect2(-s.size / 2.0, s.size)
+			if pass_kind == "shadow":
+				# тень дома падает вправо-вниз на газон, как от солнца на диораме
+				draw_set_transform_matrix(view * Transform2D(0.0, Vector2(1.4, 1.4)) * s.xf)
+				draw_rect(r, COLORS.shadow)
 				continue
 			draw_set_transform_matrix(view * s.xf)
-			var r := Rect2(-s.size / 2.0, s.size)
-			draw_rect(r, COLORS[pass_kind])
-			if pass_kind == "block":
-				draw_rect(r, COLORS.edge, false, 1.0 / scale_px)
+			draw_rect(r, COLORS[kind])
+			if kind == "block":
+				draw_rect(r.grow(-2.0 * px), COLORS.block.lightened(0.12))
+				draw_rect(r, COLORS.edge, false, 2.0 * px)
+			elif kind == "prop":
+				draw_rect(r, COLORS.edge, false, 1.0 * px)
+	draw_set_transform_matrix(Transform2D.IDENTITY)
+
+
+## Двор-диорама: клетки сетки цветом покрытия — плитка, асфальт, пруд, террасы, клумбы.
+func _draw_yard(view: Transform2D) -> void:
+	var reach := size.length() / 2.0 / scale_px + 10.0
+	var area := Rect2(origin - Vector2(reach, reach), Vector2(reach, reach) * 2.0)
+	if not area.intersects(StartYard.BOUNDS):
+		return
+	draw_set_transform_matrix(view)
+	var g := StartYard.grid()
+	var c := StartYard.CELL
+	for j in g.size():
+		for i in g[j].length():
+			var ch := g[j][i]
+			if not YARD.has(ch):
+				continue
+			var at := StartYard.GRID_ORIGIN + Vector2(i, j) * c
+			if ch == "T" or ch == "b" or ch == "P":
+				draw_circle(at + Vector2(c, c) / 2.0 + Vector2(0.5, 0.5), c * 0.45, COLORS.shadow)
+				draw_circle(at + Vector2(c, c) / 2.0, c * 0.45, YARD[ch])
+			else:
+				draw_rect(Rect2(at, Vector2(c, c)), YARD[ch])
 	draw_set_transform_matrix(Transform2D.IDENTITY)
 
 
@@ -61,9 +103,14 @@ func _draw_district(view: Transform2D) -> void:
 		for cy in range(c0.y, c1.y + 1):
 			for h: Rect2 in _house_cells.get(Vector2i(cx, cy), []):
 				if area.intersects(h):
+					draw_rect(Rect2(h.position + Vector2(1.6, 1.6), h.size), COLORS.shadow)
 					draw_rect(h, COLORS.block)
+					draw_rect(h, COLORS.edge, false, 2.0 / scale_px)
 	for r in _roads:
-		# 337 улиц и переулков: рисуем только те, что попадают в круг миникарты
+		# 337 улиц и переулков: рисуем только те, что попадают в круг миникарты; кант — шире и темнее
+		if area.intersects(r.box):
+			draw_polyline(r.pts, COLORS.road_edge, r.w + 3.0 / scale_px)
+	for r in _roads:
 		if area.intersects(r.box):
 			draw_polyline(r.pts, COLORS.road, r.w)
 	draw_set_transform_matrix(Transform2D.IDENTITY)
@@ -113,7 +160,7 @@ static func collect(world: Node) -> Array:
 
 
 static func _skipped(n: Node) -> bool:
-	var p := n.get_parent()
+	var p := n
 	while p:
 		if p.has_meta("map_skip"):
 			return true

@@ -28,12 +28,7 @@ var _toast: Callable
 
 func _ready() -> void:
 	visible = false
-	var sb := StyleBoxFlat.new()
-	sb.bg_color = Color(0.07, 0.06, 0.08, 0.96)
-	sb.border_color = Color(0.85, 0.72, 0.5, 0.9)
-	sb.set_border_width_all(2)
-	sb.set_corner_radius_all(14)
-	sb.set_content_margin_all(16)
+	var sb := UiSkin.panel(16)
 	add_theme_stylebox_override("panel", sb)
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 12)
@@ -45,8 +40,9 @@ func _ready() -> void:
 	_tabs.add_theme_constant_override("separation", 8)
 	_tabs.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	head.add_child(_tabs)
-	var close := _btn(head, "  ✕  ", close_panel, 26)
-	close.custom_minimum_size.x = 70
+	var close := UiSkin.icon_button("close", 54, Color(0, 0, 0, 0))
+	close.pressed.connect(close_panel)
+	head.add_child(close)
 	_body = ScrollContainer.new()
 	_body.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_body.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
@@ -105,8 +101,7 @@ func _render() -> void:
 			_tab = t[0]
 			_sel = {}
 			_render(), 24)
-		b.toggle_mode = true
-		b.button_pressed = _tab == t[0]
+		UiSkin.style_tab(b, _tab == t[0])
 	for c in _body.get_children():
 		c.queue_free()
 	match _tab:
@@ -156,12 +151,9 @@ func _render_hero() -> void:
 		bar.show_percentage = false
 		bar.max_value = maxi(5, GameState.tones.values().max() if not GameState.tones.is_empty() else 5)
 		bar.value = int(GameState.tones.get(tone, 0))
-		var fill := StyleBoxFlat.new()
-		fill.bg_color = DialogView.TONE_COLORS[tone]
-		bar.add_theme_stylebox_override("fill", fill)
-		var back := StyleBoxFlat.new()
-		back.bg_color = Color(1, 1, 1, 0.08)
-		bar.add_theme_stylebox_override("background", back)
+		var boxes := UiSkin.bar_boxes(DialogView.TONE_COLORS[tone])
+		bar.add_theme_stylebox_override("fill", boxes[0])
+		bar.add_theme_stylebox_override("background", boxes[1])
 		bar.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		row.add_child(bar)
 
@@ -238,16 +230,19 @@ func _cell(parent: Node, id: String, count: int, sel: Dictionary, hint := "") ->
 	var picked: bool = id != "" and _sel.get("id", "") == id and _sel.get("from", "") == sel.from
 	var edge: Color = RARITY.get(it.get("rarity", "common"), Color.WHITE) if id != "" else Color(0.3, 0.27, 0.24)
 	for st in ["normal", "hover", "pressed"]:
+		# клетка как ячейка на диораме: светлее, если занята; кант цвета редкости, снизу толще
 		var sb := StyleBoxFlat.new()
-		sb.bg_color = Color(0.15, 0.13, 0.12) if id != "" else Color(0.09, 0.085, 0.08)
+		sb.bg_color = UiSkin.INK_LIGHT.lightened(0.06) if id != "" else UiSkin.INK.lightened(0.04)
 		if st != "normal" and id != "":
-			sb.bg_color = sb.bg_color.lightened(0.08)
-		sb.border_color = Color(1, 0.8, 0.25) if picked else edge.darkened(0.25)
-		sb.set_border_width_all(3 if picked else 2)
-		sb.set_corner_radius_all(8)
+			sb.bg_color = sb.bg_color.lightened(0.1)
+		sb.border_color = UiSkin.GOLD if picked else (edge.darkened(0.1) if id != "" else Color(UiSkin.OUTLINE, 0.6))
+		sb.set_border_width_all(4 if picked else 3)
+		sb.border_width_bottom = 6 if id != "" else 3
+		sb.set_corner_radius_all(12)
+		sb.anti_aliasing = true
 		if id != "":
-			sb.shadow_color = Color(edge, 0.25)
-			sb.shadow_size = 4
+			sb.shadow_color = Color(edge, 0.3)
+			sb.shadow_size = 5
 		b.add_theme_stylebox_override(st, sb)
 	parent.add_child(b)
 	b.pressed.connect(func():
@@ -472,12 +467,11 @@ func _render_storage() -> void:
 
 func _panel(parent: Node, bg: Color) -> PanelContainer:
 	var p := PanelContainer.new()
-	var sb := StyleBoxFlat.new()
-	sb.bg_color = bg
-	sb.border_color = Color(0.35, 0.3, 0.25)
-	sb.set_border_width_all(1)
-	sb.set_corner_radius_all(10)
-	sb.set_content_margin_all(10)
+	var sb := UiSkin.card(Color(0, 0, 0, 0), 1.0, 10)
+	sb.bg_color = bg.lerp(UiSkin.INK_LIGHT, 0.6)
+	sb.border_color = Color(UiSkin.OUTLINE, 0.7)
+	sb.set_border_width_all(2)
+	sb.content_margin_left = 10
 	p.add_theme_stylebox_override("panel", sb)
 	parent.add_child(p)
 	return p

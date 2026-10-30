@@ -5,6 +5,10 @@ extends CharacterBody3D
 ## Вышибала — 3D-модель со скелетом (assets/characters/vyshibala), остальные классы пока из фигур.
 
 signal died
+## Серия ударов (0.20): n — какой по счёту удар подряд попал, 0 — серия сорвалась.
+signal combo(n: int)
+## Ловкий уклон: удар врага прошёл сквозь уклон — следующий удар двойной.
+signal perfect_dodge
 
 const SPEED := 6.0
 const DODGE_DISTANCE := 4.5
@@ -12,6 +16,13 @@ const DODGE_TIME := 0.22
 const ATTACK_RANGE := 2.6
 const ATTACK_COOLDOWN := 0.45
 const ATTACK_DAMAGE := 12.0
+## Серия: если следующий удар попал не позже COMBO_WINDOW с, серия растёт. Каждый третий —
+## размашистый: бьёт всех рядом сильнее и отбрасывает.
+const COMBO_WINDOW := 1.1
+const COMBO_MULT := [1.0, 1.15, 1.8]
+const SWEEP_RANGE := 3.4
+const PERFECT_WINDOW := 2.5
+const PERFECT_MULT := 2.0
 const CLASS_COLORS := {"CLASS_1": Color(0.75, 0.16, 0.14), "CLASS_2": Color(0.2, 0.55, 0.3),
 		"CLASS_3": Color(0.45, 0.25, 0.7)}
 const MODELS := {"CLASS_1": "res://assets/characters/vyshibala/vyshibala.glb",
@@ -31,6 +42,9 @@ var buff_until := 0.0
 var safe_zone := ""
 
 var _attack_ready_at := 0.0
+var combo_count := 0
+var _combo_until := 0.0
+var _perfect_until := 0.0
 var _dodge_left := 0.0
 var _dodge_dir := Vector3.ZERO
 var _knock := Vector3.ZERO
@@ -188,6 +202,10 @@ func is_dodging() -> bool:
 
 
 func take_hit(damage: float) -> void:
+	if is_dodging() and GameState.hp > 0.0 and t >= _perfect_until:
+		# увернулся в последний момент — награда за риск
+		_perfect_until = t + PERFECT_WINDOW
+		perfect_dodge.emit()
 	if is_dodging() or GameState.hp <= 0.0 or safe_zone != "":
 		return
 	if is_guarding():
@@ -222,11 +240,29 @@ func basic_attack() -> void:
 		face(target.global_position)
 	play_action("Attack", 0.45)
 	if target == null:
+		if combo_count > 0:
+			combo_count = 0
+			combo.emit(0)
 		return
+	combo_count = combo_count + 1 if t < _combo_until else 1
+	_combo_until = t + COMBO_WINDOW
+	var step := (combo_count - 1) % 3
+	var mult: float = COMBO_MULT[step]
+	if t < _perfect_until:
+		mult *= PERFECT_MULT
+		_perfect_until = 0.0
+	var dmg := attack_damage(ATTACK_DAMAGE) * mult
 	if ranged:
 		Kit.beam(get_parent(), global_position + Vector3(0, 1.3, 0), target.global_position + Vector3(0, 1, 0),
 				Color(1, 0.85, 0.3) if GameState.class_id == "CLASS_2" else Color(0.3, 0.9, 1))
-	target.take_hit(attack_damage(ATTACK_DAMAGE), global_position)
+	if step == 2:
+		# третий удар серии — размашистый: достаётся всем рядом с целью
+		for e in enemies_in(SWEEP_RANGE, target.global_position):
+			if e != target:
+				e.take_hit(dmg * 0.6, global_position)
+		Juice.shake(get_tree(), 0.1)
+	target.take_hit(dmg, global_position)
+	combo.emit(combo_count)
 
 
 ## Урон с учётом уровня, оружия и баффа «Бесплатная молодость».

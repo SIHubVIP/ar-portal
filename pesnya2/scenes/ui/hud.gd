@@ -9,7 +9,10 @@ var controls: TouchControls
 var _hp_bar: ProgressBar
 var _xp_bar: ProgressBar
 var _level: Label
-var _resources: Label
+var _hp_text: Label
+var _res_babki: Label
+var _res_rep: Label
+var _res_kuk: Label
 var _tracker: PanelContainer
 var _tr_head: Label
 var _tr_title: Label
@@ -24,6 +27,8 @@ var world_map: WorldMap
 var quest_log: QuestLog
 var _objective_detail := ""
 var _toast: Label
+var _toast_box: CenterContainer
+var _toast_tween: Tween
 var dialog: DialogView
 var inventory: InventoryPanel
 var _pause: PanelContainer
@@ -32,12 +37,17 @@ var boss_box: VBoxContainer
 var _boss_name: Label
 var _boss_bar: ProgressBar
 var _boss_phase: Label
+var _combo_box: VBoxContainer
+var _combo_big: Label
+var _combo_sub: Label
+var _combo_tween: Tween
 
 
 func _ready() -> void:
 	layer = 10
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	var root := Control.new()
+	root.theme = UiSkin.theme()     # CanvasLayer не передаёт тему окна дальше — ставим здесь
 	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(root)
 	root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -48,38 +58,22 @@ func _ready() -> void:
 	root.add_child(controls)
 
 	var top := VBoxContainer.new()
-	top.position = Vector2(20, 16)
+	top.position = Vector2(16, 12)
 	top.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	top.add_theme_constant_override("separation", 8)
 	root.add_child(top)
-	var row := HBoxContainer.new()
-	top.add_child(row)
-	_level = _label(row, "Ур. 1", 22)
-	_hp_bar = _bar(row, Color(0.85, 0.2, 0.2), Vector2(240, 22))
-	_xp_bar = _bar(top, Color(0.95, 0.75, 0.2), Vector2(310, 8))
-	_resources = _label(top, "", 20)
+	_build_plate(top)
 	_build_tracker(top)
 
-	var pause_btn := Button.new()
-	pause_btn.text = "  ☰  "
-	pause_btn.add_theme_font_size_override("font_size", 30)
-	pause_btn.focus_mode = Control.FOCUS_NONE
-	pause_btn.pressed.connect(toggle_pause)
-	root.add_child(pause_btn)
-	_place(pause_btn, Vector2(1, 0), Vector2(-320, 14), Vector2(-230, 74))
-	var bag_btn := Button.new()
-	bag_btn.text = " Сумка "
-	bag_btn.add_theme_font_size_override("font_size", 24)
-	bag_btn.focus_mode = Control.FOCUS_NONE
-	bag_btn.pressed.connect(func(): open_inventory("bags"))
-	root.add_child(bag_btn)
-	_place(bag_btn, Vector2(1, 0), Vector2(-460, 14), Vector2(-330, 74))
-	var quests_btn := Button.new()
-	quests_btn.text = " Задания "
-	quests_btn.add_theme_font_size_override("font_size", 24)
-	quests_btn.focus_mode = Control.FOCUS_NONE
-	quests_btn.pressed.connect(open_quests)
-	root.add_child(quests_btn)
-	_place(quests_btn, Vector2(1, 0), Vector2(-615, 14), Vector2(-470, 74))
+	# справа сверху — круглые кнопки со значками и подписью (0.20), левее мини-карты
+	var btns := HBoxContainer.new()
+	btns.add_theme_constant_override("separation", 10)
+	root.add_child(btns)
+	_place(btns, Vector2(1, 0), Vector2(-470, 10), Vector2(-236, 100))
+	btns.alignment = BoxContainer.ALIGNMENT_END
+	_icon_button(btns, "quests", "Задания", open_quests)
+	_icon_button(btns, "bag", "Сумка", func(): open_inventory("bags"))
+	_icon_button(btns, "menu", "Меню", toggle_pause)
 	# мини-карта в правом верхнем углу, как на ориентире; нажатие — большая карта
 	minimap = MiniMap.new()
 	root.add_child(minimap)
@@ -92,21 +86,29 @@ func _ready() -> void:
 	root.add_child(_banner)
 	_place(_banner, Vector2(0.5, 0), Vector2(-450, 150), Vector2(450, 260))
 	_banner_title = _label(_banner, "", 34)
-	_banner_title.add_theme_font_override("font", load("res://assets/fonts/RussoOne-Regular.ttf"))
-	_banner_title.add_theme_color_override("font_color", Color(1, 0.82, 0.3))
+	_banner_title.add_theme_font_override("font", UiSkin.title_font())
+	_banner_title.add_theme_color_override("font_color", UiSkin.GOLD)
+	_banner_title.add_theme_constant_override("outline_size", 10)
 	_banner_sub = _label(_banner, "", 22)
 	for l in [_banner_title, _banner_sub]:
 		l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_banner.modulate.a = 0.0
 
-	_toast = _label(root, "", 24)
-	_place(_toast, Vector2(0.5, 0), Vector2(-400, 90), Vector2(400, 160))
+	# тост — плашка по ширине текста по центру сверху (0.20)
+	_toast_box = CenterContainer.new()
+	_toast_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	root.add_child(_toast_box)
+	_place(_toast_box, Vector2(0.5, 0), Vector2(-420, 112), Vector2(420, 112))
+	_toast = _label(_toast_box, "", 22)
 	_toast.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_toast.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_toast.modulate.a = 0.0
+	var ts := UiSkin.card(UiSkin.GREEN, 0.92, 10)
+	ts.content_margin_right = 18
+	_toast.add_theme_stylebox_override("normal", ts)
+	_toast_box.modulate.a = 0.0
 
 	_build_boss(root)
+	_build_combo(root)
 	_build_pause(root)
 	inventory = InventoryPanel.new()
 	root.add_child(inventory)
@@ -150,6 +152,9 @@ func _ready() -> void:
 
 func set_player(p: Player) -> void:
 	controls.player = p
+	p.combo.connect(_on_combo)
+	p.perfect_dodge.connect(func() -> void:
+		_pop_combo("ЛОВКО!", "следующий удар ×2", UiSkin.BLUE))
 	pointer.player = p
 	inventory.player = p
 	var names := PackedStringArray()
@@ -189,7 +194,7 @@ func _label(parent: Node, text: String, size: int) -> Label:
 	var l := Label.new()
 	l.text = text
 	l.add_theme_font_size_override("font_size", size)
-	l.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9))
+	l.add_theme_color_override("font_outline_color", UiSkin.OUTLINE)
 	l.add_theme_constant_override("outline_size", 6)
 	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	parent.add_child(l)
@@ -200,14 +205,9 @@ func _bar(parent: Node, color: Color, min_size: Vector2) -> ProgressBar:
 	var b := ProgressBar.new()
 	b.custom_minimum_size = min_size
 	b.show_percentage = false
-	var fill := StyleBoxFlat.new()
-	fill.bg_color = color
-	fill.set_corner_radius_all(4)
-	var bg := StyleBoxFlat.new()
-	bg.bg_color = Color(0, 0, 0, 0.5)
-	bg.set_corner_radius_all(4)
-	b.add_theme_stylebox_override("fill", fill)
-	b.add_theme_stylebox_override("background", bg)
+	var boxes := UiSkin.bar_boxes(color)
+	b.add_theme_stylebox_override("fill", boxes[0])
+	b.add_theme_stylebox_override("background", boxes[1])
 	b.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	parent.add_child(b)
 	return b
@@ -215,13 +215,7 @@ func _bar(parent: Node, color: Color, min_size: Vector2) -> ProgressBar:
 
 func _panel(parent: Node) -> PanelContainer:
 	var p := PanelContainer.new()
-	var sb := StyleBoxFlat.new()
-	sb.bg_color = Color(0.06, 0.05, 0.09, 0.92)
-	sb.border_color = Color(0.95, 0.75, 0.2)
-	sb.set_border_width_all(2)
-	sb.set_corner_radius_all(10)
-	sb.set_content_margin_all(18)
-	p.add_theme_stylebox_override("panel", sb)
+	p.add_theme_stylebox_override("panel", UiSkin.panel(22))
 	p.visible = false
 	parent.add_child(p)
 	return p
@@ -231,41 +225,124 @@ func _button(parent: Node, text: String, cb: Callable, fs := 24) -> Button:
 	var b := Button.new()
 	b.text = text
 	b.add_theme_font_size_override("font_size", fs)
-	b.custom_minimum_size.y = 56
+	b.custom_minimum_size.y = 60
 	b.focus_mode = Control.FOCUS_NONE
 	b.pressed.connect(cb)
 	parent.add_child(b)
 	return b
 
 
+## Круглая кнопка-значок с подписью под ней.
+func _icon_button(parent: Node, icon: String, caption: String, cb: Callable) -> Button:
+	var v := VBoxContainer.new()
+	v.add_theme_constant_override("separation", 0)
+	parent.add_child(v)
+	var b := UiSkin.icon_button(icon, 66)
+	b.pressed.connect(cb)
+	v.add_child(b)
+	var l := _label(v, caption, 15)
+	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	return b
+
+
+## Плашка героя: значок уровня, сердце и полоса здоровья с цифрами, опыт, три валюты значками.
+func _build_plate(parent: Node) -> void:
+	var plate := PanelContainer.new()
+	plate.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var sb := UiSkin.card(Color(0, 0, 0, 0), 0.82, 8)
+	sb.content_margin_left = 10
+	sb.content_margin_right = 14
+	plate.add_theme_stylebox_override("panel", sb)
+	parent.add_child(plate)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 10)
+	plate.add_child(row)
+	# значок уровня — жёлтая монета с цифрой
+	var badge := PanelContainer.new()
+	badge.custom_minimum_size = Vector2(66, 66)
+	var bb := UiSkin.button_box(UiSkin.GOLD, "normal", 33)
+	bb.set_content_margin_all(0)
+	badge.add_theme_stylebox_override("panel", bb)
+	row.add_child(badge)
+	var bv := VBoxContainer.new()
+	bv.alignment = BoxContainer.ALIGNMENT_CENTER
+	bv.add_theme_constant_override("separation", -6)
+	badge.add_child(bv)
+	var cap := _label(bv, "УР", 13)
+	cap.add_theme_color_override("font_color", UiSkin.BROWN)
+	cap.add_theme_constant_override("outline_size", 0)
+	_level = _label(bv, "1", 30)
+	_level.add_theme_font_override("font", UiSkin.title_font())
+	_level.add_theme_color_override("font_color", UiSkin.BROWN)
+	_level.add_theme_constant_override("outline_size", 0)
+	for l in [cap, _level]:
+		l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	var col := VBoxContainer.new()
+	col.add_theme_constant_override("separation", 5)
+	row.add_child(col)
+	var hp_row := HBoxContainer.new()
+	hp_row.add_theme_constant_override("separation", 6)
+	col.add_child(hp_row)
+	_icon(hp_row, "heart", 30)
+	_hp_bar = _bar(hp_row, Color(0.93, 0.27, 0.3), Vector2(250, 26))
+	_hp_bar.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	_hp_text = _label(_hp_bar, "", 16)
+	_hp_text.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_hp_text.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_hp_text.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_hp_text.add_theme_constant_override("outline_size", 5)
+	_xp_bar = _bar(col, UiSkin.BLUE, Vector2(286, 9))
+	var res := HBoxContainer.new()
+	res.add_theme_constant_override("separation", 6)
+	col.add_child(res)
+	_res_babki = _chip(res, "coin")
+	_res_rep = _chip(res, "rep")
+	_res_kuk = _chip(res, "kukukha")
+
+
+func _icon(parent: Node, name: String, px: float) -> TextureRect:
+	var t := TextureRect.new()
+	t.texture = UiSkin.icon(name)
+	t.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	t.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	t.custom_minimum_size = Vector2(px, px)
+	t.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	parent.add_child(t)
+	return t
+
+
+func _chip(parent: Node, icon: String) -> Label:
+	_icon(parent, icon, 26)
+	var l := _label(parent, "0", 19)
+	l.custom_minimum_size.x = 52
+	return l
+
+
 # ---------- ресурсы ----------
 
 func _refresh_resources() -> void:
-	_resources.text = "Бабки %d   Репутация %d   Кукуха %d" % [GameState.babki, GameState.reputation, GameState.kukukha]
+	_res_babki.text = str(GameState.babki)
+	_res_rep.text = str(GameState.reputation)
+	_res_kuk.text = str(GameState.kukukha)
 
 
 func _on_hp(hp: float, max_hp: float) -> void:
 	_hp_bar.max_value = max_hp
 	_hp_bar.value = hp
+	_hp_text.text = "%d / %d" % [ceili(hp), roundi(max_hp)]
 
 
 func _on_xp(_xp: int, level: int, into: int, need: int) -> void:
-	_level.text = "Ур. %d  " % level
+	_level.text = str(level)
 	_xp_bar.max_value = need
 	_xp_bar.value = into
 
 
 func _build_tracker(parent: Node) -> void:
 	_tracker = PanelContainer.new()
-	var sb := StyleBoxFlat.new()
-	sb.bg_color = Color(0.05, 0.04, 0.06, 0.62)
-	sb.border_color = Color(1, 0.8, 0.3, 0.8)
-	sb.border_width_left = 4
-	sb.set_corner_radius_all(8)
-	sb.content_margin_left = 14
+	var sb := UiSkin.card(UiSkin.GOLD, 0.82, 8)
+	sb.content_margin_left = 16
 	sb.content_margin_right = 14
-	sb.content_margin_top = 6
-	sb.content_margin_bottom = 8
 	_tracker.add_theme_stylebox_override("panel", sb)
 	_tracker.custom_minimum_size.x = 420
 	_tracker.gui_input.connect(func(e: InputEvent):
@@ -277,8 +354,9 @@ func _build_tracker(parent: Node) -> void:
 	v.add_theme_constant_override("separation", 0)
 	_tracker.add_child(v)
 	_tr_head = _label(v, "", 14)
-	_tr_head.add_theme_color_override("font_color", Color(1, 0.8, 0.35))
-	_tr_title = _label(v, "", 18)
+	_tr_head.add_theme_color_override("font_color", UiSkin.GOLD)
+	_tr_title = _label(v, "", 19)
+	_tr_title.add_theme_font_override("font", UiSkin.title_font())
 	_tr_goal = _label(v, "", 21)
 	_tr_goal.add_theme_color_override("font_color", Color(1, 0.92, 0.55))
 	_tr_goal.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -341,10 +419,55 @@ func show_banner(title: String, sub: String) -> void:
 
 func show_toast(text: String) -> void:
 	_toast.text = text
-	var tw := _toast.create_tween()
-	tw.tween_property(_toast, "modulate:a", 1.0, 0.15)
-	tw.tween_interval(2.6)
-	tw.tween_property(_toast, "modulate:a", 0.0, 0.4)
+	if _toast_tween:
+		_toast_tween.kill()
+	_toast_box.scale = Vector2(0.9, 0.9)
+	_toast_box.pivot_offset = Vector2(_toast_box.size.x / 2, 0)
+	_toast_tween = _toast_box.create_tween()
+	_toast_tween.tween_property(_toast_box, "modulate:a", 1.0, 0.15)
+	_toast_tween.parallel().tween_property(_toast_box, "scale", Vector2.ONE, 0.2).set_trans(Tween.TRANS_BACK)
+	_toast_tween.tween_interval(2.6)
+	_toast_tween.tween_property(_toast_box, "modulate:a", 0.0, 0.4)
+
+
+# ---------- серия ударов (0.20) ----------
+
+## Счётчик серии над кнопкой удара: «×3 РАЗМАХ!», гаснет сам.
+func _build_combo(root: Control) -> void:
+	_combo_box = VBoxContainer.new()
+	_combo_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_combo_box.add_theme_constant_override("separation", -8)
+	root.add_child(_combo_box)
+	_place(_combo_box, Vector2(1, 1), Vector2(-300, -420), Vector2(-40, -300))
+	_combo_big = _label(_combo_box, "", 52)
+	_combo_big.add_theme_font_override("font", UiSkin.title_font())
+	_combo_big.add_theme_constant_override("outline_size", 12)
+	_combo_sub = _label(_combo_box, "", 20)
+	for l in [_combo_big, _combo_sub]:
+		l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_combo_box.modulate.a = 0.0
+
+
+func _on_combo(n: int) -> void:
+	if n < 2:
+		return
+	var sweep := n % 3 == 0
+	_pop_combo("×%d" % n, "РАЗМАХ!" if sweep else "серия", UiSkin.RED if sweep else UiSkin.GOLD)
+
+
+func _pop_combo(big: String, sub: String, color: Color) -> void:
+	_combo_big.text = big
+	_combo_sub.text = sub
+	_combo_big.add_theme_color_override("font_color", color)
+	if _combo_tween:
+		_combo_tween.kill()
+	_combo_box.pivot_offset = _combo_box.size / 2.0
+	_combo_box.scale = Vector2(1.35, 1.35)
+	_combo_box.modulate.a = 1.0
+	_combo_tween = _combo_box.create_tween()
+	_combo_tween.tween_property(_combo_box, "scale", Vector2.ONE, 0.18).set_trans(Tween.TRANS_BACK)
+	_combo_tween.tween_interval(0.9)
+	_combo_tween.tween_property(_combo_box, "modulate:a", 0.0, 0.35)
 
 
 # ---------- босс (0.16) ----------
@@ -357,7 +480,7 @@ func _build_boss(root: Control) -> void:
 	root.add_child(boss_box)
 	_place(boss_box, Vector2(0.5, 1), Vector2(-360, -118), Vector2(170, -36))
 	_boss_name = _label(boss_box, "", 26)
-	_boss_name.add_theme_font_override("font", load("res://assets/fonts/RussoOne-Regular.ttf"))
+	_boss_name.add_theme_font_override("font", UiSkin.title_font())
 	_boss_name.add_theme_color_override("font_color", Color(1, 0.55, 0.75))
 	_boss_bar = _bar(boss_box, Color(0.9, 0.2, 0.45), Vector2(530, 20))
 	_boss_bar.max_value = 1.0
@@ -453,7 +576,8 @@ func _build_pause(root: Control) -> void:
 	var menu := VBoxContainer.new()
 	menu.add_theme_constant_override("separation", 10)
 	_pause.add_child(menu)
-	_label(menu, "Пауза", 30)
+	var ttl := UiSkin.title(menu, "Пауза", 34)
+	ttl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_button(menu, "Продолжить", toggle_pause)
 	_button(menu, "Задания", func():
 		toggle_pause()

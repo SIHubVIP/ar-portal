@@ -51,8 +51,8 @@ func buttons() -> Dictionary:
 	if interact_label != "":
 		b["interact"] = [a + Vector2(0, -330), 48.0]
 	# поворот камеры — слева от мини-карты (она в правом верхнем углу)
-	b["rot_left"] = [Vector2(s.x - 345, 120), 30.0]
-	b["rot_right"] = [Vector2(s.x - 265, 120), 30.0]
+	b["rot_left"] = [Vector2(s.x - 345, 146), 30.0]
+	b["rot_right"] = [Vector2(s.x - 265, 146), 30.0]
 	var inner := [180.0, 210.0, 240.0, 270.0]
 	var outer := [195.0, 225.0, 255.0]
 	for i in 7:
@@ -152,63 +152,88 @@ func _process(_delta: float) -> void:
 
 func _draw() -> void:
 	var font := get_theme_default_font()
-	# стик
+	# стик: кольцо с насечками и рисованная «шайба»
 	var base := _stick_origin if _stick_finger >= 0 else Vector2(170, size.y - 170)
-	draw_circle(base, STICK_RADIUS, Color(1, 1, 1, 0.10))
-	draw_arc(base, STICK_RADIUS, 0, TAU, 48, Color(1, 1, 1, 0.35), 3.0)
+	draw_circle(base, STICK_RADIUS, Color(UiSkin.INK, 0.28))
+	draw_arc(base, STICK_RADIUS, 0, TAU, 64, Color(UiSkin.CREAM, 0.55), 4.0, true)
+	for k in 4:
+		var ang := k * PI / 2
+		draw_line(base + Vector2.from_angle(ang) * (STICK_RADIUS - 14), base + Vector2.from_angle(ang) * (STICK_RADIUS - 4),
+				Color(UiSkin.CREAM, 0.6), 4.0)
 	var knob := base + ((_stick_pos - _stick_origin).limit_length(STICK_RADIUS) if _stick_finger >= 0 else Vector2.ZERO)
-	draw_circle(knob, 38, Color(1, 1, 1, 0.45))
-	# кнопки
+	_disc(knob, 40, Color(UiSkin.CREAM, 0.85), false)
+	# кнопки — круглые «таблетки» с бортиком и рисованными значками (0.20)
 	var b := buttons()
 	for id in b:
 		var c: Vector2 = b[id][0]
 		var r: float = b[id][1]
 		var held := _pressed.values().has(id)
-		var col := Color(0.1, 0.1, 0.14, 0.55)
-		var text := ""
+		var col := UiSkin.INK_LIGHT
+		var icon := ""
+		var caption := ""
 		var cd := 0.0
+		var total := 1.0
+		var locked := false
 		match id:
 			"attack":
-				col = Color(0.8, 0.2, 0.15, 0.7)
-				text = "Удар"
+				col = Color(0.93, 0.3, 0.26)
+				icon = "fist"
 			"dodge":
-				text = "Уклон"
+				col = Color(0.3, 0.62, 0.95)
+				icon = "dodge"
 			"interact":
-				col = Color(0.15, 0.55, 0.3, 0.75)
-				text = interact_label
-			"rot_left":
-				text = "↺"
-			"rot_right":
-				text = "↻"
+				col = Color(0.3, 0.72, 0.4)
+				icon = "hand"
+				caption = interact_label
+			"rot_left", "rot_right":
+				col = Color(UiSkin.INK_LIGHT, 0.85)
+				icon = id
 			_:
 				var i := int(id.get_slice("_", 1))
-				text = ability_names[i] if i < ability_names.size() else str(i + 1)
-				cd = player.ability_remaining(i) if player else 0.0
+				var a: Dictionary = player.book.abilities[i] if player and i < player.book.abilities.size() else {}
+				icon = String(a.get("id", ""))
+				col = Color(0.42, 0.3, 0.55)
 				if player and not player.ability_unlocked(i):
-					col = Color(0.05, 0.05, 0.07, 0.45)
-					text = "с ур.\n%d" % player.unlock_level(i)
-					cd = 0.0
-		if held:
-			col = col.lightened(0.3)
-		draw_circle(c, r, col)
-		draw_arc(c, r, 0, TAU, 40, Color(1, 1, 1, 0.5), 2.0)
+					locked = true
+					icon = "lock"
+					caption = "ур. %d" % player.unlock_level(i)
+					col = Color(0.2, 0.17, 0.24)
+				elif player:
+					cd = player.ability_remaining(i)
+					total = maxf(0.1, float(a.get("cooldown_s", 1.0)))
+		_disc(c, r, col, held)
+		var tex := UiSkin.icon(icon) if icon != "" else null
+		if tex:
+			var px := r * (1.25 if not locked else 0.95)
+			var off := Vector2(0, (3 if held else -2) - (8 if locked else 0))
+			draw_texture_rect(tex, Rect2(c + off - Vector2(px, px) / 2, Vector2(px, px)), false,
+					Color(1, 1, 1, 0.45 if cd > 0.0 else 1.0))
 		if cd > 0.0:
-			var total: float = player.book.abilities[int(id.get_slice("_", 1))].cooldown_s
+			# остаток перезарядки — тёмный сектор и цифра поверх значка
 			var frac := clampf(cd / total, 0.0, 1.0)
-			draw_arc(c, r - 6, -PI / 2, -PI / 2 + TAU * frac, 32, Color(0, 0, 0, 0.6), 12.0)
-			text = str(ceili(cd))
-		var fs := 16 if r < 45 else 22
-		if id.begins_with("rot_"):
-			fs = 30
-		var lines := text.split("\n")
-		var widest := 0.0
-		for ln in lines:
-			widest = maxf(widest, font.get_string_size(ln, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x)
-		if widest > 2.0 * r - 8.0:
-			fs = maxi(11, int(fs * (2.0 * r - 6.0) / widest))
-		for li in lines.size():
-			var w := font.get_string_size(lines[li], HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
-			var y := c.y + fs * 0.35 + (li - (lines.size() - 1) * 0.5) * fs
-			draw_string_outline(font, Vector2(c.x - w / 2, y), lines[li], HORIZONTAL_ALIGNMENT_LEFT, -1, fs, 4,
-					Color(0, 0, 0, 0.8))
-			draw_string(font, Vector2(c.x - w / 2, y), lines[li], HORIZONTAL_ALIGNMENT_LEFT, -1, fs)
+			var pts := PackedVector2Array([c])
+			for k in 33:
+				pts.append(c + Vector2.from_angle(-PI / 2 + TAU * frac * k / 32.0) * (r - 3))
+			if frac > 0.01:
+				draw_colored_polygon(pts, Color(0, 0, 0, 0.5))
+			_text(font, c + Vector2(0, 9), str(ceili(cd)), 26, UiSkin.TEXT)
+		if locked:
+			_text(font, c + Vector2(0, r * 0.62), caption, 14, UiSkin.TEXT)
+		elif caption != "":
+			_text(font, c + Vector2(0, r + 20), caption, 17, UiSkin.TEXT)
+
+
+## Круг с тенью, тёмным контуром и бликом сверху; нажатый — ниже и темнее.
+func _disc(c: Vector2, r: float, col: Color, held: bool) -> void:
+	var dy := 4.0 if held else 0.0
+	draw_circle(c + Vector2(0, 6), r + 2, Color(0, 0, 0, 0.3))
+	draw_circle(c + Vector2(0, 5), r, UiSkin.OUTLINE)
+	draw_circle(c + Vector2(0, dy), r, UiSkin.OUTLINE)
+	draw_circle(c + Vector2(0, dy), r - 3.5, col.darkened(0.12) if held else col)
+	draw_arc(c + Vector2(0, dy), r - 9, deg_to_rad(200), deg_to_rad(320), 16, Color(1, 1, 1, 0.28), 5.0, true)
+
+
+func _text(font: Font, at: Vector2, text: String, fs: int, col: Color) -> void:
+	var w := font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
+	draw_string_outline(font, Vector2(at.x - w / 2, at.y), text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, 6, UiSkin.OUTLINE)
+	draw_string(font, Vector2(at.x - w / 2, at.y), text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, col)

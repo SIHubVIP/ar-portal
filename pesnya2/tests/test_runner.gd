@@ -795,7 +795,11 @@ func test_district_chunk_is_dressed() -> void:
 	DistrictDressing.flush(root, c, b)
 	check(DistrictDressing.lamp_points.has(c), "участок отдал фонари LampLights")
 	var mms := root.find_children("*", "MultiMeshInstance3D", true, false)
-	check(mms.size() < 40, "мелочь участка собрана в MultiMesh по видам: %d" % mms.size())
+	# 0.20: большой вид режется на клетки по 40 м, но сетка у всех клеток вида одна
+	var kinds := {}
+	for m in mms:
+		kinds[(m as MultiMeshInstance3D).multimesh.mesh] = true
+	check(kinds.size() < 40 and mms.size() < 40 * 49, "мелочь участка собрана в MultiMesh по видам: %d видов, %d клеток" % [kinds.size(), mms.size()])
 	root.free()
 	check(not DistrictDressing.lamp_points.has(c), "выгруженный участок забирает свои фонари")
 
@@ -1017,3 +1021,95 @@ func test_workbench_crafts_from_bags_and_storage() -> void:
 	check(Crafting.trophies().size() == 1 and Crafting.trophies()[0].id == "BOSS_01", "трофей Люси на стенде")
 	for r in Crafting.RECIPES:
 		check(GameData.item_by_id.has(r.out) and r.needs.keys().all(func(k): return GameData.item_by_id.has(k)), "рецепт %s из настоящих предметов" % r.id)
+
+
+## Цель для проверки серии: считает удары, всегда жива.
+class _Dummy extends Node3D:
+	var hits: Array[float] = []
+
+	func _ready() -> void:
+		add_to_group("enemies")
+
+	func is_alive() -> bool:
+		return true
+
+	func take_hit(damage: float, _from: Vector3) -> void:
+		hits.append(damage)
+
+
+func test_combo_third_hit_sweeps() -> void:
+	var pl := Player.new()
+	add_child(pl)
+	var a := _Dummy.new()
+	var b := _Dummy.new()
+	add_child(a)
+	add_child(b)
+	a.global_position = pl.global_position + Vector3(1.5, 0, 0)
+	b.global_position = a.global_position + Vector3(0, 0, 2)    # дальше удара, но в размахе от цели
+	var seen: Array[int] = []
+	pl.combo.connect(func(n: int) -> void: seen.append(n))
+	for k in 3:
+		pl.t += Player.ATTACK_COOLDOWN + 0.05
+		pl.basic_attack()
+	check(seen == [1, 2, 3] and a.hits.size() == 3, "три удара подряд — серия 1, 2, 3")
+	check(a.hits[2] > a.hits[0] * 1.7 and b.hits.size() == 1, "третий удар серии сильнее и задевает соседа")
+	pl.t += Player.COMBO_WINDOW + 1.0
+	pl.basic_attack()
+	check(pl.combo_count == 1, "после паузы серия начинается заново")
+	a.queue_free()
+	b.queue_free()
+	pl.queue_free()
+
+
+func test_perfect_dodge_doubles_next_hit() -> void:
+	var pl := Player.new()
+	add_child(pl)
+	var a := _Dummy.new()
+	add_child(a)
+	a.global_position = pl.global_position + Vector3(1.5, 0, 0)
+	var hp := GameState.hp
+	var fired := [false]
+	pl.perfect_dodge.connect(func() -> void: fired[0] = true)
+	pl.dodge()
+	pl.take_hit(40.0)
+	check(fired[0] and is_equal_approx(GameState.hp, hp), "удар сквозь уклон не ранит и засчитан как ловкий")
+	pl._dodge_left = 0.0
+	pl.t += 1.0
+	pl.basic_attack()
+	pl.t += Player.COMBO_WINDOW + 1.0
+	pl.basic_attack()
+	check(a.hits.size() == 2 and is_equal_approx(a.hits[0], a.hits[1] * Player.PERFECT_MULT), "после ловкого уклона удар двойной, один раз")
+	a.queue_free()
+	pl.queue_free()
+
+
+func test_ui_skin_has_drawn_icons() -> void:
+	var ok := true
+	for c in ["CLASS_1", "CLASS_2", "CLASS_3"]:
+		for ab in GameData.class_abilities(c):
+			ok = ok and UiSkin.icon(ab.id) != null
+	for n in ["bag", "quests", "menu", "map", "heart", "coin", "rep", "kukukha", "close", "lock", "fist", "dodge", "hand",
+			"rot_left", "rot_right"]:
+		ok = ok and UiSkin.icon(n) != null
+	check(ok, "у всех 21 способности и кнопок интерфейса есть рисованный значок")
+	var th := UiSkin.theme()
+	check(th.get_stylebox("normal", "Button") is StyleBoxFlat and (th.get_stylebox("normal", "Button") as StyleBoxFlat).border_width_bottom > 3,
+			"кнопки по умолчанию — с бортиком")
+
+
+func test_big_multimesh_is_split_into_cells() -> void:
+	var root := Node3D.new()
+	add_child(root)
+	var list: Array = []
+	for i in 200:
+		list.append([Transform3D(Basis(), Vector3(i * 1.0, 0, 0)), Color.WHITE])
+	DistrictDressing._multimesh(root, BoxMesh.new(), null, list, Transform3D(), false, DistrictDressing.SMALL_FAR_M)
+	var n := 0
+	var total := 0
+	var culled := true
+	for c in root.get_children():
+		n += 1
+		total += (c as MultiMeshInstance3D).multimesh.instance_count
+		culled = culled and (c as MultiMeshInstance3D).visibility_range_end > 0.0
+	check(n == 5 and total == 200 and culled, "200 вещей на 200 м режутся на 5 клеток по 40 м, мелочь гаснет вдали")
+	root.queue_free()
