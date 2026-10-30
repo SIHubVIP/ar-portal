@@ -36,6 +36,8 @@ var _walk_segs: Array = []
 var _drive_segs: Array = []
 var _rng := RandomNumberGenerator.new()
 var _t := 0.0
+var _near_at := Vector2(INF, INF)
+var _near: Dictionary = {}     # набор улиц → улицы рядом с героем (0.14: в двух районах их вдвое больше)
 
 
 func _ready() -> void:
@@ -157,8 +159,19 @@ func _step_car(c: Dictionary, pp: Vector2, delta: float) -> void:
 ## Ставит фигуру на случайную улицу у героя: на ближайшую к нему точку отрезка плюс сдвиг,
 ## подальше, чем NEAR_M, чтобы не возникать перед носом. Направление случайное.
 func _place(e: Dictionary, segs: Array, pp: Vector2, walker: bool) -> bool:
+	if pp.distance_to(_near_at) > 40.0:
+		_near_at = pp
+		_near.clear()
+	var key := 0 if walker else 1
+	if not _near.has(key):
+		_near[key] = segs.filter(func(s: Dictionary) -> bool:
+			return Geometry2D.get_closest_point_to_segment(pp, s.a, s.b).distance_to(pp) < FAR_M)
+	var near: Array = _near[key]
+	if near.is_empty():
+		e.t = 1.0
+		return false
 	for attempt in 8:
-		var s: Dictionary = segs[_rng.randi() % segs.size()]
+		var s: Dictionary = near[_rng.randi() % near.size()]
 		var ab: Vector2 = s.b - s.a
 		var len := ab.length()
 		if len < 10.0:

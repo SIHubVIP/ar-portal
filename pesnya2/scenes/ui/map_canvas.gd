@@ -18,6 +18,7 @@ var rot := 0.0
 var district := false
 
 static var _roads: Array = []       # [{pts: PackedVector2Array (x, z), w: float}]
+static var _house_cells: Dictionary = {}
 static var _houses: Array[Rect2] = []
 
 
@@ -53,9 +54,14 @@ func _draw_district(view: Transform2D) -> void:
 	draw_set_transform_matrix(view)
 	var reach := size.length() / 2.0 / scale_px + 20.0
 	var area := Rect2(origin - Vector2(reach, reach), Vector2(reach, reach) * 2.0)
-	for h in _houses:
-		if area.intersects(h):
-			draw_rect(h, COLORS.block)
+	# 0.14: домов двух районов ~16 тыс. — перебираем только корзины 250 м рядом с героем
+	var c0 := Vector2i(floori(area.position.x / 250.0), floori(area.position.y / 250.0)) - Vector2i.ONE
+	var c1 := Vector2i(floori(area.end.x / 250.0), floori(area.end.y / 250.0)) + Vector2i.ONE
+	for cx in range(c0.x, c1.x + 1):
+		for cy in range(c0.y, c1.y + 1):
+			for h: Rect2 in _house_cells.get(Vector2i(cx, cy), []):
+				if area.intersects(h):
+					draw_rect(h, COLORS.block)
 	for r in _roads:
 		# 337 улиц и переулков: рисуем только те, что попадают в круг миникарты
 		if area.intersects(r.box):
@@ -74,7 +80,12 @@ static func _load_district() -> void:
 			box = box.expand(q)
 		r.box = box.grow(r.w)
 	for h in District.houses():
-		_houses.append(Rect2(h.position - o, h.size))
+		var hr := Rect2(h.position - o, h.size)
+		_houses.append(hr)
+		var key := Vector2i(floori(hr.get_center().x / 250.0), floori(hr.get_center().y / 250.0))
+		if not _house_cells.has(key):
+			_house_cells[key] = []
+		_house_cells[key].append(hr)
 
 
 ## Собирает формы для карты из уже построенного мира. Участки района (map_skip) не берутся:

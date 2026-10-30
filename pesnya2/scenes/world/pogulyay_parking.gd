@@ -14,6 +14,9 @@ const GARAGE_POS := StartYard.GARAGE_13
 const UFO_POS := Vector3(70, 62, -230)
 ## Арка в северном корпусе — выход со двора (ворота в StartYard._bounds).
 const EXIT_ARCH := StartYard.EXIT_ARCH
+## Такси «Межрайон» (0.14): у будки во дворе и у площади «Последний талон» в Деловом.
+const TAXI_YARD := StartYard.BOOTH + Vector3(10, 0, 7)
+const TAXI_DL_PLAN := Vector2(4600, 1598)
 
 var player: Player
 var camera: IsoCamera
@@ -55,6 +58,7 @@ func _ready() -> void:
 	_build_checkpoint()
 	_build_kiosk()
 	_build_exit_to_delovoy()
+	_build_taxi()
 	_build_locals()
 	_trim_shadows(self)
 	_build_pavel()
@@ -649,6 +653,49 @@ func _build_exit_to_delovoy() -> void:
 		"enabled": func(): return QuestService.state_of(QID) != QuestService.COMPLETED})
 
 
+# ---------- такси «Межрайон» между районами (0.14) ----------
+
+func _build_taxi() -> void:
+	var dl := District.to_world(TAXI_DL_PLAN)
+	Props.collider(self, Vector3(1.8, 1.4, 4.3), dl + Vector3(-3, 0.7, 0))
+	Props.place(self, "taxi", dl + Vector3(-3, 0, 0), 0.0)
+	Props.place(self, "taxi_sign", dl + Vector3(0, 0, -1.5), 0.0)
+	Signboard.make(self, "МЕЖРАЙОН", "board", Color(0.1, 0.08, 0.05), dl + Vector3(0, 2.62, -1.41), 0.0, 0.27,
+			{"bg": Color(0.98, 0.8, 0.15)})
+	Signboard.make(self, "МЕЖРАЙОН\nПОГУЛЯЙ ⇄ ДЕЛОВОЙ", "board", Color(0.1, 0.08, 0.05), TAXI_YARD + Vector3(0, 3.3, -2.3), 0.0, 0.22,
+			{"bg": Color(0.98, 0.8, 0.15)})
+	_interactables.append({"pos": TAXI_YARD, "radius": 3.0, "label": "Такси в Деловой", "cb": func():
+		_ride(dl + Vector3(0, 0, 2.5), "ДЕЛОВОЙ", "Площадь «Последний талон». Счётчик тикал быстрее сердца."),
+		"enabled": func(): return QuestService.state_of(QID) == QuestService.COMPLETED})
+	_interactables.append({"pos": dl + Vector3(0, 0, 2.5), "radius": 3.0, "label": "Такси в Погуляй", "cb": func():
+		_ride(TAXI_YARD + Vector3(0, 0, 1.5), "ПОГУЛЯЙ", "Двор у киоска. Таксист взял чаевые талонами."),
+		"enabled": func(): return true})
+
+
+## Поездка: затемнение, перенос героя, подгрузка участков, баннер с названием района.
+func _ride(to: Vector3, title: String, sub: String) -> void:
+	var layer := CanvasLayer.new()
+	layer.layer = 50
+	var black := ColorRect.new()
+	black.color = Color(0, 0, 0, 0)
+	black.set_anchors_preset(Control.PRESET_FULL_RECT)
+	black.mouse_filter = Control.MOUSE_FILTER_STOP
+	layer.add_child(black)
+	add_child(layer)
+	var tw := black.create_tween()
+	tw.tween_property(black, "color:a", 1.0, 0.35)
+	tw.tween_callback(func() -> void:
+		player.global_position = to
+		player.velocity = Vector3.ZERO
+		chunks.load_now()
+		_queue_save())
+	tw.tween_interval(0.4)
+	tw.tween_property(black, "color:a", 0.0, 0.5)
+	tw.tween_callback(func() -> void:
+		layer.queue_free()
+		hud.show_banner(title, sub))
+
+
 # ---------- MAIN_001: вступление и восстановление ----------
 
 func _scene_line(i: int) -> Dictionary:
@@ -1056,6 +1103,25 @@ func _run_autotest() -> void:
 	var walkers := street_life.get_children().filter(func(n: Node3D) -> bool: return n.visible).size()
 	log.call("улица: видно %d прохожих и машин; группа M10-1: %d, опыт +%d" % [walkers, group, GameState.xp - xp_before])
 	if group < 4 or GameState.xp <= xp_before or walkers < 5:
+		print("AUTOTEST_FAIL")
+	player.global_position = back
+	await _frames(20)
+	# 0.14: такси «Межрайон» — в Деловой и обратно во двор
+	var rides := {}
+	for it in _interactables:
+		if String(it.label).begins_with("Такси"):
+			rides[it.label] = it
+	var to_dl: Dictionary = rides.get("Такси в Деловой", {})
+	var ok_dl: bool = not to_dl.is_empty() and to_dl.enabled.call()
+	if ok_dl:
+		to_dl.cb.call()
+		await get_tree().create_timer(1.6).timeout
+		ok_dl = District.district_at(District.to_plan(player.global_position)).id == "DL"
+		rides["Такси в Погуляй"].cb.call()
+		await get_tree().create_timer(1.6).timeout
+	var home := player.global_position.distance_to(TAXI_YARD) < 4.0
+	log.call("такси «Межрайон»: в Деловой %s, обратно во двор %s" % [ok_dl, home])
+	if not ok_dl or not home:
 		print("AUTOTEST_FAIL")
 	player.global_position = back
 	await _frames(20)

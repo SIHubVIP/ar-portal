@@ -417,7 +417,8 @@ func test_district_manifest_counts() -> void:
 func test_district_chunks_follow_tz_formula() -> void:
 	check(District.chunk_of(Vector2(0, 0)) == Vector2i(0, 0), "угол — участок 0,0")
 	check(District.chunk_of(Vector2(249.9, 250)) == Vector2i(0, 1), "граница 250 м — следующий участок")
-	check(District.chunk_of(Vector2(3000, 3000)) == Vector2i(11, 11), "край 3000 м — последний участок")
+	check(District.chunk_of(Vector2(6000, 3000)) == Vector2i(23, 11), "край 6000 × 3000 м — последний участок")
+	check(District.chunk_of(Vector2(2999, 2999)) == Vector2i(11, 11), "угол Погуляя — участок 11, 11")
 	var ok := true
 	for c in District.data().chunks:
 		var idx := Vector2i(int(c.index[0]), int(c.index[1]))
@@ -651,6 +652,34 @@ func test_signboard_styles_build_real_objects() -> void:
 			break
 	var lb := Signboard.make(root, "А", "lightbox", Color.WHITE, Vector3.ZERO, 0.0, 0.4)
 	check(lb.find_children("*", "MeshInstance3D", true, false).size() <= 2, "короб — одна сетка рамки и поля плюс отсвет")
+	root.queue_free()
+
+
+func test_delovoy_district_joins_pogulyay() -> void:
+	check(District.district_at(Vector2(1500, 1500)).id == "PG" and District.district_at(Vector2(4500, 1500)).id == "DL",
+			"Погуляй на западе, Деловой на востоке")
+	check(String(District.sector_at(Vector2(4500, 1500)).get("name", "")) == "Последний талон"
+			and String(District.sector_at(Vector2(5500, 500)).get("name", "")) == "Кредит доверчивым"
+			and String(District.sector_at(Vector2(3500, 1500)).get("name", "")) == "Двор свидетелей", "сектора Делового по брифу")
+	for id in ["dl_mfc", "dl_credit", "dl_yard", "dl_school", "dl_zags", "dl_archive", "dl_station", "dl_passage", "dl_greenhouses"]:
+		check(not District.site(id).is_empty(), "площадка %s есть в макете" % id)
+	District.reachability()
+	check(District.reached(Vector2(4500, 1590)) and District.reached(Vector2(5500, 598)) and District.reached(Vector2(3500, 1590)),
+			"до трёх площадок Делового можно дойти пешком со двора")
+	check(District.chunk_of(Vector2(4500, 1500)).x > 11, "участки Делового — правее Погуляя")
+
+
+func test_delovoy_sites_build() -> void:
+	var root := Node3D.new()
+	add_child(root)
+	var b := DistrictDressing.Batch.new()
+	for id in ["dl_mfc", "dl_credit", "dl_yard"]:
+		DistrictSites.build(root, District.site(id), b)
+	check(root.get_node_or_null("StuckUfo") != null and root.get_node_or_null("ProbeHeld") != null, "тарелка у администрации и зонд у бабушки")
+	var bodies := root.find_children("*", "StaticBody3D", true, false).size()
+	check(bodies > 30, "корпуса, машины и ограды площадок с коллизией: %d" % bodies)
+	var signs := b.jobs.size()
+	check(signs >= 25, "вывески площадок в очереди: %d" % signs)
 	root.queue_free()
 
 

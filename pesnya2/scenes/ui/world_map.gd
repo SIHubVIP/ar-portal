@@ -89,7 +89,7 @@ func open() -> void:
 	_quarter.shapes = shapes
 	if _district.zoom == 1.0 and _district.pan == Vector2.ZERO:
 		_district.zoom = 3.0
-		_district.pan = player_plan() - Vector2(District.SIZE_M, District.SIZE_M) / 2.0
+		_district.pan = player_plan() - Vector2(District.WIDTH_M, District.SIZE_M) / 2.0
 	_render()
 	_district.clamp_pan()
 
@@ -103,7 +103,7 @@ func close_panel() -> void:
 func _render() -> void:
 	for c in _tabs.get_children():
 		c.queue_free()
-	for t in [["district", "Район · Погуляй"], ["quarter", "Квартал · Старт"]]:
+	for t in [["district", "Район · " + String(District.district_at(player_plan()).get("name", "Погуляй"))], ["quarter", "Квартал · Старт"]]:
 		var b := _btn(_tabs, "  %s  " % t[1], func():
 			_tab = t[0]
 			_render(), 22)
@@ -123,8 +123,10 @@ func _render() -> void:
 	_quarter.visible = _tab == "quarter"
 	_quarter_overlay.visible = _tab == "quarter"
 	if _tab == "district":
-		_info.text = "Погуляй, 3 × 3 км, 9 секторов. Ты в «Похмельной» (C1). Двигай карту пальцем, нажми на точку — " \
-				+ "покажу, что там. В оранжевых кругах живут мобы, в голубых — безопасно. NPC и боссы пока метки."
+		var here := player_plan()
+		var sec := District.sector_at(here)
+		_info.text = "Погуляй и Деловой, 6 × 3 км, 18 секторов. Ты в районе «%s», сектор «%s». Двигай карту пальцем, нажми на точку — " \
+				% [District.district_at(here).get("name", "Погуляй"), sec.get("name", "?")] + "покажу, что там. В оранжевых кругах живут мобы, в голубых — безопасно. NPC и боссы пока метки."
 		_district.queue_redraw()
 	else:
 		_info.text = "Белые точки — с кем поговорить, красные — дроны, «!» — цель задания, поезд — выход в другой район."
@@ -225,7 +227,7 @@ class _DistrictCanvas extends Control:
 		return minf(size.x, size.y) * 0.96 * zoom / District.SIZE_M
 
 	func to_px(m: Vector2) -> Vector2:
-		return size / 2.0 + (m - Vector2(District.SIZE_M, District.SIZE_M) / 2.0 - pan) * k()
+		return size / 2.0 + (m - Vector2(District.WIDTH_M, District.SIZE_M) / 2.0 - pan) * k()
 
 	func _gui_input(event: InputEvent) -> void:
 		if event is InputEventMouseButton or event is InputEventScreenTouch:
@@ -245,7 +247,7 @@ class _DistrictCanvas extends Control:
 	func clamp_pan() -> void:
 		if k() <= 0.0:
 			return
-		var lim := (Vector2(District.SIZE_M, District.SIZE_M) - size / k()) / 2.0
+		var lim := (Vector2(District.WIDTH_M, District.SIZE_M) - size / k()) / 2.0
 		lim = lim.max(Vector2.ZERO)
 		pan = pan.clamp(-lim, lim)
 		queue_redraw()
@@ -274,11 +276,12 @@ class _DistrictCanvas extends Control:
 			return
 		var kk := k()
 		var o := to_px(Vector2.ZERO)
-		var full := District.SIZE_M * kk
+		var full := Vector2(District.WIDTH_M, District.SIZE_M) * kk      # 0.14: Погуляй и Деловой
 		draw_rect(Rect2(Vector2.ZERO, size), Color(0.07, 0.08, 0.1))
-		draw_rect(Rect2(o, Vector2(full, full)), Color(0.2, 0.22, 0.23))
+		draw_rect(Rect2(o, full), Color(0.2, 0.22, 0.23))
 		# сектора: подложка парка и рынка, граница, подпись
-		for z in d.get("sectors", []):
+		var sectors: Array = d.get("sectors", []) + District.layout().get("sectors", [])
+		for z in sectors:
 			var b: Array = z.bounds_plan_m
 			var r := Rect2(to_px(Vector2(b[0], b[1])), Vector2(b[2] - b[0], b[3] - b[1]) * kk)
 			if z.id == "A1":
@@ -299,10 +302,15 @@ class _DistrictCanvas extends Control:
 			if s.id != "lane":
 				draw_line(to_px(s.a), to_px(s.b), Color(0.55, 0.58, 0.58) if s.major else Color(0.42, 0.45, 0.46),
 						maxf(1.5, s.w * kk))
+		# названия районов над картой
+		for dd in District.layout().get("districts", []):
+			var dr: Array = dd.r
+			WorldMap._text(self, to_px(Vector2((float(dr[0]) + float(dr[2])) / 2.0, -40.0)), String(dd.name).to_upper(), 26,
+					Color(1, 0.9, 0.6))
 		# двор старта
 		var sa := District.start_area()
 		draw_rect(Rect2(to_px(sa.position), sa.size * kk), Color(0.85, 0.72, 0.5, 0.35))
-		for z in d.get("sectors", []):
+		for z in sectors:
 			var b: Array = z.bounds_plan_m
 			var c := to_px(Vector2((b[0] + b[2]) / 2.0, b[1] + 60.0))
 			WorldMap._text(self, c, "%s · %s" % [z.id, String(z.name).to_upper()], 17,

@@ -18,6 +18,9 @@ const WARM := Color(1.0, 0.78, 0.45)
 
 
 static func build(root: Node3D, site: Dictionary, batch: DistrictDressing.Batch) -> void:
+	if String(site.id).begins_with("dl_"):
+		DelovoySites.build(root, site, batch)
+		return
 	match String(site.id):
 		"market":
 			_market(root, site, batch)

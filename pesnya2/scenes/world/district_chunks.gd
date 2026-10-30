@@ -67,7 +67,7 @@ func _update(immediate: bool) -> void:
 	for dx in range(-LOAD_RADIUS, LOAD_RADIUS + 1):
 		for dy in range(-LOAD_RADIUS, LOAD_RADIUS + 1):
 			var c := here + Vector2i(dx, dy)
-			if c.x < 0 or c.y < 0 or c.x >= District.CHUNKS or c.y >= District.CHUNKS or loaded.has(c):
+			if c.x < 0 or c.y < 0 or c.x >= District.CHUNKS_X or c.y >= District.CHUNKS or loaded.has(c):
 				continue
 			if immediate:
 				loaded[c] = _build_chunk(c)
@@ -83,7 +83,8 @@ func _update(immediate: bool) -> void:
 
 func _build_floor_and_edges() -> void:
 	var size := District.SIZE_M
-	var center := District.to_world(Vector2(size, size) / 2.0)
+	var width := District.WIDTH_M          # 0.14: Погуляй и Деловой — один пол
+	var center := District.to_world(Vector2(width, size) / 2.0)
 	var floor_body := StaticBody3D.new()
 	floor_body.name = "DistrictFloor"
 	floor_body.position = center + Vector3(0, -0.5, 0)
@@ -91,11 +92,11 @@ func _build_floor_and_edges() -> void:
 	add_child(floor_body)
 	var fs := CollisionShape3D.new()
 	var fb := BoxShape3D.new()
-	fb.size = Vector3(size, 1, size)
+	fb.size = Vector3(width, 1, size)
 	fs.shape = fb
 	floor_body.add_child(fs)
-	for wall in [[Vector2(size / 2, 0), Vector3(size, 6, 1)], [Vector2(size / 2, size), Vector3(size, 6, 1)],
-			[Vector2(0, size / 2), Vector3(1, 6, size)], [Vector2(size, size / 2), Vector3(1, 6, size)]]:
+	for wall in [[Vector2(width / 2, 0), Vector3(width, 6, 1)], [Vector2(width / 2, size), Vector3(width, 6, 1)],
+			[Vector2(0, size / 2), Vector3(1, 6, size)], [Vector2(width, size / 2), Vector3(1, 6, size)]]:
 		var b := Props.collider(self, wall[1], District.to_world(wall[0], 3.0))
 		b.set_meta("map_skip", true)
 
