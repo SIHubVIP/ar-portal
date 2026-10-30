@@ -246,6 +246,7 @@ func _halo(size: Vector2, color: Color, strength: float, pos := Vector3(0, 0, 0.
 		m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 		m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 		m.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+		m.disable_fog = true
 		m.albedo_color = Color(color.r * strength, color.g * strength, color.b * strength, 1.0)
 		m.albedo_texture = _halo_texture()
 		m.disable_receive_shadows = true

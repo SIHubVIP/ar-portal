@@ -42,6 +42,7 @@ static func _material(name: String, normal_scale: float, tile := TILE_M, tint :=
 	m.normal_scale = normal_scale
 	m.roughness_texture = load("res://assets/textures/%s_rough.png" % name)
 	m.roughness_texture_channel = BaseMaterial3D.TEXTURE_CHANNEL_RED
+	m.metallic_specular = 0.2            # 0.11: сухой осенний вечер — без мокрых бликов
 	m.roughness = 1.0
 	m.uv1_triplanar = true
 	m.uv1_world_triplanar = true

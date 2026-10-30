@@ -2,15 +2,16 @@ class_name DistrictChunks
 extends Node3D
 ## Этап 1 ТЗ «Погуляй»: весь район 3000 × 3000 м из 144 участков по 250 м.
 ## Загружены участок героя и восемь соседних; дальние выгружаются с запасом (гистерезис),
-## новый участок строится по одному за кадр, чтобы не дёргать ввод. Участок — дороги,
-## дома-блоки по силуэтам схемы, метки точек реестра. Пол и внешние стены района — общие.
-## Квартал «Похмельная» строит сам мир: участки в нём не ставят ни домов, ни дорог.
+## новый участок строится по кусочкам, чтобы не дёргать ввод. Участок по макету «Рубин»
+## (0.11): улицы и переулки, дома 2–5 этажей (BuildingKit), частный сектор, гаражи и сараи
+## одним MultiMesh на вид, деревья и огороды, площадки и ориентиры (DistrictSites), метки
+## точек реестра. Пол и внешние стены района — общие. Двор «Похмельной» строит StartYard.
 
 const LOAD_RADIUS := 1
 const BUILD_BUDGET_US := 3000
 const KEEP_RADIUS := 2
 const HOUSE_FLOOR_M := 3.0
-const HOUSE_SHADER := preload("res://assets/shaders/house_windows.gdshader")
+const SMALL_KINDS := ["cottage", "workshop", "garage", "shed"]
 const POINT_COLORS := {"npc": Color(0.45, 0.9, 0.65), "boss": Color(0.95, 0.38, 0.45), "safe": Color(0.45, 0.78, 0.95),
 		"underground": Color(0.95, 0.72, 0.3), "place": Color(0.93, 0.87, 0.75), "mob": Color(1, 0.5, 0.3)}
 
@@ -147,12 +148,30 @@ func _chunk_steps(root: Node3D, c: Vector2i) -> Array[Callable]:
 		if is_instance_valid(root):
 			DistrictDressing.streets(root, c, _segments, batch)
 			drain.call())
-	for h in District.houses():
-		var hc := h.get_center()
-		if rect.has_point(hc):
+	var small: Array = []
+	for b in District.buildings():
+		var hc: Vector2 = (b.rect as Rect2).get_center()
+		if not rect.has_point(hc) or start.has_point(hc):
+			continue
+		if b.kind == "house":
 			steps.append(func() -> void:
-				_house(root, h, batch)
+				_house(root, b, batch)
 				drain.call())
+		elif SMALL_KINDS.has(b.kind):
+			small.append(b)
+	if not small.is_empty():
+		steps.append(_small_houses.bind(root, small, batch))
+	steps.append(func() -> void:
+		if is_instance_valid(root):
+			DistrictDressing.layout_fill(root, rect, batch))
+	for st in District.sites():
+		var sr: Array = st.r
+		var sc := Vector2((float(sr[0]) + float(sr[2])) / 2.0, (float(sr[1]) + float(sr[3])) / 2.0)
+		if rect.has_point(sc) and st.id != "start":
+			steps.append(func() -> void:
+				if is_instance_valid(root):
+					DistrictSites.build(root, st, batch)
+					drain.call())
 	for p in District.data().get("points", []):
 		var pm2 := District.pos(p)
 		# одна копия NPC: пока Павел у киоска во дворе, метки в парке нет
@@ -171,28 +190,107 @@ func _chunk_steps(root: Node3D, c: Vector2i) -> Array[Callable]:
 	return steps
 
 
-static var _unit_box: BoxMesh
-
-
-func _house(root: Node3D, h: Rect2, batch: DistrictDressing.Batch = null) -> void:
+## Многоквартирный дом макета: своя сетка BuildingKit (окна шейдера и балконы — по мировой
+## сетке), тело-окклюдер для выреза камерой, у подъездов свет; к улицам — витрины и вывески.
+func _house(root: Node3D, b: Dictionary, batch: DistrictDressing.Batch = null) -> void:
 	if not is_instance_valid(root):
 		return
+	var h: Rect2 = b.rect
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash(Vector2i(int(h.position.x), int(h.position.y)))
-	var floors := rng.randi_range(3, 9)
-	var height := floors * HOUSE_FLOOR_M
-	var size := Vector3(h.size.x, height, h.size.y)
-	var body := Props.collider(root, size, District.to_world(h.get_center(), height / 2.0), true)
-	# одна сетка-куб на все дома: окна шейдер рисует в мировых координатах, масштаб им не мешает
-	if _unit_box == null:
-		_unit_box = BoxMesh.new()
+	var floors := clampi(int(round(float(b.h) / HOUSE_FLOOR_M)), 2, 5)
+	var at := District.to_world(h.get_center())
+	var built := BuildingKit.house(h.size.x, h.size.y, floors, at, b.mat == "brick", rng)
+	var height := floors * HOUSE_FLOOR_M + 0.4
+	var body := Props.collider(root, Vector3(h.size.x, height, h.size.y), at + Vector3(0, height / 2.0, 0), true)
 	var mi := MeshInstance3D.new()
-	mi.mesh = _unit_box
-	mi.scale = size
-	mi.material_override = _mat("house_%d" % (rng.randi() % 4))
+	mi.mesh = built.mesh
+	mi.position = Vector3(0, -height / 2.0, 0)
 	body.add_child(mi)
 	if batch != null:
+		for e: Vector3 in built.entrances:
+			batch.lamps.append(e + Vector3(0, 2.4, -0.0))
+			batch.add("spill", Transform3D(Basis().scaled(Vector3(3.6, 1.0, 3.6)), e + Vector3(0, 0.07, 0)), Color(0.8, 0.62, 0.4))
 		DistrictDressing.facades(root, h, height, _segments, batch, rng)
+
+
+## Частный сектор, мастерские, гаражи и сараи участка: единичные сетки BuildingKit в
+## MultiMesh (по сетке на вид), коллизия — одно тело с коробками. Лицом к ближайшему проходу.
+func _small_houses(root: Node3D, list: Array, batch: DistrictDressing.Batch) -> void:
+	if not is_instance_valid(root):
+		return
+	var groups: Dictionary = {}
+	var body := StaticBody3D.new()
+	body.name = "SmallHouses"
+	root.add_child(body)
+	for b in list:
+		var r: Rect2 = b.rect
+		var rng := RandomNumberGenerator.new()
+		rng.seed = hash(Vector2i(int(r.position.x * 10.0), int(r.position.y * 10.0)))
+		var floors := 2 if float(b.h) >= 5.5 else 1
+		var brick: bool = b.mat == "brick"
+		var variant := rng.randi() % 4
+		var key := "%s|%d|%s|%d" % [b.kind, floors, brick, variant]
+		var size := r.size
+		var yaw := _face_yaw(r)
+		# лицо единичной сетки — +Z: на повороте 90° ширина и глубина меняются местами
+		var turned := absf(sin(yaw)) > 0.5
+		var sx := size.y if turned else size.x
+		var sz := size.x if turned else size.y
+		var xf := Transform3D(Basis(Vector3.UP, yaw).scaled(Vector3(sx, 1.0, sz)), District.to_world(r.get_center()))
+		if not groups.has(key):
+			groups[key] = [BuildingKit.unit(b.kind, floors, brick, variant), []]
+		var tint := BuildingKit.small_wall_color(String(b.mat), rng)
+		groups[key][1].append([xf, tint])
+		var cs := CollisionShape3D.new()
+		var bs := BoxShape3D.new()
+		var hh := float(b.h)
+		bs.size = Vector3(size.x, hh, size.y)
+		cs.shape = bs
+		cs.position = District.to_world(r.get_center(), hh / 2.0)
+		body.add_child(cs)
+		if b.kind == "cottage" or b.kind == "workshop":
+			var front := Vector3(sin(yaw), 0, cos(yaw))
+			var door := District.to_world(r.get_center()) + front * (sz / 2.0 + 0.6)
+			if b.kind == "cottage":
+				door += Vector3(cos(yaw), 0, -sin(yaw)) * (-0.2 * sx)
+				batch.add("spill", Transform3D(Basis().scaled(Vector3(2.6, 1.0, 2.6)), door + Vector3(0, 0.07, 0)), Color(0.8, 0.62, 0.4))
+			if rng.randf() < 0.35:
+				batch.lamps.append(door + Vector3(0, 2.3, 0))
+	for key in groups:
+		var mesh: Mesh = groups[key][0]
+		var items: Array = groups[key][1]
+		var mm := MultiMesh.new()
+		mm.transform_format = MultiMesh.TRANSFORM_3D
+		mm.use_colors = true            # белый: иначе GL-рендер берёт COLOR из пустого буфера
+		mm.use_custom_data = true          # цвет стены — в данных экземпляра, крыша и двери своих цветов
+		mm.mesh = mesh
+		mm.instance_count = items.size()
+		for i in items.size():
+			mm.set_instance_transform(i, items[i][0])
+			mm.set_instance_color(i, Color.WHITE)
+			mm.set_instance_custom_data(i, items[i][1])
+		var mmi := MultiMeshInstance3D.new()
+		mmi.multimesh = mm
+		mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		root.add_child(mmi)
+
+
+## Поворот мелкого дома лицом к ближайшему проходу (улице или переулку) в пределах 20 м.
+func _face_yaw(r: Rect2) -> float:
+	var c := r.get_center()
+	var best := 1e9
+	var yaw := 0.0
+	for s in _segments:
+		var d := District.dist_to_segment(c, s.a, s.b) - float(s.w) / 2.0
+		if d < best and d < 20.0:
+			best = d
+			var ab: Vector2 = s.b - s.a
+			var t := clampf((c - s.a).dot(ab) / maxf(ab.length_squared(), 0.0001), 0.0, 1.0)
+			var to: Vector2 = s.a + ab * t - c
+			yaw = atan2(to.x, to.y)
+			yaw = roundf(yaw / (PI / 2.0)) * (PI / 2.0)
+	return yaw
 
 
 ## Кусок дороги внутри участка: отрезок обрезается по участку и двору старта.
@@ -218,7 +316,9 @@ func _road_piece(root: Node3D, s: Dictionary, rect: Rect2, start: Rect2) -> void
 	var lane: bool = s.id == "lane"
 	mi.position = District.to_world(mid, 0.02 if s.major else (0.005 if lane else 0.01))
 	mi.rotation.y = -atan2(dir.y, dir.x)
-	mi.material_override = _mat("road" if s.major else ("lane" if lane else "street"))
+	# коллектор и местные — асфальт, переулки — светлый асфальт, дорожки и кольца — плитка
+	var kind := String(s.get("kind", ""))
+	mi.material_override = _mat("road" if s.major else ("street" if not lane else ("path" if kind == "path" or kind == "alley" else "lane")))
 	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	root.add_child(mi)
 
@@ -290,21 +390,17 @@ func _mat(kind: String) -> Material:
 	match kind:
 		# 0.10: текстуры вместо ровной заливки — земля дворов, мокрый асфальт, переулки
 		"ground":
-			m = Surfaces.dirt()
+			m = Surfaces.dirt(Color(1.45, 1.5, 0.95))     # осенний газон с землёй
 		"road":
 			m = Surfaces.asphalt()
 		"street":
 			m = Surfaces.asphalt(Color(1.12, 1.1, 1.1))
 		"lane":
 			m = Surfaces.asphalt(Color(1.45, 1.35, 1.25))
+		"path":
+			m = Surfaces.slabs(Color(0.92, 0.88, 0.82))
 		_:
-			# дома: окна и витрины шейдером по мировым координатам (этажи по HOUSE_FLOOR_M)
-			var palette := [Color(0.55, 0.36, 0.3), Color(0.6, 0.58, 0.54), Color(0.48, 0.5, 0.55), Color(0.62, 0.5, 0.4)]
-			var sm := ShaderMaterial.new()
-			sm.shader = HOUSE_SHADER
-			sm.set_shader_parameter("wall", palette[int(kind.right(1)) % palette.size()])
-			sm.set_shader_parameter("floor_h", HOUSE_FLOOR_M)
-			_mats[kind] = sm
-			return sm
+			# прежние «house_N» (прогрев шейдеров): стены домов BuildingKit
+			m = BuildingKit.wall_material(int(kind.right(1)) % 2 == 0)
 	_mats[kind] = m
 	return m

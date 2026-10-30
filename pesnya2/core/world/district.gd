@@ -1,31 +1,26 @@
 class_name District
 extends RefCounted
-## Район «Погуляй» по ТЗ 1.0: 3000 × 3000 м, точки и дороги из data/district_pogulyay.json.
-## План: X на восток, Y на юг, метры от северо-западного угла. В Godot 1 единица = 1 метр,
-## север = -Z. Все переводы координат — только здесь.
+## Район «Погуляй» 3000 × 3000 м. План: X на восток, Y на юг, метры от северо-западного угла.
+## В Godot 1 единица = 1 метр, север = -Z. Все переводы координат — только здесь.
 ##
-## Данные — манифест владельца pogulyay-map.json (схема 1.1) плюс силуэты домов со схемы.
+## Точки реестра (NPC, боссы, мобы, места) — data/district_pogulyay.json (манифест ТЗ).
+## Улицы, дома, деревья, огороды и площадки — data/pogulyay_layout.json (0.11, D-051): макет
+## утверждённого пакета «Рубин» (tools/importers/import_rubin_layout.py) — коллектор 20 м,
+## местные улицы 10 м, переулки, дома 2–5 этажей и наполнение промежутков.
 ##
-## Начало координат Godot стоит у кабриолета во дворе «Похмельной» (360, 2690), а не в центре
-## района (1500, 1500), как в формуле манифеста: это тот же план без масштаба и поворота,
-## сдвинутый на постоянный вектор, чтобы квартал (построенный вокруг нуля) остался на месте.
-## Двор лежит между магистралью h12 (y = 2600) и главной осью (y = 2740), арка выходит на h12;
-## точка P0 (360, 2640) оказывается во дворе в 50 м к северу от машины. Сменить на центр
-## района — поменять ORIGIN_M, когда квартал переедет в участки (решение D-030).
+## Начало координат Godot — у прежнего кабриолета (360, 2690): двор «Похмельной» по макету
+## занимает 268…452 × 2550…2740, арка — в северном корпусе на x = 360.
 
 const SIZE_M := 3000.0
 const CHUNK_M := 250.0
 const CHUNKS := 12
 const ORIGIN_M := Vector2(360, 2690)
-const LANE_W_M := 6.0
-const LANE_MIN_BLOCK_M := 140.0
-const LANE_CLEAR_M := 1.5
-const LANE_MIN_HOUSE_M := 6.0
 
 static var _data: Dictionary = {}
+static var _layout: Dictionary = {}
 static var _houses: Array[Rect2] = []
+static var _buildings: Array = []
 static var _segments: Array = []
-static var _lane_rects: Array[Rect2] = []
 
 
 static func data() -> Dictionary:
@@ -34,6 +29,15 @@ static func data() -> Dictionary:
 		if f:
 			_data = JSON.parse_string(f.get_as_text())
 	return _data
+
+
+## Макет «Рубин»: streets, buildings, trees, plots, sites, cores (метры плана).
+static func layout() -> Dictionary:
+	if _layout.is_empty():
+		var f := FileAccess.open("res://data/pogulyay_layout.json", FileAccess.READ)
+		if f:
+			_layout = JSON.parse_string(f.get_as_text())
+	return _layout
 
 
 static func to_world(m: Vector2, y := 0.0) -> Vector3:
@@ -128,129 +132,61 @@ static func safe_zone_at(plan: Vector2) -> Dictionary:
 	return {}
 
 
-## Дороги как отрезки с шириной коридора из манифеста: 24 м магистрали, кольцо и ось, 12 м улицы.
+## Улицы макета как отрезки: {a, b, w, kind, id, major}. kind — collector (20 м), local (10 м),
+## alley (кольца 4 м), path (дорожки у домов), lane (переулки 5 м наполнения). id "street" —
+## улица с тротуарами и фонарями, "lane" — проход без тротуаров; major — коллектор.
 static func road_segments() -> Array:
 	if not _segments.is_empty():
 		return _segments
 	var out: Array = []
-	for r in data().get("road_centerlines", []):
-		var pts: Array = r.polyline_plan_m
-		var w := float(r.corridor_width_m)
-		for i in pts.size() - 1:
-			out.append({"a": m(pts[i]), "b": m(pts[i + 1]), "w": w, "id": r.id, "major": w >= 20.0})
-	out.append_array(_lanes())
+	for r in layout().get("streets", []):
+		var kind := String(r.kind)
+		out.append({"a": m(r.a), "b": m(r.b), "w": float(r.w), "kind": kind,
+				"id": "street" if kind == "collector" or kind == "local" else "lane", "major": kind == "collector"})
 	_segments = out
 	return out
 
 
-## Переулки этапа 3: в каждом квартале сетки, где между коридорами улиц больше LANE_MIN_BLOCK_M,
-## по середине идёт сквозной проход от улицы до улицы. Вертикальный и горизонтальный проходы
-## одного квартала пересекаются и дают петли. Двор старта и арены боссов переулки обходят.
-static func _lanes() -> Array:
-	var xs: Array = []
-	var ys: Array = []
-	for r in data().get("road_centerlines", []):
-		var id := String(r.id)
-		var p0: Array = r.polyline_plan_m[0]
-		if id.begins_with("v"):
-			xs.append([float(p0[0]), float(r.corridor_width_m)])
-		elif id.begins_with("h"):
-			ys.append([float(p0[1]), float(r.corridor_width_m)])
-	xs.sort_custom(func(a: Array, b: Array) -> bool: return a[0] < b[0])
-	ys.sort_custom(func(a: Array, b: Array) -> bool: return a[0] < b[0])
-	var keep_out: Array[Rect2] = [start_area().grow(10)]
-	for p in points("boss"):
-		var sz := m(p.arena_size_m)
-		keep_out.append(Rect2(pos(p) - sz / 2.0, sz).grow(10))
-	var out: Array = []
-	for i in xs.size() - 1:
-		for j in ys.size() - 1:
-			var x0: float = xs[i][0]
-			var x1: float = xs[i + 1][0]
-			var y0: float = ys[j][0]
-			var y1: float = ys[j + 1][0]
-			var gap_x: float = x1 - x0 - (xs[i][1] + xs[i + 1][1]) / 2.0
-			var gap_y: float = y1 - y0 - (ys[j][1] + ys[j + 1][1]) / 2.0
-			var cx := (x0 + x1) / 2.0
-			var cy := (y0 + y1) / 2.0
-			if gap_x > LANE_MIN_BLOCK_M:
-				_add_lane(out, Vector2(cx, y0), Vector2(cx, y1), keep_out)
-			if gap_y > LANE_MIN_BLOCK_M:
-				_add_lane(out, Vector2(x0, cy), Vector2(x1, cy), keep_out)
-	return out
-
-
-static func _add_lane(out: Array, a: Vector2, b: Vector2, keep_out: Array[Rect2]) -> void:
-	for k in keep_out:
-		if _segment_hits_rect(a, b, k):
-			return
-	out.append({"a": a, "b": b, "w": LANE_W_M, "id": "lane", "major": false})
-
-
-static func _segment_hits_rect(a: Vector2, b: Vector2, r: Rect2) -> bool:
-	for t in 33:
-		if r.has_point(a.lerp(b, t / 32.0)):
-			return true
-	return false
-
-
-## Дома со схемы (метры плана), которые реально стоят в районе: не на дороге, не на точке
-## реестра, не на арене и не во дворе старта. Один список и для участков, и для карт.
+## Дома макета (метры плана) — прямоугольники для коллизий, карт и проверки доступности.
 static func houses() -> Array[Rect2]:
 	if _houses.is_empty():
-		var start := start_area().grow(6)
-		for h in data().get("houses_plan_m", []):
-			var r := Rect2(float(h[0]), float(h[1]), float(h[2]), float(h[3]))
-			if not start.has_point(r.get_center()) and not _blocked(r.get_center(), r.size):
-				_houses.append_array(_split_by_lanes(r))
+		for b in buildings():
+			_houses.append(b.rect)
 	return _houses
 
 
-## Переулок режет дом на два корпуса с проходом LANE_W_M + 2 × LANE_CLEAR_M; узкие обрезки
-## меньше LANE_MIN_HOUSE_M не строятся.
-static func _split_by_lanes(h: Rect2) -> Array[Rect2]:
-	if _lane_rects.is_empty():
-		for s in road_segments():
-			if s.id == "lane":
-				_lane_rects.append(Rect2(s.a, Vector2.ZERO).expand(s.b).grow(s.w / 2.0 + LANE_CLEAR_M))
-	var parts: Array[Rect2] = [h]
-	for lane in _lane_rects:
-		if not lane.intersects(h):
-			continue
-		var next: Array[Rect2] = []
-		for r in parts:
-			if not lane.intersects(r):
-				next.append(r)
-				continue
-			var vertical: bool = lane.size.y > lane.size.x
-			var pieces: Array[Rect2] = []
-			if vertical:
-				pieces = [Rect2(r.position, Vector2(lane.position.x - r.position.x, r.size.y)),
-					Rect2(Vector2(lane.end.x, r.position.y), Vector2(r.end.x - lane.end.x, r.size.y))]
-			else:
-				pieces = [Rect2(r.position, Vector2(r.size.x, lane.position.y - r.position.y)),
-					Rect2(Vector2(r.position.x, lane.end.y), Vector2(r.size.x, r.end.y - lane.end.y))]
-			for q in pieces:
-				if q.size.x >= LANE_MIN_HOUSE_M and q.size.y >= LANE_MIN_HOUSE_M:
-					next.append(q)
-		parts = next
-	return parts
+## Дома с подробностями: {rect, h, mat, kind, site?}. kind: house (многоквартирный 2–5 этажей),
+## site (корпус площадки или ориентира — строит DistrictSites), cottage, workshop, garage, shed.
+static func buildings() -> Array:
+	if _buildings.is_empty():
+		for b in layout().get("buildings", []):
+			var r: Array = b.r
+			var d: Dictionary = b.duplicate()
+			d.rect = Rect2(float(r[0]), float(r[1]), float(r[2]), float(r[3]))
+			_buildings.append(d)
+	return _buildings
 
 
-static func _blocked(center: Vector2, size: Vector2) -> bool:
-	var r := maxf(size.x, size.y) * 0.6
-	for s in road_segments():
-		if s.id != "lane" and dist_to_segment(center, s.a, s.b) < s.w / 2.0 + r + 2.0:
-			return true
-	for p in data().get("points", []):
-		var pm := pos(p)
-		if p.type == "boss":
-			var a := Rect2(pm - m(p.arena_size_m) / 2.0, m(p.arena_size_m))
-			if a.grow(r).has_point(center):
-				return true
-		elif center.distance_to(pm) < r + (12.0 if p.type != "safe" else 25.0):
-			return true
-	return false
+## Деревья макета: [x, y, радиус кроны, высота, "tree" | "grove"].
+static func trees() -> Array:
+	return layout().get("trees", [])
+
+
+## Участки двора: {r: [x, y, w, d], kind: garden | playground | laundry}.
+static func plots() -> Array:
+	return layout().get("plots", [])
+
+
+## Площадки и ориентиры секторов: {id, r: [x0, y0, x1, y1], objects}.
+static func sites() -> Array:
+	return layout().get("sites", [])
+
+
+static func site(id: String) -> Dictionary:
+	for s in sites():
+		if s.id == id:
+			return s
+	return {}
 
 
 ## Расстояние от точки до отрезка дороги.
@@ -260,12 +196,13 @@ static func dist_to_segment(p: Vector2, a: Vector2, b: Vector2) -> float:
 	return p.distance_to(a + ab * t)
 
 
-## Квартал «Похмельная» собран вручную вокруг старта: участки не строят в нём дома и дороги.
+## Двор «Похмельной» собран вручную (StartYard): участки не строят в нём дома и дороги.
+## Корпуса двора, гаражи и двор 268…452 × 2550…2740; южная улица — уже за ним.
 static func start_area() -> Rect2:
-	return Rect2(ORIGIN_M + Vector2(-42, -78), Vector2(84, 108))
+	return Rect2(248, 2536, 222, 208)
 
 
-## Двор старта выходит на h12 через арку: отсюда начинается проверка доступности.
+## Двор выходит на север через арку северного корпуса: отсюда начинается проверка доступности.
 static func yard_exit() -> Vector2:
 	return Vector2(ORIGIN_M.x, start_area().position.y - 6.0)
 

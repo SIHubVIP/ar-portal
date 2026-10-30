@@ -193,6 +193,9 @@ func _physics_process(delta: float) -> void:
 	if vp.x > 0.0:
 		RenderingServer.global_shader_parameter_set("hero_screen",
 				unproject_position(target.global_position + Vector3(0, 1.0, 0)) / vp)
+		# глубина героя от камеры: мелкие дома в MultiMesh вырезают всё, что ближе (depth_cut)
+		RenderingServer.global_shader_parameter_set("hero_depth",
+				-(global_transform.affine_inverse() * (target.global_position + Vector3(0, 1.0, 0))).z)
 	_update_occluders()
 
 

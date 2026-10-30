@@ -2,9 +2,11 @@ class_name DistrictDressing
 extends RefCounted
 ## 0.10: улицы района живут, а не просто тёмный асфальт между коробками. На участок:
 ##   улица — тротуары с бордюром, фонари со световыми пятнами, деревья, скамейки, ларьки
-##   с вывесками, машины у обочины, разметка, зебры и рекламные щиты на перекрёстках, лужи;
-##   дом — витрины первого этажа с вывесками и маркизами, кондиционеры, водостоки, бак и
-##   антенны на крыше, на торцах у переулков — граффити и объявления.
+##   с вывесками, машины у обочины, разметка, зебры и рекламные щиты на перекрёстках;
+##   дом — витрины первого этажа с вывесками и маркизами, кондиционеры, водостоки,
+##   на торцах — граффити и объявления.
+## 0.11: дворы по макету «Рубин» — осенние деревья и рощи, огороды, площадки, бельё
+##   (layout_fill), фонари на столбах вдоль переулков.
 ## Всё мелкое и повторяющееся собирается в MultiMesh по видам (Batch), поэтому на участок
 ## уходит пара десятков вызовов отрисовки. Вывески — Signboard, видны только вблизи.
 
@@ -12,7 +14,6 @@ const SIDEWALK_M := 3.5
 const LAMP_STEP_M := 26.0
 const SIGN_FAR_M := 95.0         # камера висит в 60 м от героя: дальше вывески не рисуются
 const ROOF_SIGN_FAR_M := 160.0
-const YARD_STEP_M := 15.0
 ## Виды-коробки без текстур: цвет по умолчанию; альфа — «не свечение» (0 — лампа горит).
 const PLAIN := {
 	"curb": Color(0.55, 0.54, 0.52), "paint": Color(0.85, 0.85, 0.8), "zebra": Color(0.9, 0.9, 0.86),
@@ -20,8 +21,11 @@ const PLAIN := {
 	"roof_block": Color(0.32, 0.31, 0.3), "antenna": Color(0.2, 0.2, 0.22), "lamp_post": Color(0.18, 0.18, 0.2),
 	"door": Color(0.22, 0.15, 0.1), "canopy": Color(0.45, 0.44, 0.42), "doorlamp": Color(1.0, 0.82, 0.55, 0.0),
 	"play": Color(0.8, 0.3, 0.2), "cloth": Color(0.9, 0.9, 0.85), "awning": Color(0.6, 0.2, 0.2),
+	"leaves": Color(0.75, 0.45, 0.15), "picket": Color(0.5, 0.38, 0.24), "bed": Color(0.24, 0.17, 0.12),
+	"pole": Color(0.32, 0.24, 0.18), "greenhouse": Color(0.8, 0.88, 0.85, 0.85),
+	"site": Color(0.6, 0.6, 0.6), "glow": Color(1.0, 0.85, 0.55, 0.0),
 }
-const SHADOW_KINDS := ["crown"]     # деревья: тень кроны под ногами — главное, чем двор живой
+const SHADOW_KINDS := ["crown", "plain"]     # тень кроны под ногами и тени машин, ларьков, лавок — двор живой
 const MODELS := ["streetlamp", "bench", "kiosk", "dumpster", "car_wreck", "taxi", "convertible", "billboard", "ac_unit",
 	"trash_bags", "boxes", "fence", "garage", "tires"]
 const SHOPS := [
@@ -125,91 +129,11 @@ static func streets(root: Node3D, c: Vector2i, segments: Array, batch: Batch) ->
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash(c) + 17
 	batch.jobs.append(_crossings.bind(root, rect, near, batch, rng))
-	batch.jobs.append(_yards.bind(root, c, near, batch))
-
-
-## Дворы между домами: не пустырь, а деревья, гаражи, площадки, машины, сушка белья.
-## Сетка через YARD_STEP_M; клетка занята, если рядом улица, дом или двор старта.
-static func _yards(root: Node3D, c: Vector2i, near: Array, batch: Batch) -> void:
-	if not is_instance_valid(root):
-		return
-	var rect := District.chunk_rect(c)
-	var start := District.start_area().grow(8)
-	var houses: Array[Rect2] = []
-	for h in District.houses():
-		if h.grow(6).intersects(rect):
-			houses.append(h.grow(3.5))
-	var blockers: Array = []
-	for o in near:
-		blockers.append([o.a, o.b, float(o.w) / 2.0, Rect2(o.a, Vector2.ZERO).expand(o.b).grow(float(o.w) / 2.0 + 14.0)])
-	var rng := RandomNumberGenerator.new()
-	rng.seed = hash(c) * 7 + 3
-	var y := rect.position.y + YARD_STEP_M / 2.0
-	while y < rect.end.y:
-		var x := rect.position.x + YARD_STEP_M / 2.0
-		while x < rect.end.x:
-			var p := Vector2(x, y) + Vector2(rng.randf_range(-4, 4), rng.randf_range(-4, 4))
-			x += YARD_STEP_M
-			var roll := rng.randf()
-			if _blocked(p, blockers, SIDEWALK_M + 3.0, start):
-				continue
-			var inside := false
-			for h in houses:
-				if h.has_point(p):
-					inside = true
-					break
-			if inside:
-				continue
-			var at := District.to_world(p)
-			var yaw := rng.randi_range(0, 3) * PI / 2.0
-			if roll < 0.42:
-				_tree(batch, at, rng)
-				if rng.randf() < 0.5:
-					_tree(batch, at + Vector3(rng.randf_range(-5, 5), 0, rng.randf_range(-5, 5)), rng)
-			elif roll < 0.52:
-				var car_name: String = ["car_wreck", "taxi", "convertible"][rng.randi() % 3]
-				batch.model(car_name, at, yaw + rng.randf_range(-0.3, 0.3))
-				var cb := Props.collider(root, Vector3(1.9, 1.4, 4.4), at + Vector3(0, 0.7, 0))
-				cb.rotation.y = yaw
-			elif roll < 0.58:
-				# ряд ржавых гаражей
-				for i in rng.randi_range(2, 4):
-					var g := at + Vector3(cos(yaw), 0, -sin(yaw)) * (i * 3.3)
-					batch.model("garage", g, yaw)
-					var gb := Props.collider(root, Vector3(3.2, 2.6, 6.0), g + Vector3(0, 1.3, 0))
-					gb.rotation.y = yaw
-				if rng.randf() < 0.6:
-					batch.sign(root, GRAFFITI[rng.randi() % GRAFFITI.size()], "graffiti",
-							GRAFFITI_COLORS[rng.randi() % GRAFFITI_COLORS.size()],
-							at + Vector3(sin(yaw), 0, cos(yaw)) * 3.05 + Vector3(0, 1.4, 0), rad_to_deg(yaw), 0.5,
-							{"far": SIGN_FAR_M})
-			elif roll < 0.64:
-				_playground(batch, at, yaw, rng)
-			elif roll < 0.72:
-				batch.model("bench", at, yaw)
-				batch.props.append([at + Vector3(1.6, 0, 0), "bin"])
-				batch.box("lamp_post", at + Vector3(-1.8, 1.6, 0), Vector3(0.1, 3.2, 0.1))
-				batch.box("doorlamp", at + Vector3(-1.8, 3.25, 0), Vector3(0.3, 0.15, 0.3))
-				batch.add("spill", Transform3D(Basis().scaled(Vector3(6, 1, 6)), at + Vector3(-1.0, 0.07, 0)), Color(0.75, 0.6, 0.38))
-				batch.lamps.append(at + Vector3(-1.8, 3.1, 0))
-			elif roll < 0.77:
-				batch.model("dumpster", at, yaw)
-				batch.model("trash_bags", at + Vector3(1.6, 0, 0.5), rng.randf() * TAU)
-				Props.collider(root, Vector3(1.8, 1.6, 1.3), at + Vector3(0, 0.8, 0))
-				batch.props.append([at + Vector3(-1.5, 0, 0.8), "box"])
-			elif roll < 0.81:
-				# сушка белья между двумя столбами
-				var side := Vector3(cos(yaw), 0, -sin(yaw))
-				batch.box("lamp_post", at - side * 2.5 + Vector3(0, 1.1, 0), Vector3(0.08, 2.2, 0.08))
-				batch.box("lamp_post", at + side * 2.5 + Vector3(0, 1.1, 0), Vector3(0.08, 2.2, 0.08))
-				for i in 6:
-					var cloth := at - side * 2.0 + side * (i * 0.8) + Vector3(0, 1.75, 0)
-					batch.add("cloth", Transform3D(Basis(Vector3.UP, yaw).scaled(Vector3(0.6, 0.7, 0.03)), cloth),
-							[Color(0.85, 0.3, 0.3), Color(0.9, 0.9, 0.85), Color(0.3, 0.5, 0.8), Color(0.9, 0.8, 0.3)][rng.randi() % 4])
-			elif roll < 0.86:
-				batch.model("tires", at, rng.randf() * TAU)
-				batch.props.append([at + Vector3(1.2, 0, 0), "tire"])
-		y += YARD_STEP_M
+	# 0.11: дворы по макету (layout_fill), а вдоль переулков — столбы с лампами
+	var lanes := segments.filter(func(o: Dictionary) -> bool:
+		return o.id == "lane" and o.kind != "path" and not DistrictChunks._clip(o.a, o.b, rect).is_empty())
+	if not lanes.is_empty():
+		batch.jobs.append(_lane_lamps.bind(root, rect, lanes, batch))
 
 
 ## Детская площадка: качели, горка, песочница.
@@ -313,12 +237,6 @@ static func _street(root: Node3D, rect: Rect2, start: Rect2, reach: Rect2, s: Di
 				batch.model(car_name, District.to_world(car_at), car_yaw)
 				var cb := Props.collider(root, Vector3(1.9, 1.4, 4.4), District.to_world(car_at, 0.7))
 				cb.rotation.y = car_yaw
-		# лужи на проезжей части
-		if rng.randf() < 0.6:
-			var pud := q2 + dir * rng.randf_range(-8, 8) + nrm * rng.randf_range(-w / 2.0 + 1.0, w / 2.0 - 1.0)
-			if rect.has_point(pud) and not start.has_point(pud):
-				batch.box("puddle", District.to_world(pud, 0.035), Vector3(rng.randf_range(1.5, 3.5), 1.0,
-						rng.randf_range(1.2, 2.6)), rng.randf() * TAU)
 		k += 1
 		t2 += LAMP_STEP_M
 
@@ -374,13 +292,131 @@ static func _crossings(root: Node3D, rect: Rect2, segments: Array, batch: Batch,
 						"far": ROOF_SIGN_FAR_M}, Vector2(6.6, 3.1))
 
 
-static func _tree(batch: Batch, pos: Vector3, rng: RandomNumberGenerator) -> void:
-	var h := rng.randf_range(3.5, 5.5)
-	batch.box("trunk", pos + Vector3(0, h * 0.35, 0), Vector3(0.28, h * 0.7, 0.28))
-	var crown := Color(0.16, 0.3, 0.16).lerp(Color(0.3, 0.38, 0.14), rng.randf())
-	batch.add("crown", Transform3D(Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3(2.6, 2.4, 2.6) * rng.randf_range(0.8, 1.2)),
-			pos + Vector3(0, h * 0.8, 0)), crown)
-	batch.box("planter", pos + Vector3(0, 0.12, 0), Vector3(1.3, 0.24, 1.3))
+## Осенние цвета крон концептов: золото, охра, медь, остатки зелени.
+const AUTUMN := [Color(0.85, 0.55, 0.12), Color(0.9, 0.68, 0.2), Color(0.75, 0.36, 0.12), Color(0.62, 0.26, 0.1),
+	Color(0.55, 0.55, 0.18), Color(0.36, 0.42, 0.16), Color(0.95, 0.75, 0.3)]
+
+
+## Дерево: ствол и две-три кроны разного тона (осень), иногда кольцо-приствольник.
+static func _tree(batch: Batch, pos: Vector3, rng: RandomNumberGenerator, scale := 1.0, planter := true) -> void:
+	var h := rng.randf_range(3.5, 5.5) * scale
+	batch.box("trunk", pos + Vector3(0, h * 0.35, 0), Vector3(0.28, h * 0.7, 0.28) * Vector3(scale, 1, scale))
+	var base: Color = AUTUMN[rng.randi() % AUTUMN.size()]
+	# пышная крона: 4–6 шапок разного тона вокруг ствола, верхние светлее
+	for i in rng.randi_range(4, 6):
+		var off := Vector3(rng.randf_range(-1.3, 1.3), rng.randf_range(-0.5, 1.2), rng.randf_range(-1.3, 1.3)) * scale
+		var col := base.lerp(AUTUMN[rng.randi() % AUTUMN.size()], 0.35).darkened(rng.randf_range(0.0, 0.25))
+		col = col.lightened(clampf(off.y / scale, 0.0, 1.0) * 0.12)
+		batch.add("crown", Transform3D(Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3(2.1, 1.8, 2.1) * scale * rng.randf_range(0.7, 1.05)),
+				pos + Vector3(0, h * 0.8, 0) + off), col)
+	if planter:
+		batch.box("planter", pos + Vector3(0, 0.12, 0), Vector3(1.3, 0.24, 1.3))
+	# опавшие листья под кроной
+	for i in rng.randi_range(2, 4):
+		batch.box("leaves", pos + Vector3(rng.randf_range(-2.2, 2.2), 0.04, rng.randf_range(-2.2, 2.2)),
+				Vector3(rng.randf_range(0.8, 1.8), 0.02, rng.randf_range(0.6, 1.4)), rng.randf() * TAU,
+				base.lerp(Color(0.6, 0.35, 0.12), 0.4))
+
+
+## Дворы по макету «Рубин» (0.11): деревья и рощи пакета, огороды, детские площадки и бельё
+## из наполнения промежутков — всё, что попадает в участок.
+static func layout_fill(root: Node3D, rect: Rect2, batch: Batch) -> void:
+	for t in District.trees():
+		var c := Vector2(float(t[0]), float(t[1]))
+		if not rect.has_point(c):
+			continue
+		var rng := RandomNumberGenerator.new()
+		rng.seed = hash(Vector2i(int(c.x), int(c.y)))
+		if String(t[4]) == "grove":
+			# роща: несколько деревьев в круге кроны пакета, под ними скамейка
+			var r := float(t[2])
+			for i in rng.randi_range(6, 10):
+				var a := rng.randf() * TAU
+				var d := sqrt(rng.randf()) * r * 0.8
+				_tree(batch, District.to_world(c + Vector2(cos(a), sin(a)) * d), rng, rng.randf_range(1.1, 1.6), false)
+			batch.model("bench", District.to_world(c + Vector2(r * 0.5, 0)), PI / 2.0)
+		else:
+			_tree(batch, District.to_world(c), rng, rng.randf_range(1.2, 1.6))
+			if rng.randf() < 0.5:
+				_tree(batch, District.to_world(c + Vector2(rng.randf_range(-5, 5), rng.randf_range(-5, 5))), rng, 1.0, false)
+	for p in District.plots():
+		var pr: Array = p.r
+		var r2 := Rect2(float(pr[0]), float(pr[1]), float(pr[2]), float(pr[3]))
+		if not rect.has_point(r2.get_center()):
+			continue
+		var rng2 := RandomNumberGenerator.new()
+		rng2.seed = hash(Vector2i(int(r2.position.x * 10.0), int(r2.position.y * 10.0)))
+		var at := District.to_world(r2.get_center())
+		match String(p.kind):
+			"garden":
+				_garden(batch, at, r2.size, rng2)
+			"playground":
+				_playground(batch, at - Vector3(2, 0, 2), 0.0, rng2)
+				batch.model("bench", at + Vector3(5, 0, 3), -PI / 2.0)
+			"laundry":
+				var yaw := 0.0 if r2.size.x > r2.size.y else PI / 2.0
+				var side := Vector3(cos(yaw), 0, -sin(yaw))
+				batch.box("lamp_post", at - side * 4.5 + Vector3(0, 1.1, 0), Vector3(0.08, 2.2, 0.08))
+				batch.box("lamp_post", at + side * 4.5 + Vector3(0, 1.1, 0), Vector3(0.08, 2.2, 0.08))
+				for i in 9:
+					batch.add("cloth", Transform3D(Basis(Vector3.UP, yaw).scaled(Vector3(0.6, 0.75, 0.03)),
+							at - side * 3.8 + side * (i * 0.95) + Vector3(0, 1.75, 0)),
+							[Color(0.85, 0.3, 0.3), Color(0.95, 0.95, 0.9), Color(0.3, 0.5, 0.8), Color(0.95, 0.8, 0.3)][rng2.randi() % 4])
+
+
+## Огород: штакетник, грядки рядами, капуста и ботва, иногда парник или пугало.
+static func _garden(batch: Batch, at: Vector3, size: Vector2, rng: RandomNumberGenerator) -> void:
+	var hx := size.x / 2.0
+	var hz := size.y / 2.0
+	var fence_col: Color = [Color(0.5, 0.38, 0.24), Color(0.4, 0.5, 0.35), Color(0.62, 0.55, 0.45)][rng.randi() % 3]
+	for side: float in [-1.0, 1.0]:
+		batch.box("picket", at + Vector3(0, 0.5, side * hz), Vector3(size.x, 1.0, 0.05), 0.0, fence_col)
+		batch.box("picket", at + Vector3(side * hx, 0.5, 0), Vector3(0.05, 1.0, size.y), 0.0, fence_col)
+	var rows := maxi(2, int(size.y / 1.6))
+	for i in rows:
+		var z := -hz + (i + 0.5) * size.y / rows
+		batch.box("bed", at + Vector3(0, 0.1, z), Vector3(size.x - 1.2, 0.2, 0.9))
+		var crop: Color = [Color(0.45, 0.62, 0.25), Color(0.6, 0.7, 0.3), Color(0.75, 0.55, 0.2)][(i + rng.randi()) % 3]
+		var x := -hx + 1.1
+		while x < hx - 1.0:
+			batch.add("veg", Transform3D(Basis().scaled(Vector3(0.5, 0.38, 0.5)), at + Vector3(x, 0.32, z)), crop)
+			x += rng.randf_range(0.7, 1.1)
+	if rng.randf() < 0.3:
+		# парник: дуги и плёнка
+		batch.box("greenhouse", at + Vector3(hx * 0.4, 0.8, -hz * 0.4), Vector3(2.0, 1.6, 3.2))
+	elif rng.randf() < 0.25:
+		batch.box("lamp_post", at + Vector3(0, 0.9, 0), Vector3(0.08, 1.8, 0.08))
+		batch.box("lamp_post", at + Vector3(0, 1.4, 0), Vector3(1.2, 0.08, 0.08))
+		batch.box("cloth", at + Vector3(0, 1.25, 0), Vector3(0.6, 0.7, 0.2), 0.0, Color(0.7, 0.3, 0.25))
+		batch.add("veg", Transform3D(Basis().scaled(Vector3(0.4, 0.4, 0.4)), at + Vector3(0, 1.85, 0)), Color(0.85, 0.75, 0.4))
+
+
+## Переулки: деревянные столбы с жёлтой лампой через 32 м, поочерёдно по сторонам.
+static func _lane_lamps(root: Node3D, rect: Rect2, lanes: Array, batch: Batch) -> void:
+	if not is_instance_valid(root):
+		return
+	for s in lanes:
+		var a: Vector2 = s.a
+		var b: Vector2 = s.b
+		var length := a.distance_to(b)
+		var dir := (b - a) / length
+		var nrm := Vector2(-dir.y, dir.x)
+		var t := 16.0
+		var k := 0
+		while t < length:
+			var side := 1.0 if k % 2 == 0 else -1.0
+			var p := a + dir * t + nrm * side * (float(s.w) / 2.0 + 0.6)
+			if rect.has_point(p):
+				var at := District.to_world(p)
+				batch.box("pole", at + Vector3(0, 2.6, 0), Vector3(0.18, 5.2, 0.18))
+				var arm := Vector3(-nrm.x * side, 0, -nrm.y * side)
+				batch.box("lamp_post", at + Vector3(0, 4.9, 0) + arm * 0.6, Vector3(0.08 + absf(arm.x) * 1.1, 0.08, 0.08 + absf(arm.z) * 1.1))
+				var head := at + Vector3(0, 4.75, 0) + arm * 1.1
+				batch.box("doorlamp", head, Vector3(0.35, 0.16, 0.35))
+				batch.lamps.append(head)
+				batch.box("pool", Vector3(head.x, 0.07, head.z), Vector3(8.0, 1.0, 8.0))
+			t += 32.0
+			k += 1
 
 
 ## Ларёк у тротуара: модель, вывеска на крыше, тёплое пятно света перед окошком.
@@ -431,9 +467,9 @@ static func facades(root: Node3D, h: Rect2, height: float, segments: Array, batc
 				_shopfront(root, batch, wall, out, yaw, unit_w, rng)
 				entrance = true
 			else:
-				if roll < 0.8:
+				if roll < (0.8 if kind == "street" else 0.18):
 					_wall_paper(root, batch, wall + Vector3(dir.x, 0, dir.y) * (unit_w * 0.25), yaw, rng, kind == "lane")
-				if kind == "street" and i % 2 == 0:
+				if kind == "street" and i % 3 == 0 and absf(n.y) < 0.5:
 					_door(batch, wall, out, yaw)
 					entrance = true
 			# дорожка от двери к тротуару через газон
@@ -455,24 +491,7 @@ static func facades(root: Node3D, h: Rect2, height: float, segments: Array, batc
 		if rng.randf() < 0.5:
 			var at := a + dir * rng.randf_range(2.0, length - 2.0) + n * 1.2
 			batch.model("trash_bags" if rng.randf() < 0.6 else "boxes", District.to_world(at), rng.randf() * TAU)
-	# крыша: бак, антенны, тарелка; иногда большие буквы, видные издалека
-	var top := District.to_world(h.get_center(), height)
-	batch.box("roof_block", top + Vector3(rng.randf_range(-4, 4), 1.1, rng.randf_range(-4, 4)), Vector3(3.0, 2.2, 3.0))
-	batch.add("tank", Transform3D(Basis().scaled(Vector3(2.0, 2.4, 2.0)),
-			top + Vector3(rng.randf_range(-h.size.x / 3, h.size.x / 3), 1.2, rng.randf_range(-h.size.y / 3, h.size.y / 3))),
-			Color(0.42, 0.38, 0.33))
-	for i in rng.randi_range(1, 3):
-		batch.box("antenna", top + Vector3(rng.randf_range(-h.size.x / 2.5, h.size.x / 2.5), 1.5,
-				rng.randf_range(-h.size.y / 2.5, h.size.y / 2.5)), Vector3(0.06, 3.0, 0.06))
-	if height >= 18.0 and rng.randf() < 0.18:
-		var e2: Array = edges[rng.randi() % 4]
-		if _edge_kind(e2[0], e2[1], e2[2], segments) == "street":
-			var mid: Vector2 = (e2[0] + e2[1]) / 2.0
-			var n2: Vector2 = e2[2]
-			var word: String = ROOF_WORDS[rng.randi() % ROOF_WORDS.size()]
-			var col: Color = [Color(1, 0.25, 0.2), Color(1, 0.3, 0.75), Color(0.3, 0.9, 1.0), Color(1, 0.8, 0.3)][rng.randi() % 4]
-			batch.sign(root, word, "letters", col, District.to_world(mid + n2 * 0.1, height + 1.2), rad_to_deg(atan2(n2.x, n2.y)),
-					1.6, {"far": ROOF_SIGN_FAR_M}, Vector2((e2[0] as Vector2).distance_to(e2[1]) - 2.0, 0.0))
+	# крыша двускатная (BuildingKit): трубы и антенны уже в сетке дома
 
 
 ## Что за гранью дома: "street" — улица рядом (витрины), "lane" — переулок вплотную, "" — двор.
@@ -597,7 +616,7 @@ static func warm() -> void:
 	for m in MODELS:
 		_parts(m)
 	# текстуры асфальта, плитки и земли грузятся при первом материале — тоже заранее
-	for kind in ["plain", "sidewalk", "path", "lawn", "pocket", "curb", "paint", "zebra", "trunk", "crown", "planter", "pipe",
+	for kind in ["plain", "sidewalk", "path", "lawn", "pocket", "curb", "paint", "zebra", "trunk", "crown", "veg", "planter", "pipe",
 			"roof_block", "tank", "antenna", "awning", "puddle", "pool", "spill", "lamp_post", "cloth", "play", "door",
 			"canopy", "doorlamp"]:
 		_material(kind)
@@ -695,7 +714,7 @@ static func _mesh(kind: String) -> Mesh:
 			cy.radial_segments = 14
 			cy.rings = 1
 			m = cy
-		"crown":
+		"crown", "veg":
 			var sp := SphereMesh.new()
 			sp.radius = 0.5
 			sp.height = 1.0
@@ -722,7 +741,7 @@ static var _mats: Dictionary = {}
 static func _material(kind: String) -> Material:
 	if _mats.has(kind):
 		return _mats[kind]
-	if kind == "plain" or kind == "crown" or kind == "tank":
+	if kind == "plain" or kind == "crown" or kind == "tank" or kind == "veg":
 		var sm := ShaderMaterial.new()
 		sm.shader = Signboard.PLAIN_SHADER
 		sm.set_shader_parameter("roughness_value", 0.9 if kind == "crown" else 0.7)
@@ -796,8 +815,9 @@ static func _material(kind: String) -> Material:
 			m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 			m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 			m.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+			m.disable_fog = true          # иначе туман прибавляется квадратом
 			m.albedo_texture = Signboard._halo_texture()
-			m.albedo_color = Color(0.42, 0.33, 0.2) if kind == "pool" else Color(0.5, 0.5, 0.5)
+			m.albedo_color = Color(0.2, 0.15, 0.09) if kind == "pool" else Color(0.22, 0.2, 0.18)
 			m.disable_receive_shadows = true
 	_mats[kind] = m
 	return m

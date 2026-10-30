@@ -1,17 +1,19 @@
 extends Node3D
-## Вертикальный срез: Погуляй, парковка «Похмельная» и улица до киоска.
-## Здесь играется MAIN_001 «Проснись, тебя уже посчитали» по карточке и сцене SCENE_01.
-## Геометрия — заглушки из Kit, ID объектов и этапов канонические.
+## Вертикальный срез: Погуляй, двор «Похмельная» по макету «Рубин» (StartYard) и район.
+## Здесь играется MAIN_001 «Проснись, тебя уже посчитали» по карточке и сцене SCENE_01:
+## пробуждение у кабриолета → телефон, ботинок, долг → пункт приёма благодарности →
+## киоск «НЛО напрокат» → разговор и выбор → выход через арку или восточный проход.
 
 const QID := "MAIN_001"
-const SPAWN := Vector3(0, 0, 4)
-const CHECKPOINT_POS := Vector3(0, 0, -28)
-const EXIT_POS := Vector3(0, 0, -43)
-const KIOSK_POS := Vector3(-13, 0, -55)
-const GARAGE_POS := Vector3(6.5, 0, 13)
-const UFO_POS := Vector3(-25, 55, -70)
-## Арка в торцевом доме — выход со двора на север (ворота в PogulyayDressing._bounds).
-const EXIT_ARCH := Vector3(0, 0, -67)
+const CONVERTIBLE_POS := Vector3(-53, 0, -2)
+const SPAWN := Vector3(-49, 0, 3)
+const CHECKPOINT_POS := Vector3(38, 0, 2)
+const EXIT_POS := Vector3(38, 0, -8)
+const KIOSK_POS := StartYard.KIOSK
+const GARAGE_POS := StartYard.GARAGE_13
+const UFO_POS := Vector3(70, 62, -230)
+## Арка в северном корпусе — выход со двора (ворота в StartYard._bounds).
+const EXIT_ARCH := StartYard.EXIT_ARCH
 
 var player: Player
 var camera: IsoCamera
@@ -26,8 +28,6 @@ var _drone_respawn := -1.0
 var _kiosk_wreck: Node3D
 var _battery: Node3D
 var _kiosk_owner: Node3D
-var _lit_windows: Array = []
-var _dark_windows: Array = []
 var _save_pending := false
 var _marker: Node3D
 var _npc_marks: Array = []
@@ -48,16 +48,14 @@ const SAFE_HEAL_PER_S := 6.0
 func _ready() -> void:
 	_autotest = OS.get_cmdline_user_args().has("--autotest")
 	_build_environment()
-	_build_city()
+	StartYard.build(self)
+	_build_ufo()
 	_build_parking()
 	_build_queue()
 	_build_checkpoint()
 	_build_kiosk()
 	_build_exit_to_delovoy()
 	_build_locals()
-	_build_windows()
-	PogulyayDressing.build(self)
-	ParkingReference.build(self)
 	_trim_shadows(self)
 	_build_pavel()
 
@@ -117,18 +115,18 @@ func _ready() -> void:
 	add_child(lamp_lights)
 	physics_props = PhysicsProps.new()
 	physics_props.player = player
-	# двор: конусы у шлагбаума, урны у скамеек и парковки, коробки у ларька
-	physics_props.extra = [[Vector3(-6.5, 0, -10.2), "cone"], [Vector3(-5.7, 0, -10.6), "cone"], [Vector3(-4.9, 0, -10.2), "cone"],
-			[Vector3(7.6, 0, -2.4), "bin"], [Vector3(-9.6, 0, 1.5), "bin"], [Vector3(-9.8, 0, -22.0), "bin"],
-			[Vector3(9.2, 0, -30.0), "bin"], [Vector3(-11.2, 0, -51.0), "box"], [Vector3(-10.4, 0, -51.6), "box"],
-			[Vector3(5.4, 0, 11.0), "tire"], [Vector3(3.0, 0, -40.0), "cone"], [Vector3(-3.0, 0, -40.0), "cone"]]
+	# двор: конусы у шлагбаума и места посадки, урны у парковки, коробки у киоска, шины у гаражей
+	physics_props.extra = [[Vector3(16.5, 0, 12.8), "cone"], [Vector3(17.3, 0, 13.4), "cone"], [Vector3(18.1, 0, 12.8), "cone"],
+			[Vector3(-46, 0, 8), "bin"], [Vector3(-60, 0, -8), "bin"], [Vector3(10, 0, -55), "bin"],
+			[Vector3(-14, 0, -64), "cone"], [Vector3(-6, 0, -64), "cone"], [Vector3(38.5, 0, -15.5), "box"],
+			[Vector3(39.4, 0, -15.0), "box"], [Vector3(88, 0, -40), "tire"], [Vector3(88, 0, -70), "tire"]]
 	add_child(physics_props)
 	var pigeons := Pigeons.new()
 	pigeons.player = player
 	add_child(pigeons)
-	var rain := Rain.new()
-	rain.target = player
-	add_child(rain)
+	var leaves := Leaves.new()
+	leaves.target = player
+	add_child(leaves)
 	mobs = DistrictMobs.new()
 	mobs.player = player
 	add_child(mobs)
@@ -183,7 +181,7 @@ func _ready() -> void:
 				if not m.is_empty():
 					player.global_position = (m[0] as Node3D).global_position + Vector3(4, 0, 4))
 		if arg == "--free":                 # проверка этапа 1: выход со двора открыт сразу
-			PogulyayDressing.open_exit(self, true)
+			StartYard.open_exit(self, true)
 	chunks.load_now()
 	hud.setup_map.call_deferred(self, camera, player)
 
@@ -245,112 +243,69 @@ func _build_environment() -> void:
 	var env := Environment.new()
 	var sky := Sky.new()
 	var sm := ProceduralSkyMaterial.new()
-	# поздний вечер после вторжения (ориентир парковки): тёплые окна и фонари, холодное небо
-	sm.sky_top_color = Color(0.04, 0.05, 0.1)
-	sm.sky_horizon_color = Color(0.42, 0.2, 0.16)
-	sm.ground_horizon_color = Color(0.25, 0.13, 0.1)
-	sm.ground_bottom_color = Color(0.04, 0.03, 0.03)
-	sm.sky_energy_multiplier = 0.8
+	# 0.11: тёплый осенний вечер концептов «Рубин» — низкое солнце, золотой свет, окна горят
+	sm.sky_top_color = Color(0.3, 0.38, 0.62)
+	sm.sky_horizon_color = Color(0.98, 0.68, 0.42)
+	sm.ground_horizon_color = Color(0.62, 0.42, 0.3)
+	sm.ground_bottom_color = Color(0.2, 0.15, 0.12)
+	sm.sun_angle_max = 20.0
+	sm.sky_energy_multiplier = 1.0
 	sky.sky_material = sm
 	env.background_mode = Environment.BG_SKY
 	env.sky = sky
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	env.ambient_light_color = Color(0.46, 0.38, 0.36)
-	env.ambient_light_energy = 0.5
+	env.ambient_light_color = Color(0.52, 0.56, 0.7)      # голубоватые тени против золотого солнца
+	env.ambient_light_energy = 0.62
 	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
-	env.tonemap_exposure = 1.1
+	env.tonemap_exposure = 0.9
 	env.glow_enabled = true
-	env.glow_intensity = 0.9
-	env.glow_bloom = 0.03
-	env.glow_hdr_threshold = 0.9
+	env.glow_intensity = 0.7
+	env.glow_bloom = 0.04
+	env.glow_hdr_threshold = 1.0
+	# дымка только вдали (по глубине от 120 м): двор у героя чистый, дальние кварталы — в золоте
 	env.fog_enabled = true
-	env.fog_light_color = Color(0.2, 0.13, 0.12)
-	env.fog_density = 0.006
+	env.fog_mode = Environment.FOG_MODE_DEPTH
+	env.fog_depth_begin = 120.0
+	env.fog_depth_end = 700.0
+	env.fog_density = 0.6
+	env.fog_light_color = Color(0.85, 0.66, 0.5)
+	env.fog_sun_scatter = 0.1
 	env.adjustment_enabled = true
-	env.adjustment_saturation = 1.12
-	env.adjustment_contrast = 1.08
+	env.adjustment_saturation = 1.14
+	env.adjustment_contrast = 1.12
 	var we := WorldEnvironment.new()
 	we.environment = env
 	add_child(we)
-	var moon := DirectionalLight3D.new()
-	moon.rotation_degrees = Vector3(-52, 35, 0)
-	moon.light_color = Color(0.6, 0.66, 0.95)
-	moon.light_energy = 0.35
-	moon.shadow_enabled = true
-	# ортографическая камера видит пятно ~40 м: одного каскада теней хватает (на телефоне каскады — 4 прохода)
-	moon.directional_shadow_mode = DirectionalLight3D.SHADOW_ORTHOGONAL
-	moon.directional_shadow_max_distance = 45.0
-	add_child(moon)
-	# мокрая брусчатка отражает фонари и неон: одна статичная проба на весь двор
-	var probe := ReflectionProbe.new()
-	probe.position = Vector3(0, 6, -25)
-	probe.size = Vector3(34, 14, 100)
-	probe.box_projection = true
-	probe.update_mode = ReflectionProbe.UPDATE_ONCE
-	probe.intensity = 0.9
-	add_child(probe)
+	# закатное солнце с запада-юго-запада: длинные тёплые тени, фасады в золоте
+	var sun := DirectionalLight3D.new()
+	sun.name = "Sun"
+	sun.rotation_degrees = Vector3(-36, -118, 0)
+	sun.light_color = Color(1.0, 0.86, 0.7)
+	sun.light_energy = 1.3
+	sun.shadow_enabled = true
+	# камера на плече 60 м видит пятно ~40 м: одного каскада до 110 м хватает (на телефоне каскады — 4 прохода)
+	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_ORTHOGONAL
+	sun.directional_shadow_max_distance = 110.0
+	sun.shadow_opacity = 0.8
+	add_child(sun)
 
 
-func _build_city() -> void:
-	# земля и улица
-	Kit.solid_box(self, Vector3(160, 1, 170), Vector3(0, -0.5, -25), Color(0.28, 0.28, 0.3))
-	Kit.box(self, Vector3(12, 0.02, 70), Vector3(0, 0.01, -30), Color(0.2, 0.2, 0.22))
-	for z in range(-62, 4, 6):
-		Kit.box(self, Vector3(0.25, 0.03, 3), Vector3(0, 0.02, z), Color(0.9, 0.9, 0.85))
-	for side in [-1, 1]:
-		Kit.box(self, Vector3(3, 0.25, 70), Vector3(7.5 * side, 0.12, -30), Color(0.45, 0.44, 0.42))
-	# панельки: [центр, размер, цвет]
-	var blocks := [
-		[Vector3(-19, 0, 6), Vector3(12, 15, 18), Color(0.62, 0.6, 0.56)],
-		[Vector3(-19, 0, -16), Vector3(12, 27, 20), Color(0.7, 0.66, 0.6)],
-		[Vector3(-19, 0, -38), Vector3(12, 15, 16), Color(0.58, 0.6, 0.62)],
-		# низкий кирпичный дом отступает за рынок у канала: камера с юго-востока видит канал
-		# и лотки, а не крышу (композиция ориентира)
-		[Vector3(21, 0, 2), Vector3(8, 6, 20), Color(0.66, 0.62, 0.58), true],
-		[Vector3(19, 0, -22), Vector3(12, 15, 22), Color(0.6, 0.58, 0.6)],
-		[Vector3(19, 0, -46), Vector3(12, 24, 18), Color(0.68, 0.64, 0.6)],
-		[Vector3(-14.5, 0, -72), Vector3(19, 30, 10), Color(0.5, 0.5, 0.56)],
-		[Vector3(14.5, 0, -72), Vector3(19, 30, 10), Color(0.5, 0.5, 0.56)],
-	]
-	for b in blocks:
-		var size: Vector3 = b[1]
-		var floors := roundi(size.y / 3.0)
-		var model := "panel_%d" % floors
-		if Props.exists(model) and b[0].z > -70.0:
-			# панелька из Blender: подъезды смотрят на улицу, окна и балконы уже в модели
-			var body := Props.collider(self, size, b[0] + Vector3(0, size.y / 2, 0), true)
-			Props.place(body, model, Vector3(0, -size.y / 2, 0), 0.0 if b[0].x < 0 else 180.0,
-					Vector3(size.x / 12.0, 1, size.z / 20.0))
-		else:
-			var body := Kit.solid_box(self, size, b[0] + Vector3(0, size.y / 2, 0), b[2], 0.0, true)
-			_queue_windows(b[0], size)
-			if b.size() > 3:
-				Surfaces.brick_all(body)
-	# арка в торцевом доме: выход со двора в остальной Погуляй (над проходом — этажи дома)
-	Kit.solid_box(self, Vector3(10, 24, 10), Vector3(0, 18, -72), Color(0.5, 0.5, 0.56), 0.0, true)
-	_queue_windows(Vector3(0, 6, -72), Vector3(10, 24, 10))
-	# вывески и парадоксальная реклама (редакторские надписи вертикального среза)
-	_sign("ПОГУЛЯЙ", Vector3(0, 24, -66.95), 260, Color(1, 0.3, 0.6), 0.0, "letters")
-	_sign("ЛОМБАРД\n«ВЕЧНОСТЬ»", Vector3(-12.95, 5, 6), 70, Color(0.3, 1, 0.8), 90.0, "neon", {"flicker": true})
-	_sign("ШАУРМА 24\nДАЖЕ ПОСЛЕ КОНЦА СВЕТА", Vector3(12.95, 4, -22), 50, Color.WHITE, -90.0, "lightbox",
-			{"bg": Color(1.0, 0.82, 0.25), "ink": Color(0.6, 0.08, 0.05)})
-	_sign("КЛУБ\n«ТРИДЦАТЬ ЛАЙКОВ»", Vector3(12.95, 6, -46), 70, Color(0.9, 0.3, 1), -90.0, "neon", {"flicker": true})
-	_sign("КЛАНЯЙТЕСЬ ТАРЕЛКЕ —\nЭТО БЕСПЛАТНО*", Vector3(-12.95, 12, -16), 80, Color.WHITE, 90.0, "lightbox",
-			{"bg": Color(0.25, 0.55, 0.95), "ink": Color(1, 1, 1)})
-	_sign("*при наличии согласия", Vector3(-12.95, 10.3, -16), 32, Color(0.1, 0.12, 0.2), 90.0, "board",
-			{"bg": Color(0.85, 0.88, 0.95)})
-	# тарелка: огромная, видна в начальной сцене
+## Тарелка флота над районом: огромная, видна из двора в начальной сцене.
+func _build_ufo() -> void:
 	var ufo := Node3D.new()
 	ufo.name = "UFO"
 	ufo.position = UFO_POS
 	add_child(ufo)
-	Kit.cylinder(ufo, 34, 3, Vector3.ZERO, Color(0.35, 0.37, 0.42), 0.0, 22)
-	Kit.cylinder(ufo, 22, 2.5, Vector3(0, -2.6, 0), Color(0.25, 0.27, 0.3), 0.0, 30)
+	Kit.cylinder(ufo, 34, 3, Vector3.ZERO, Color(0.55, 0.57, 0.62), 0.0, 22)
+	Kit.cylinder(ufo, 22, 2.5, Vector3(0, -2.6, 0), Color(0.38, 0.4, 0.45), 0.0, 30)
 	Kit.sphere(ufo, 10, Vector3(0, 3, 0), Color(0.5, 0.9, 1, 0.8), 0.6)
 	for i in 16:
 		var a := TAU * i / 16.0
 		Kit.sphere(ufo, 1.0, Vector3(cos(a) * 30, -1, sin(a) * 30), Color(0.4, 1, 0.6), 4.0)
 	ufo.create_tween().set_loops().tween_property(ufo, "rotation:y", TAU, 60.0).from(0.0)
+	# тарелка висит над двором, но тени не бросает: иначе полдвора в полосе тени
+	for g: GeometryInstance3D in ufo.find_children("*", "GeometryInstance3D", true, false):
+		g.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 
 
 ## Вывеска на стене (0.10): стиль — Signboard (короб, неон, щит, плакат…). size — прежний
@@ -358,43 +313,6 @@ func _build_city() -> void:
 func _sign(text: String, pos: Vector3, size: int, color: Color, yaw_deg: float, kind := "neon",
 		opts := {}) -> Signboard:
 	return Signboard.make(self, text, kind, color, pos, yaw_deg, size * 0.0105, opts)
-
-
-## Окна на гранях, обращённых к улице и к камере. Все окна города — два MultiMesh (горит / не горит).
-func _queue_windows(center: Vector3, size: Vector3) -> void:
-	var floors := int(size.y / 3.0)
-	var faces := [Vector3(1, 0, 0), Vector3(-1, 0, 0), Vector3(0, 0, 1)]
-	for n: Vector3 in faces:
-		var width := size.z if n.x != 0 else size.x
-		var depth := (size.x if n.x != 0 else size.z) / 2.0 + 0.03
-		var tangent := Vector3(0, 0, 1) if n.x != 0 else Vector3(1, 0, 0)
-		var cols := int(width / 3.0)
-		for fl in floors:
-			for c in cols:
-				var p := center + n * depth + tangent * ((c + 0.5) * width / cols - width / 2.0) \
-						+ Vector3(0, 1.6 + fl * 3.0, 0)
-				(_lit_windows if randf() < 0.22 else _dark_windows).append([p, n])
-
-
-func _build_windows() -> void:
-	for pair in [[_lit_windows, Color(1, 0.85, 0.5), 2.2], [_dark_windows, Color(0.2, 0.24, 0.32), 0.0]]:
-		var wins: Array = pair[0]
-		var quad := QuadMesh.new()
-		quad.size = Vector2(1.3, 1.6)
-		var mm := MultiMesh.new()
-		mm.transform_format = MultiMesh.TRANSFORM_3D
-		mm.mesh = quad
-		mm.instance_count = wins.size()
-		for i in wins.size():
-			var n: Vector3 = wins[i][1]
-			# QuadMesh смотрит в +Z; поворачиваем лицом наружу по нормали грани
-			var basis := Basis.looking_at(-n, Vector3.UP)
-			mm.set_instance_transform(i, Transform3D(basis, wins[i][0]))
-		var mmi := MultiMeshInstance3D.new()
-		mmi.multimesh = mm
-		mmi.material_override = Kit.mat(pair[1], pair[2])
-		mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-		add_child(mmi)
 
 
 func _person(pos: Vector3, color: Color, name_tag := "", look := {}) -> Node3D:
@@ -419,14 +337,11 @@ func _person(pos: Vector3, color: Color, name_tag := "", look := {}) -> Node3D:
 # ---------- парковка и находки этапа 1 ----------
 
 func _build_parking() -> void:
-	Kit.label(self, "Парковка «Похмельная»", Vector3(-4, 0.05, 8), 70, Color(1, 1, 1, 0.5), false) \
-			.rotation_degrees = Vector3(-90, 0, 0)
-	for x in range(-10, 12, 4):
-		Kit.box(self, Vector3(0.15, 0.03, 4), Vector3(x, 0.02, 0), Color(0.9, 0.9, 0.85))
-	# чужой кабриолет
+	# чужой кабриолет флота: брошен поперёк парковки (место — из макета, PG_C1_convertible)
 	var car := Node3D.new()
 	car.name = "Convertible"
-	car.position = Vector3(2, 0, 1)
+	car.position = CONVERTIBLE_POS
+	car.rotation_degrees.y = 100.0
 	add_child(car)
 	var body := StaticBody3D.new()
 	car.add_child(body)
@@ -436,26 +351,35 @@ func _build_parking() -> void:
 	cs.shape = bs
 	cs.position.y = 0.6
 	body.add_child(cs)
-	if Props.place(car, "convertible", Vector3.ZERO, 180.0) == null:
-		Kit.box(car, Vector3(2, 0.7, 4.4), Vector3(0, 0.65, 0), Color(0.8, 0.1, 0.12))
+	var model := Props.place(car, "convertible", Vector3.ZERO, 180.0)
+	if model == null:
+		Kit.box(car, Vector3(2, 0.7, 4.4), Vector3(0, 0.65, 0), Color(0.15, 0.55, 0.55))
+	else:
+		_repaint(model, Color(0.12, 0.52, 0.55))     # по концепту кабриолет бирюзовый
 	Kit.label(car, "ИМУЩЕСТВО ФЛОТА №0001", Vector3(0, 1.0, 2.21), 28, Color(0.4, 1, 0.6), false)
-	# скамейка, урны, автомат
-	Props.collider(self, Vector3(2.4, 0.5, 0.7), Vector3(6, 0.25, -3))
-	Props.place(self, "bench", Vector3(6, 0, -3), 180.0)
-	Kit.solid_box(self, Vector3(0.7, 1.0, 0.7), Vector3(-5, 0.5, 5), Color(0.25, 0.35, 0.3))
-	Kit.solid_box(self, Vector3(1.2, 2.0, 0.8), Vector3(-3, 1.0, -7), Color(0.3, 0.3, 0.6), 0.2)
-	_add_pickup("ITEM_P1_PHONE", Vector3(6.2, 0.6, -2.2))
-	_add_pickup("ITEM_P1_SHOE", Vector3(-4.2, 0.3, 4.2))
-	_add_pickup("ITEM_P1_DEBT_NOTICE", Vector3(-3, 0.4, -6.2))
+	# скамейка у машины, автомат с газировкой
+	Props.collider(self, Vector3(2.4, 0.5, 0.7), CONVERTIBLE_POS + Vector3(8, 0.25, 6))
+	Props.place(self, "bench", CONVERTIBLE_POS + Vector3(8, 0, 6), 180.0)
+	Kit.solid_box(self, Vector3(1.2, 2.0, 0.8), CONVERTIBLE_POS + Vector3(-12, 1.0, -8), Color(0.3, 0.3, 0.6), 0.2)
+	_add_pickup("ITEM_P1_PHONE", Vector3(-54, 0.6, -4.6))
+	_add_pickup("ITEM_P1_SHOE", Vector3(-42, 0.3, 6.5))
+	_add_pickup("ITEM_P1_DEBT_NOTICE", Vector3(-31, 0.4, -12))
 	# гараж №13 — вход на личную базу
-	for i in 6:
-		var gx := -10.0 + i * 4.2
-		var g := Props.collider(self, Vector3(4, 3, 4), Vector3(gx, 1.5, 16), true)
-		if Props.place(g, "garage_13" if i == 4 else "garage", Vector3(0, -1.5, 0), 180.0) == null:
-			Kit.box(g, Vector3(4, 3, 4), Vector3.ZERO, Color(0.42, 0.4, 0.38))
-	Kit.label(self, "ГАРАЖ №13", GARAGE_POS + Vector3(0, 3.4, 0), 44, Color(1, 0.8, 0.3))
 	_interactables.append({"pos": GARAGE_POS, "radius": 3.0, "label": "База", "cb": _enter_base,
 			"enabled": func(): return true})
+
+
+## Перекрасить красные детали модели (кузов) в другой цвет.
+static func _repaint(model: Node, color: Color) -> void:
+	for mi: MeshInstance3D in model.find_children("*", "MeshInstance3D", true, false):
+		if mi.mesh == null:
+			continue
+		for k in mi.mesh.get_surface_count():
+			var m := mi.get_active_material(k) as BaseMaterial3D
+			if m != null and m.albedo_color.r > 0.45 and m.albedo_color.r > m.albedo_color.g * 2.0 and not m.emission_enabled:
+				var nm := m.duplicate() as BaseMaterial3D
+				nm.albedo_color = color
+				mi.set_surface_override_material(k, nm)
 
 
 func _add_pickup(item_id: String, pos: Vector3) -> void:
@@ -491,19 +415,20 @@ func _collect(item_id: String) -> void:
 # ---------- очередь за бесплатной квартирой ----------
 
 func _build_queue() -> void:
-	Kit.solid_box(self, Vector3(0.3, 3, 3.5), Vector3(-11.5, 1.5, 10), Color(0.2, 0.3, 0.6), 0.3)
-	_sign("ОЧЕРЕДЬ ЗА БЕСПЛАТНОЙ\nКВАРТИРОЙ", Vector3(-11.33, 2.4, 10), 30, Color(0.15, 0.2, 0.55), 90.0, "board",
+	var q := StartYard.QUEUE
+	Kit.solid_box(self, Vector3(0.3, 3, 3.5), q + Vector3(-3.6, 1.5, -2), Color(0.2, 0.3, 0.6), 0.3)
+	_sign("ОЧЕРЕДЬ ЗА БЕСПЛАТНОЙ\nКВАРТИРОЙ", q + Vector3(-3.43, 2.4, -2), 30, Color(0.15, 0.2, 0.55), 90.0, "board",
 			{"bg": Color(0.93, 0.94, 0.97), "lamp": true})
-	_sign("ВЫ 4 718-Й", Vector3(-11.33, 1.3, 9.2), 22, Color(0.75, 0.1, 0.1), 90.0, "poster", {"tilt": -5.0})
+	_sign("ВЫ 4 718-Й", q + Vector3(-3.43, 1.3, -2.8), 22, Color(0.75, 0.1, 0.1), 90.0, "poster", {"tilt": -5.0})
 	var colors := [Color(0.4, 0.3, 0.5), Color(0.3, 0.45, 0.4), Color(0.55, 0.4, 0.25), Color(0.35, 0.35, 0.5),
 			Color(0.5, 0.25, 0.3), Color(0.3, 0.3, 0.3), Color(0.45, 0.45, 0.2)]
 	for i in colors.size():
-		var p := _person(Vector3(-10 + i * 1.1, 0, 10), colors[i])
-		p.rotation_degrees.y = -90
+		var p := _person(q + Vector3(-2.0, 0, i * 1.1), colors[i])
+		p.rotation_degrees.y = 180
 		var tw := p.create_tween().set_loops()
 		tw.tween_property(p, "rotation_degrees:z", 3.0, 1.2 + i * 0.1)
 		tw.tween_property(p, "rotation_degrees:z", -3.0, 1.2 + i * 0.1)
-	var passer := _person(Vector3(-2, 0, 10), Color(0.6, 0.5, 0.35), "Прохожий")
+	var passer := _person(StartYard.QUEUE + Vector3(1.5, 0, 9), Color(0.6, 0.5, 0.35), "Прохожий")
 	_npc_mark(passer, "PASSER")
 	_interactables.append({"pos": passer.position, "radius": 2.5, "label": "Говорить", "face": passer, "cb": func():
 		hud.run_dialogue("PASSER"), "enabled": func(): return true})
@@ -597,30 +522,22 @@ func _escaped_patrol() -> void:
 # ---------- киоск (этапы 3 и 4) ----------
 
 func _build_kiosk() -> void:
-	var k := Node3D.new()
-	k.name = "Kiosk"
-	k.position = KIOSK_POS
-	add_child(k)
-	Props.collider(k, Vector3(4, 3, 3), Vector3(0, 1.5, 0))
-	if Props.place(k, "kiosk", Vector3.ZERO) == null:
-		Kit.box(k, Vector3(4, 3, 3), Vector3(0, 1.5, 0), Color(0.85, 0.85, 0.8))
-	_sign("КИОСК 24/7 · РАССРОЧКА НА ВСЁ", KIOSK_POS + Vector3(0, 3.3, 1.55), 36, Color.WHITE, 0.0, "lightbox",
-			{"bg": Color(0.95, 0.25, 0.2), "ink": Color(1, 1, 0.9)})
-	_kiosk_owner = _person(KIOSK_POS + Vector3(0.6, 0, 0.6), Color(0.5, 0.35, 0.3), "Киоскёр")
+	# сам киоск «НЛО напрокат» и вывески строит StartYard; здесь — люди и сюжет
+	_kiosk_owner = _person(KIOSK_POS + Vector3(-2.2, 0, 3.6), Color(0.5, 0.35, 0.3), "Киоскёр")
 	# разбитый дрон, привалившийся к двери, и батарея на месте аварии
 	_kiosk_wreck = Node3D.new()
-	_kiosk_wreck.position = KIOSK_POS + Vector3(2.4, 0, 1.4)
+	_kiosk_wreck.position = KIOSK_POS + Vector3(5.2, 0, 1.8)
 	add_child(_kiosk_wreck)
 	Kit.sphere(_kiosk_wreck, 0.9, Vector3(0, 0.8, 0), Color(0.55, 0.57, 0.6))
 	Kit.cylinder(_kiosk_wreck, 1.4, 0.12, Vector3(0, 0.6, 0), Color(0.3, 0.3, 0.35)).rotation_degrees.z = 35
 	_battery = Node3D.new()
-	_battery.position = KIOSK_POS + Vector3(5, 0, 3.5)
+	_battery.position = KIOSK_POS + Vector3(7.5, 0, 5.0)
 	add_child(_battery)
 	Kit.box(_battery, Vector3(0.5, 0.8, 0.5), Vector3(0, 0.4, 0), Color(0.3, 1, 0.7), 3.0)
 	Kit.label(_battery, "Инопланетная батарея", Vector3(0, 1.3, 0), 30, Color(0.6, 1, 0.8))
 	_zones.append({"pos": KIOSK_POS, "radius": 6.0, "cb": _reach_kiosk,
 			"when": func(): return QuestService.is_on_stage(QID, "MAIN_001_S03")})
-	_interactables.append({"pos": KIOSK_POS + Vector3(0, 0, 2), "radius": 4.0, "label": "Решить",
+	_interactables.append({"pos": KIOSK_POS + Vector3(0, 0, 4), "radius": 4.0, "label": "Решить",
 			"cb": _talk_kiosk, "enabled": func(): return QuestService.is_on_stage(QID, "MAIN_001_S04")})
 
 
@@ -647,7 +564,7 @@ func _on_choice(key: String) -> void:
 		_battery.queue_free()
 		GameState.grant("main001:choice_b:item", "Батарея с места аварии", {"items": {"ITEM_P1_ALIEN_BATTERY": 1}})
 	QuestService.turn_in(QID)
-	PogulyayDressing.open_exit(self)
+	StartYard.open_exit(self)
 	hud.play_dialog([{"speaker": "journal", "text": "%s." % q.choices[key].result},
 			{"speaker": "journal", "text": "Поворот: %s" % q.twist}], func():
 		var next := GameData.quest("MAIN_002")
@@ -660,7 +577,7 @@ func _build_locals() -> void:
 	# Гл'орп: стажёр флота, прилетел «в столицу», а попал в Рубин
 	var glorp := Node3D.new()
 	glorp.name = "Glorp"
-	glorp.position = Vector3(5.5, 0, 7)
+	glorp.position = CONVERTIBLE_POS + Vector3(7.5, 0, 9)
 	add_child(glorp)
 	Kit.capsule(glorp, 0.28, 0.8, Vector3(0, 0.75, 0), Color(0.25, 0.25, 0.3))
 	Kit.sphere(glorp, 0.32, Vector3(0, 1.45, 0), Color(0.56, 0.82, 0.48))
@@ -676,8 +593,8 @@ func _build_locals() -> void:
 	shake.tween_property(glorp, "rotation_degrees:z", -4.0, 0.15)
 	_interactables.append({"pos": glorp.position, "radius": 2.5, "label": "Говорить", "face": glorp, "cb": func():
 		hud.run_dialogue("GLORP"), "enabled": func(): return true})
-	# тётя Зина: балкон второго этажа над ломбардом
-	var balcony := Vector3(-11.8, 3.2, 1.5)   # выступает перед балконами панельки, иначе её не видно снизу
+	# тётя Зина: балкон второго этажа западного дома, над очередью
+	var balcony := StartYard.ZINA_BALCONY
 	Kit.solid_box(self, Vector3(1.4, 0.15, 3), balcony, Color(0.55, 0.52, 0.5))
 	Kit.box(self, Vector3(0.08, 0.75, 3), balcony + Vector3(0.7, 0.45, 0), Color(0.4, 0.3, 0.3))
 	# у самых перил: снизу видно не только макушку
@@ -686,7 +603,7 @@ func _build_locals() -> void:
 	zina.name = "Zina"
 	zina.rotation_degrees.y = 90
 	_npc_mark(zina, "ZINA")
-	_interactables.append({"pos": Vector3(-8.2, 0, 1.5), "radius": 3.5, "label": "Зина", "face": zina, "cb": func():
+	_interactables.append({"pos": balcony * Vector3(1, 0, 1) + Vector3(3.6, 0, 0), "radius": 3.5, "label": "Зина", "face": zina, "cb": func():
 		hud.run_dialogue("ZINA"), "enabled": func(): return true})
 
 
@@ -695,14 +612,14 @@ func _build_locals() -> void:
 ## ТЗ п. 5: Павел в начальной сцене стоит у прокатного киоска, пока идёт MAIN_001; потом
 ## уходит в парк (N07). Одна копия: видимость решает переопределение из данных района.
 func _build_pavel() -> void:
-	_pavel = _person(ParkingReference.PAVEL_POS, Color(0.42, 0.3, 0.22), "Павел Тарелкин",
+	_pavel = _person(StartYard.PAVEL, Color(0.42, 0.3, 0.22), "Павел Тарелкин",
 			{"style": "short", "skirt": false, "height": 1.04, "hair": Color(0.2, 0.14, 0.1)})
 	_pavel.name = "Pavel"
 	_pavel.rotation_degrees.y = 110.0
 	Kit.box(_pavel, Vector3(0.3, 0.32, 0.03), Vector3(0, 1.3, 0.16), Color(0.92, 0.9, 0.85))   # футболка с пришельцем
 	Kit.sphere(_pavel, 0.07, Vector3(0, 1.33, 0.18), Color(0.45, 0.85, 0.35))
 	_npc_mark(_pavel, "PAVEL")
-	_interactables.append({"pos": ParkingReference.PAVEL_POS, "radius": 2.6, "label": "Говорить", "face": _pavel,
+	_interactables.append({"pos": StartYard.PAVEL, "radius": 2.6, "label": "Говорить", "face": _pavel,
 			"cb": func(): hud.run_dialogue("PAVEL"), "enabled": func(): return _pavel.visible})
 	EventBus.quest_state_changed.connect(func(_q, _s): _update_pavel())
 	_update_pavel()
@@ -751,7 +668,7 @@ func _restore_progress() -> void:
 			_pickups[id].queue_free()
 			_pickups.erase(id)
 	if state == QuestService.COMPLETED:
-		PogulyayDressing.open_exit(self, true)
+		StartYard.open_exit(self, true)
 		if QuestService.records[QID].choice == "A":
 			_kiosk_wreck.position += Vector3(3, 0, 2)
 		else:

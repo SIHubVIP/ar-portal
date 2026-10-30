@@ -404,8 +404,14 @@ func test_district_manifest_counts() -> void:
 	for p in d.points:
 		kinds[p.type] = int(kinds.get(p.type, 0)) + 1
 	check(kinds == {"npc": 15, "boss": 3, "mob": 30, "place": 18, "safe": 5, "underground": 4}, "75 точек по типам ТЗ")
-	check(d.chunks.size() == 144 and d.sectors.size() == 9 and d.road_centerlines.size() == 32, "144 участка, 9 секторов, 32 дороги")
-	check(District.houses().size() > 400, "дома со схемы на месте")
+	check(d.chunks.size() == 144 and d.sectors.size() == 9, "144 участка, 9 секторов")
+	# макет «Рубин» (0.11): коллектор, местные улицы, аллеи, тропы и проезды; дома 2–5 этажей и мелкая застройка
+	check(District.road_segments().size() > 300, "улицы макета на месте: %d" % District.road_segments().size())
+	var big := District.buildings().filter(func(b: Dictionary) -> bool: return b.kind == "house")
+	check(big.size() > 150 and District.houses().size() > 3000, "дома макета и застройка промежутков: %d / %d" % [big.size(),
+			District.houses().size()])
+	check(District.site("market").objects.size() > 0 and District.site("square").objects.size() > 0
+			and District.site("start").objects.size() > 0, "ядра рынка, площади и старта — из пакета")
 
 
 func test_district_chunks_follow_tz_formula() -> void:
@@ -450,7 +456,10 @@ func test_start_yard_sits_between_roads() -> void:
 
 func test_district_houses_avoid_roads_points_and_arenas() -> void:
 	var ok := true
-	for h in District.houses():
+	for bl in District.buildings():
+		if bl.get("site", "") == "start":
+			continue          # корпуса двора старта строит StartYard, они и есть двор
+		var h: Rect2 = bl.rect
 		var c := h.get_center()
 		for s in District.road_segments():
 			ok = ok and District.dist_to_segment(c, s.a, s.b) > s.w / 2.0
@@ -462,7 +471,7 @@ func test_district_houses_avoid_roads_points_and_arenas() -> void:
 
 func test_lanes_cut_through_blocks_without_houses() -> void:
 	var lanes := District.road_segments().filter(func(s: Dictionary) -> bool: return s.id == "lane")
-	check(lanes.size() > 200, "в кварталах проложены переулки (%d)" % lanes.size())
+	check(lanes.size() > 100, "в кварталах проложены переулки и проезды (%d)" % lanes.size())
 	var clear := true
 	var ends_on_streets := true
 	for s in lanes:
@@ -729,7 +738,7 @@ func test_pavel_single_copy_by_quest_state() -> void:
 	QuestService.accept("MAIN_001")
 	var yard := District.npc_pos("N07")
 	check(District.start_area().has_point(yard), "киоск «НЛО напрокат» во дворе старта")
-	check(District.to_plan(ParkingReference.PAVEL_POS).distance_to(yard) < 1.0, "Павел стоит там, где сказано в данных")
+	check(District.to_plan(StartYard.PAVEL).distance_to(yard) < 1.0, "Павел стоит там, где сказано в данных")
 	var r := DialogueRunner.new("PAVEL")
 	while not r.finished():
 		r.advance()

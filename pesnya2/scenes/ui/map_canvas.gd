@@ -57,7 +57,7 @@ func _draw_district(view: Transform2D) -> void:
 		if area.intersects(h):
 			draw_rect(h, COLORS.block)
 	for r in _roads:
-		# 357 переулков и 30 улиц: рисуем только те, что попадают в круг миникарты
+		# 337 улиц и переулков: рисуем только те, что попадают в круг миникарты
 		if area.intersects(r.box):
 			draw_polyline(r.pts, COLORS.road, r.w)
 	draw_set_transform_matrix(Transform2D.IDENTITY)
@@ -65,14 +65,9 @@ func _draw_district(view: Transform2D) -> void:
 
 static func _load_district() -> void:
 	var o := District.ORIGIN_M
-	for r in District.data().get("road_centerlines", []):
-		var pts := PackedVector2Array()
-		for q in r.polyline_plan_m:
-			pts.append(District.m(q) - o)
-		_roads.append({"pts": pts, "w": float(r.corridor_width_m)})
+	# улицы и переулки макета «Рубин» (0.11)
 	for s in District.road_segments():
-		if s.id == "lane":
-			_roads.append({"pts": PackedVector2Array([s.a - o, s.b - o]), "w": float(s.w)})
+		_roads.append({"pts": PackedVector2Array([s.a - o, s.b - o]), "w": float(s.w)})
 	for r in _roads:
 		var box := Rect2(r.pts[0], Vector2.ZERO)
 		for q in r.pts:

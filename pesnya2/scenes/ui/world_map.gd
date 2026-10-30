@@ -132,7 +132,7 @@ func _render() -> void:
 
 
 func _fit_quarter() -> void:
-	var r := PogulyayDressing.BOUNDS
+	var r := StartYard.BOUNDS
 	if _area.size.x < 1.0 or _area.size.y < 1.0:
 		return
 	_quarter.origin = r.get_center()
@@ -286,22 +286,19 @@ class _DistrictCanvas extends Control:
 			elif z.id == "C2":
 				draw_rect(r, Color(0.27, 0.23, 0.2))
 			draw_rect(r, Color(0.5, 0.52, 0.5, 0.5), false, 1.5)
-		# дома со схемы
-		for h in District.houses():
-			draw_rect(Rect2(to_px(h.position), h.size * kk), Color(0.33, 0.35, 0.38))
-		# переулки внутри кварталов (этап 3)
+		# дома макета «Рубин»: крупные — кирпичным тоном, частный сектор светлее
+		for b in District.buildings():
+			var hr: Rect2 = b.rect
+			var hc := Color(0.42, 0.33, 0.3) if b.kind == "house" or b.kind == "site" else Color(0.33, 0.35, 0.38)
+			draw_rect(Rect2(to_px(hr.position), hr.size * kk), hc)
+		# переулки и дорожки, затем улицы с шириной коридора
 		for s in District.road_segments():
 			if s.id == "lane":
 				draw_line(to_px(s.a), to_px(s.b), Color(0.36, 0.33, 0.3), maxf(1.0, s.w * kk))
-		# дороги с шириной коридора
-		for road in d.get("road_centerlines", []):
-			var pts := PackedVector2Array()
-			for q in road.polyline_plan_m:
-				pts.append(to_px(Vector2(q[0], q[1])))
-			var w := float(road.corridor_width_m)
-			var col := Color(0.82, 0.68, 0.42) if road.id in ["tram_loop", "main_spine"] else (
-					Color(0.55, 0.58, 0.58) if w >= 20.0 else Color(0.42, 0.45, 0.46))
-			draw_polyline(pts, col, maxf(1.5, w * kk), true)
+		for s in District.road_segments():
+			if s.id != "lane":
+				draw_line(to_px(s.a), to_px(s.b), Color(0.55, 0.58, 0.58) if s.major else Color(0.42, 0.45, 0.46),
+						maxf(1.5, s.w * kk))
 		# двор старта
 		var sa := District.start_area()
 		draw_rect(Rect2(to_px(sa.position), sa.size * kk), Color(0.85, 0.72, 0.5, 0.35))

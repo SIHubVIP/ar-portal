@@ -56,7 +56,10 @@ VERIFIED — только с доказательством (тест, лог CI
 | Модели людей: NPC, прохожие, шесть мобов-людей (0.9) | DRAFT | tests npc_model_parts_and_styles, humanoid_mobs_use_npc_model, витрина tools/checks/mob_gallery.tscn |
 | Вывески по эталону: короб, неон, буквы, доски, плакаты, граффити (0.10) | DRAFT | test_signboard_styles_build_real_objects, витрина tools/checks/sign_gallery.tscn, скриншоты |
 | Обстановка района: тротуары, фонари, витрины, дворы (0.10) | DRAFT | test_district_chunk_is_dressed, test_lamp_lights_follow_nearest_lamps, tools/checks/dressing_bench.tscn (шаг ≤ 3 мс) |
-| Физика предметов, дождь, голуби (0.10) | DRAFT | test_phys_props_blast_and_push, test_physics_props_pool_limits_bodies; на телефоне не проверялось |
+| Физика предметов, голуби (0.10); дождь убран в 0.11 | DRAFT | test_phys_props_blast_and_push, test_physics_props_pool_limits_bodies; на телефоне не проверялось |
+| Город по пакету «Рубин»: улицы, дома, заполнение промежутков (0.11) | DRAFT | test_district_manifest_counts, test_district_houses_avoid_roads_points_and_arenas, test_lanes_cut_through_blocks_without_houses, docs/REACHABILITY.md (75 точек доступны), скриншоты |
+| Площадки ядер: двор старта, рынок, площадь, парк, ориентиры секторов (0.11) | DRAFT | автопрохождение MAIN_001 в новом дворе, скриншоты; сравнение с концептами — глазами владельца |
+| Золотой осенний вечер, листопад, тени (0.11) | DRAFT | скриншоты; на телефоне не проверялось |
 | Живая улица: прохожие, машины, окна домов | DRAFT | автопрохождение (видно ≥ 5 фигур), скриншоты |
 | Этапы 4–6: 15 NPC на точках, 3 арены боссов, арт кварталов, Android-маршрут | NOT_STARTED | — |
 
