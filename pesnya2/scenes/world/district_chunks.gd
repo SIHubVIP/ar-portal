@@ -67,7 +67,8 @@ func _update(immediate: bool) -> void:
 	for dx in range(-LOAD_RADIUS, LOAD_RADIUS + 1):
 		for dy in range(-LOAD_RADIUS, LOAD_RADIUS + 1):
 			var c := here + Vector2i(dx, dy)
-			if c.x < 0 or c.y < 0 or c.x >= District.CHUNKS_X or c.y >= District.CHUNKS or loaded.has(c):
+			if c.x < 0 or c.y < District.CHUNK_Y0 or c.x >= District.CHUNKS_X or c.y >= District.CHUNKS or loaded.has(c) \
+					or not District.in_city(District.chunk_rect(c).get_center()):
 				continue
 			if immediate:
 				loaded[c] = _build_chunk(c)
@@ -81,24 +82,30 @@ func _update(immediate: bool) -> void:
 
 # ---------- общие пол и края ----------
 
+## Пол и стены по районам (0.15: Погуляй, Деловой, «До свидания»): стена — только на внешнем
+## краю города, на стыке двух районов её нет.
 func _build_floor_and_edges() -> void:
-	var size := District.SIZE_M
-	var width := District.WIDTH_M          # 0.14: Погуляй и Деловой — один пол
-	var center := District.to_world(Vector2(width, size) / 2.0)
-	var floor_body := StaticBody3D.new()
-	floor_body.name = "DistrictFloor"
-	floor_body.position = center + Vector3(0, -0.5, 0)
-	floor_body.set_meta("map_skip", true)
-	add_child(floor_body)
-	var fs := CollisionShape3D.new()
-	var fb := BoxShape3D.new()
-	fb.size = Vector3(width, 1, size)
-	fs.shape = fb
-	floor_body.add_child(fs)
-	for wall in [[Vector2(width / 2, 0), Vector3(width, 6, 1)], [Vector2(width / 2, size), Vector3(width, 6, 1)],
-			[Vector2(0, size / 2), Vector3(1, 6, size)], [Vector2(width, size / 2), Vector3(1, 6, size)]]:
-		var b := Props.collider(self, wall[1], District.to_world(wall[0], 3.0))
-		b.set_meta("map_skip", true)
+	for d in District.layout().get("districts", [{"r": [0, 0, District.SIZE_M, District.SIZE_M]}]):
+		var r := District.district_rect(d)
+		var floor_body := StaticBody3D.new()
+		floor_body.name = "DistrictFloor"
+		floor_body.position = District.to_world(r.get_center()) + Vector3(0, -0.5, 0)
+		floor_body.set_meta("map_skip", true)
+		add_child(floor_body)
+		var fs := CollisionShape3D.new()
+		var fb := BoxShape3D.new()
+		fb.size = Vector3(r.size.x, 1, r.size.y)
+		fs.shape = fb
+		floor_body.add_child(fs)
+		var c := r.get_center()
+		var h := r.size / 2.0
+		for side: Vector2 in [Vector2(0, -1), Vector2(0, 1), Vector2(-1, 0), Vector2(1, 0)]:
+			var mid := c + side * h
+			if District.in_city(mid + side * 5.0):
+				continue
+			var size := Vector3(r.size.x, 6, 1) if side.x == 0 else Vector3(1, 6, r.size.y)
+			var b := Props.collider(self, size, District.to_world(mid, 3.0))
+			b.set_meta("map_skip", true)
 
 
 # ---------- участок ----------
@@ -238,7 +245,7 @@ func _small_houses(root: Node3D, list: Array, batch: DistrictDressing.Batch) -> 
 		var turned := absf(sin(yaw)) > 0.5
 		var sx := size.y if turned else size.x
 		var sz := size.x if turned else size.y
-		var xf := Transform3D(Basis(Vector3.UP, yaw).scaled(Vector3(sx, 1.0, sz)), District.to_world(r.get_center()))
+		var xf := Transform3D(Basis(Vector3.UP, yaw) * Basis.from_scale(Vector3(sx, 1.0, sz)), District.to_world(r.get_center()))
 		if not groups.has(key):
 			groups[key] = [BuildingKit.unit(b.kind, floors, brick, variant), []]
 		var tint := BuildingKit.small_wall_color(String(b.mat), rng)

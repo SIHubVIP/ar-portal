@@ -18,6 +18,11 @@ const CHUNKS := 12
 ## Участки по X — CHUNKS_X; точки реестра и сектора манифеста по-прежнему только в Погуляе.
 const WIDTH_M := 6000.0
 const CHUNKS_X := 24
+## 0.15 (D-057): к северу от Делового — «До свидания» (план x 3000…6000, y −3000…0). План y
+## города теперь от NORTH_M до SIZE_M, участки по y — от CHUNK_Y0 до CHUNKS − 1; северо-западный
+## квадрат (над Погуляем) пуст и непроходим.
+const NORTH_M := -3000.0
+const CHUNK_Y0 := -12
 const ORIGIN_M := Vector2(360, 2690)
 
 static var _data: Dictionary = {}
@@ -58,7 +63,7 @@ static func m(arr: Array) -> Vector2:
 
 ## Участок по ТЗ п. 10: floor(x / 250); край города (6000 по X, 3000 по Y) — последний участок.
 static func chunk_of(plan: Vector2) -> Vector2i:
-	return Vector2i(clampi(floori(plan.x / CHUNK_M), 0, CHUNKS_X - 1), clampi(floori(plan.y / CHUNK_M), 0, CHUNKS - 1))
+	return Vector2i(clampi(floori(plan.x / CHUNK_M), 0, CHUNKS_X - 1), clampi(floori(plan.y / CHUNK_M), CHUNK_Y0, CHUNKS - 1))
 
 
 static func chunk_rect(c: Vector2i) -> Rect2:
@@ -108,7 +113,7 @@ static func condition_met(c: String, state := "") -> bool:
 
 ## Сектор A1..C3 по ТЗ п. 3 (Погуляй — манифест, Деловой — макет: id DL_A1…DL_C3).
 static func sector_at(plan: Vector2) -> Dictionary:
-	plan = plan.clamp(Vector2.ZERO, Vector2(WIDTH_M - 0.01, SIZE_M - 0.01))
+	plan = plan.clamp(Vector2(0, NORTH_M), Vector2(WIDTH_M - 0.01, SIZE_M - 0.01))
 	for z in data().get("sectors", []) + layout().get("sectors", []):
 		var r: Array = z.bounds_plan_m
 		if plan.x >= r[0] and plan.x < r[2] and plan.y >= r[1] and plan.y < r[3]:
@@ -116,18 +121,36 @@ static func sector_at(plan: Vector2) -> Dictionary:
 	return {}
 
 
-## Район города в точке плана: {id: "PG" | "DL", name, r}.
+## Район города в точке плана: {id: "PG" | "DL" | "DS", name, r}; вне районов — Погуляй.
 static func district_at(plan: Vector2) -> Dictionary:
 	for d in layout().get("districts", []):
-		var r: Array = d.r
-		if plan.x >= float(r[0]) and plan.x < float(r[2]):
+		if district_rect(d).has_point(plan):
 			return d
 	return {"id": "PG", "name": "Погуляй", "r": [0, 0, SIZE_M, SIZE_M]}
 
 
+static func district_rect(d: Dictionary) -> Rect2:
+	var r: Array = d.r
+	return Rect2(float(r[0]), float(r[1]), float(r[2]) - float(r[0]), float(r[3]) - float(r[1]))
+
+
+## Внутри какого-нибудь района, не ближе margin к внешнему краю города (стыки районов — не край).
+static func in_city(plan: Vector2, margin := 0.0) -> bool:
+	var ds: Array = layout().get("districts", [])
+	if ds.is_empty():
+		ds = [district_at(plan)]
+	for off in [Vector2.ZERO, Vector2(margin, 0), Vector2(-margin, 0), Vector2(0, margin), Vector2(0, -margin)]:
+		var ok := false
+		for d in ds:
+			ok = ok or district_rect(d).has_point(plan + off)
+		if not ok:
+			return false
+	return true
+
+
 ## Можно ли стоять в точке плана: внутри района, не в доме и не во дворе старта.
 static func walkable(plan: Vector2) -> bool:
-	if plan.x < 2.0 or plan.y < 2.0 or plan.x > WIDTH_M - 2.0 or plan.y > SIZE_M - 2.0:
+	if not in_city(plan, 2.0):
 		return false
 	if start_area().has_point(plan):
 		return false
@@ -230,14 +253,21 @@ static var _reach_cell := 4.0
 
 static func reachability(cell := 4.0) -> Dictionary:
 	var nx := int(WIDTH_M / cell)
-	var ny := int(SIZE_M / cell)
+	var ny := int((SIZE_M - NORTH_M) / cell)
 	var blocked := PackedByteArray()
 	blocked.resize(nx * ny)
 	var yard := start_area()
-	for r in houses() + [yard]:
+	# пустые квадраты 3 × 3 км в рамке города (над Погуляем) — непроходимы целиком
+	var holes: Array = []
+	for qy in range(int(NORTH_M), int(SIZE_M), int(SIZE_M)):
+		for qx in range(0, int(WIDTH_M), int(SIZE_M)):
+			var q := Rect2(qx, qy, SIZE_M, SIZE_M)
+			if not in_city(q.get_center()):
+				holes.append(q)
+	for r in houses() + [yard] + holes:
 		var g: Rect2 = r.grow(0.4)
-		for gy in range(maxi(0, int(g.position.y / cell)), mini(ny, int(g.end.y / cell) + 1)):
-			var cy := (gy + 0.5) * cell
+		for gy in range(maxi(0, int((g.position.y - NORTH_M) / cell)), mini(ny, int((g.end.y - NORTH_M) / cell) + 1)):
+			var cy := (gy + 0.5) * cell + NORTH_M
 			if cy < g.position.y or cy > g.end.y:
 				continue
 			for gx in range(maxi(0, int(g.position.x / cell)), mini(nx, int(g.end.x / cell) + 1)):
@@ -248,7 +278,7 @@ static func reachability(cell := 4.0) -> Dictionary:
 	dist.resize(nx * ny)
 	dist.fill(-1)
 	var e := yard_exit()
-	var s := int(e.y / cell) * nx + int(e.x / cell)
+	var s := int((e.y - NORTH_M) / cell) * nx + int(e.x / cell)
 	var queue := PackedInt32Array([s])
 	dist[s] = 0
 	var head := 0
@@ -273,11 +303,11 @@ static func reachability(cell := 4.0) -> Dictionary:
 			best = {"reachable": true, "path_m": 0.0, "snap_m": 0.0, "yard": true}
 		else:
 			var px := int(pm.x / cell)
-			var py := int(pm.y / cell)
+			var py := int((pm.y - NORTH_M) / cell)
 			for gy in range(maxi(0, py - snap), mini(ny, py + snap + 1)):
 				for gx in range(maxi(0, px - snap), mini(nx, px + snap + 1)):
 					var dd := dist[gy * nx + gx]
-					var off := Vector2((gx + 0.5) * cell, (gy + 0.5) * cell).distance_to(pm)
+					var off := Vector2((gx + 0.5) * cell, (gy + 0.5) * cell + NORTH_M).distance_to(pm)
 					if dd >= 0 and off <= REACH_SNAP_M and (not best.reachable or dd * cell < best.path_m):
 						best = {"reachable": true, "path_m": dd * cell, "snap_m": off}
 		out[p.id] = best
@@ -291,8 +321,8 @@ static func reached(plan: Vector2) -> bool:
 	var nx := int(WIDTH_M / _reach_cell)
 	var snap := int(ceil(REACH_SNAP_M / _reach_cell))
 	var px := int(plan.x / _reach_cell)
-	var py := int(plan.y / _reach_cell)
-	for gy in range(maxi(0, py - snap), mini(int(SIZE_M / _reach_cell), py + snap + 1)):
+	var py := int((plan.y - NORTH_M) / _reach_cell)
+	for gy in range(maxi(0, py - snap), mini(int((SIZE_M - NORTH_M) / _reach_cell), py + snap + 1)):
 		for gx in range(maxi(0, px - snap), mini(nx, px + snap + 1)):
 			if _reach_dist[gy * nx + gx] >= 0:
 				return true

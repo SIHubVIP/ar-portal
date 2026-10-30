@@ -167,7 +167,7 @@ func _bake() -> void:
 	var norms: PackedVector3Array = arrays[Mesh.ARRAY_NORMAL]
 	var idx: PackedInt32Array = arrays[Mesh.ARRAY_INDEX]
 	for b in _solids:
-		var xf := Transform3D(Basis(Vector3.RIGHT, b[4]).scaled(b[0]), b[1])
+		var xf := Transform3D(Basis(Vector3.RIGHT, b[4]) * Basis.from_scale(b[0]), b[1])
 		var c: Color = b[2]
 		c.a = 1.0 - clampf(float(b[3]) / 4.0, 0.0, 1.0)
 		for i in idx:

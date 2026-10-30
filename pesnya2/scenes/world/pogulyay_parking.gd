@@ -14,9 +14,11 @@ const GARAGE_POS := StartYard.GARAGE_13
 const UFO_POS := Vector3(70, 62, -230)
 ## Арка в северном корпусе — выход со двора (ворота в StartYard._bounds).
 const EXIT_ARCH := StartYard.EXIT_ARCH
-## Такси «Межрайон» (0.14): у будки во дворе и у площади «Последний талон» в Деловом.
+## Такси «Межрайон» (0.14, три района с 0.15): у будки во дворе, у площади «Последний талон»
+## в Деловом и у ворот «Базара под куполом» в «До свидания».
 const TAXI_YARD := StartYard.BOOTH + Vector3(10, 0, 7)
 const TAXI_DL_PLAN := Vector2(4600, 1598)
+const TAXI_DS_PLAN := Vector2(4560, -1399)
 
 var player: Player
 var camera: IsoCamera
@@ -656,20 +658,33 @@ func _build_exit_to_delovoy() -> void:
 # ---------- такси «Межрайон» между районами (0.14) ----------
 
 func _build_taxi() -> void:
-	var dl := District.to_world(TAXI_DL_PLAN)
-	Props.collider(self, Vector3(1.8, 1.4, 4.3), dl + Vector3(-3, 0.7, 0))
-	Props.place(self, "taxi", dl + Vector3(-3, 0, 0), 0.0)
-	Props.place(self, "taxi_sign", dl + Vector3(0, 0, -1.5), 0.0)
-	Signboard.make(self, "МЕЖРАЙОН", "board", Color(0.1, 0.08, 0.05), dl + Vector3(0, 2.62, -1.41), 0.0, 0.27,
-			{"bg": Color(0.98, 0.8, 0.15)})
-	Signboard.make(self, "МЕЖРАЙОН\nПОГУЛЯЙ ⇄ ДЕЛОВОЙ", "board", Color(0.1, 0.08, 0.05), TAXI_YARD + Vector3(0, 3.3, -2.3), 0.0, 0.22,
-			{"bg": Color(0.98, 0.8, 0.15)})
-	_interactables.append({"pos": TAXI_YARD, "radius": 3.0, "label": "Такси в Деловой", "cb": func():
-		_ride(dl + Vector3(0, 0, 2.5), "ДЕЛОВОЙ", "Площадь «Последний талон». Счётчик тикал быстрее сердца."),
-		"enabled": func(): return QuestService.state_of(QID) == QuestService.COMPLETED})
-	_interactables.append({"pos": dl + Vector3(0, 0, 2.5), "radius": 3.0, "label": "Такси в Погуляй", "cb": func():
-		_ride(TAXI_YARD + Vector3(0, 0, 1.5), "ПОГУЛЯЙ", "Двор у киоска. Таксист взял чаевые талонами."),
-		"enabled": func(): return true})
+	var stops := {
+		"PG": {"at": TAXI_YARD, "title": "ПОГУЛЯЙ", "sub": "Двор у киоска. Таксист взял чаевые талонами.", "to": "Такси в Погуляй"},
+		"DL": {"at": District.to_world(TAXI_DL_PLAN), "title": "ДЕЛОВОЙ",
+				"sub": "Площадь «Последний талон». Счётчик тикал быстрее сердца.", "to": "Такси в Деловой"},
+		"DS": {"at": District.to_world(TAXI_DS_PLAN), "title": "ДО СВИДАНИЯ",
+				"sub": "Ворота «Базара под куполом». Таксист дальше не поедет — тут даже GPS прощается.",
+				"to": "Такси в «До свидания»"},
+	}
+	for id in stops:
+		var st: Dictionary = stops[id]
+		var at: Vector3 = st.at
+		if id != "PG":
+			Props.collider(self, Vector3(1.8, 1.4, 4.3), at + Vector3(-3, 0.7, 0))
+			Props.place(self, "taxi", at + Vector3(-3, 0, 0), 0.0)
+			Props.place(self, "taxi_sign", at + Vector3(0, 0, -1.5), 0.0)
+		Signboard.make(self, "МЕЖРАЙОН\nПОГУЛЯЙ · ДЕЛОВОЙ · ДО СВИДАНИЯ", "board", Color(0.1, 0.08, 0.05), at + Vector3(0, 3.3, -2.3), 0.0,
+				0.2, {"bg": Color(0.98, 0.8, 0.15)})
+		var k := 0
+		for to in stops:
+			if to == id:
+				continue
+			var dest: Dictionary = stops[to]
+			# во дворе такси ждёт, пока не разберёшься с киоском (MAIN_001)
+			_interactables.append({"pos": at + Vector3(-1.8 + k * 3.6, 0, 2.5), "radius": 1.7, "label": dest.to, "stop": id,
+					"cb": _ride.bind(dest.at + Vector3(0, 0, 1.0), dest.title, dest.sub),
+					"enabled": func(): return id != "PG" or QuestService.state_of(QID) == QuestService.COMPLETED})
+			k += 1
 
 
 ## Поездка: затемнение, перенос героя, подгрузка участков, баннер с названием района.
@@ -1106,22 +1121,23 @@ func _run_autotest() -> void:
 		print("AUTOTEST_FAIL")
 	player.global_position = back
 	await _frames(20)
-	# 0.14: такси «Межрайон» — в Деловой и обратно во двор
-	var rides := {}
-	for it in _interactables:
-		if String(it.label).begins_with("Такси"):
-			rides[it.label] = it
-	var to_dl: Dictionary = rides.get("Такси в Деловой", {})
-	var ok_dl: bool = not to_dl.is_empty() and to_dl.enabled.call()
-	if ok_dl:
-		to_dl.cb.call()
+	# 0.14–0.15: такси «Межрайон» — двор → Деловой → «До свидания» → двор
+	var trip := [["PG", "Такси в Деловой", "DL"], ["DL", "Такси в «До свидания»", "DS"], ["DS", "Такси в Погуляй", "PG"]]
+	var rode := []
+	for leg in trip:
+		var ride := {}
+		for it in _interactables:
+			if it.get("stop", "") == leg[0] and it.label == leg[1]:
+				ride = it
+		if ride.is_empty() or not ride.enabled.call():
+			rode.append(false)
+			break
+		ride.cb.call()
 		await get_tree().create_timer(1.6).timeout
-		ok_dl = District.district_at(District.to_plan(player.global_position)).id == "DL"
-		rides["Такси в Погуляй"].cb.call()
-		await get_tree().create_timer(1.6).timeout
+		rode.append(District.district_at(District.to_plan(player.global_position)).id == leg[2])
 	var home := player.global_position.distance_to(TAXI_YARD) < 4.0
-	log.call("такси «Межрайон»: в Деловой %s, обратно во двор %s" % [ok_dl, home])
-	if not ok_dl or not home:
+	log.call("такси «Межрайон»: %s, обратно во двор %s" % [str(rode), home])
+	if rode != [true, true, true] or not home:
 		print("AUTOTEST_FAIL")
 	player.global_position = back
 	await _frames(20)

@@ -170,7 +170,7 @@ static func _mfc_ufo(root: Node3D, site: Dictionary, batch: DistrictDressing.Bat
 	# бумажки с печатями по борту
 	for i in 10:
 		var a := TAU * i / 10.0 + 0.2
-		batch.add("site", ux * Transform3D(Basis(Vector3.UP, -a).scaled(Vector3(0.05, 0.8, 0.6)),
+		batch.add("site", ux * Transform3D(Basis(Vector3.UP, -a) * Basis.from_scale(Vector3(0.05, 0.8, 0.6)),
 				Vector3(cos(a) * 13.7, 0.9, sin(a) * 13.7)), Color(0.96, 0.95, 0.9))
 	var beacon := Kit.sphere(ufo, 0.5, Vector3(0, 8.0, 0), Color(1.0, 0.75, 0.2), 5.0)
 	beacon.create_tween().set_loops().tween_property(beacon, "scale", Vector3.ONE * 0.2, 0.8).from(Vector3.ONE)
@@ -296,7 +296,7 @@ static func _credit(root: Node3D, site: Dictionary, batch: DistrictDressing.Batc
 		var top := tc + Vector3(cos(a) * 8.0, 2.4, sin(a) * 8.0)
 		var d := top - anchor
 		batch.add("site", Transform3D(Basis.looking_at(d.normalized(), Vector3.UP if absf(d.normalized().y) < 0.95 else Vector3.RIGHT)
-				.scaled(Vector3(0.12, 0.12, d.length())), anchor + d / 2.0), Color(0.25, 0.25, 0.27))
+				* Basis.from_scale(Vector3(0.12, 0.12, d.length())), anchor + d / 2.0), Color(0.25, 0.25, 0.27))
 	for i in 12:
 		var a2 := TAU * i / 12.0
 		DistrictSites._b(batch, tc + Vector3(cos(a2) * 8.4, 2.1, sin(a2) * 8.4), Vector3(0.45, 0.25, 0.45), Color(0.3, 1.0, 0.8, 0.3), 0.0, "glow")

@@ -106,10 +106,10 @@ class Batch:
 		items[kind].append([xf, color])
 
 	func box(kind: String, center: Vector3, size: Vector3, yaw := 0.0, color := Color.WHITE) -> void:
-		add(kind, Transform3D(Basis(Vector3.UP, yaw).scaled(size), center), color)
+		add(kind, Transform3D(Basis(Vector3.UP, yaw) * Basis.from_scale(size), center), color)
 
 	func model(name: String, pos: Vector3, yaw := 0.0, scale := 1.0) -> void:
-		add("model:" + name, Transform3D(Basis(Vector3.UP, yaw).scaled(Vector3.ONE * scale), pos))
+		add("model:" + name, Transform3D(Basis(Vector3.UP, yaw) * Basis.from_scale(Vector3.ONE * scale), pos))
 
 
 # ---------- улица ----------
@@ -141,13 +141,13 @@ static func _playground(batch: Batch, at: Vector3, yaw: float, rng: RandomNumber
 	var b := Basis(Vector3.UP, yaw)
 	var col: Color = [Color(0.85, 0.25, 0.2), Color(0.25, 0.5, 0.85), Color(0.95, 0.75, 0.2)][rng.randi() % 3]
 	for sx: float in [-1.0, 1.0]:
-		batch.add("play", Transform3D(b * Basis(Vector3.BACK, sx * 0.25).scaled(Vector3(0.1, 2.4, 0.1)), at + b * Vector3(sx * 1.4, 1.15, 0)), col)
-	batch.add("play", Transform3D(b.scaled(Vector3(3.2, 0.1, 0.1)), at + b * Vector3(0, 2.3, 0)), col)
-	batch.add("play", Transform3D(b.scaled(Vector3(0.6, 0.06, 0.3)), at + b * Vector3(0, 0.55, 0)), Color(0.3, 0.2, 0.12))
-	batch.add("play", Transform3D(b * Basis(Vector3.RIGHT, 0.6).scaled(Vector3(0.7, 0.06, 3.0)), at + b * Vector3(4.0, 0.9, 0)), col.lightened(0.2))
-	batch.add("play", Transform3D(b.scaled(Vector3(0.7, 1.8, 0.7)), at + b * Vector3(4.0, 0.9, -1.6)), col.darkened(0.3))
-	batch.add("play", Transform3D(b.scaled(Vector3(3.0, 0.25, 3.0)), at + b * Vector3(0, 0.125, 3.5)), Color(0.55, 0.45, 0.3))
-	batch.add("play", Transform3D(b.scaled(Vector3(2.6, 0.27, 2.6)), at + b * Vector3(0, 0.13, 3.5)), Color(0.75, 0.66, 0.45))
+		batch.add("play", Transform3D(b * Basis(Vector3.BACK, sx * 0.25) * Basis.from_scale(Vector3(0.1, 2.4, 0.1)), at + b * Vector3(sx * 1.4, 1.15, 0)), col)
+	batch.add("play", Transform3D(b * Basis.from_scale(Vector3(3.2, 0.1, 0.1)), at + b * Vector3(0, 2.3, 0)), col)
+	batch.add("play", Transform3D(b * Basis.from_scale(Vector3(0.6, 0.06, 0.3)), at + b * Vector3(0, 0.55, 0)), Color(0.3, 0.2, 0.12))
+	batch.add("play", Transform3D(b * Basis(Vector3.RIGHT, 0.6) * Basis.from_scale(Vector3(0.7, 0.06, 3.0)), at + b * Vector3(4.0, 0.9, 0)), col.lightened(0.2))
+	batch.add("play", Transform3D(b * Basis.from_scale(Vector3(0.7, 1.8, 0.7)), at + b * Vector3(4.0, 0.9, -1.6)), col.darkened(0.3))
+	batch.add("play", Transform3D(b * Basis.from_scale(Vector3(3.0, 0.25, 3.0)), at + b * Vector3(0, 0.125, 3.5)), Color(0.55, 0.45, 0.3))
+	batch.add("play", Transform3D(b * Basis.from_scale(Vector3(2.6, 0.27, 2.6)), at + b * Vector3(0, 0.13, 3.5)), Color(0.75, 0.66, 0.45))
 
 
 ## Одна улица в пределах участка: тротуары, разметка, фонари и всё, что между ними.
@@ -307,7 +307,7 @@ static func _tree(batch: Batch, pos: Vector3, rng: RandomNumberGenerator, scale 
 		var off := Vector3(rng.randf_range(-1.3, 1.3), rng.randf_range(-0.5, 1.2), rng.randf_range(-1.3, 1.3)) * scale
 		var col := base.lerp(AUTUMN[rng.randi() % AUTUMN.size()], 0.35).darkened(rng.randf_range(0.0, 0.25))
 		col = col.lightened(clampf(off.y / scale, 0.0, 1.0) * 0.12)
-		batch.add("crown", Transform3D(Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3(2.1, 1.8, 2.1) * scale * rng.randf_range(0.7, 1.05)),
+		batch.add("crown", Transform3D(Basis(Vector3.UP, rng.randf() * TAU) * Basis.from_scale(Vector3(2.1, 1.8, 2.1) * scale * rng.randf_range(0.7, 1.05)),
 				pos + Vector3(0, h * 0.8, 0) + off), col)
 	if planter:
 		batch.box("planter", pos + Vector3(0, 0.12, 0), Vector3(1.3, 0.24, 1.3))
@@ -359,7 +359,7 @@ static func layout_fill(root: Node3D, rect: Rect2, batch: Batch) -> void:
 				batch.box("lamp_post", at - side * 4.5 + Vector3(0, 1.1, 0), Vector3(0.08, 2.2, 0.08))
 				batch.box("lamp_post", at + side * 4.5 + Vector3(0, 1.1, 0), Vector3(0.08, 2.2, 0.08))
 				for i in 9:
-					batch.add("cloth", Transform3D(Basis(Vector3.UP, yaw).scaled(Vector3(0.6, 0.75, 0.03)),
+					batch.add("cloth", Transform3D(Basis(Vector3.UP, yaw) * Basis.from_scale(Vector3(0.6, 0.75, 0.03)),
 							at - side * 3.8 + side * (i * 0.95) + Vector3(0, 1.75, 0)),
 							[Color(0.85, 0.3, 0.3), Color(0.95, 0.95, 0.9), Color(0.3, 0.5, 0.8), Color(0.95, 0.8, 0.3)][rng2.randi() % 4])
 
@@ -543,7 +543,7 @@ static func _front_yard(root: Node3D, batch: Batch, a: Vector2, dir: Vector2, n:
 		units: int, unit_w: float, rng: RandomNumberGenerator) -> void:
 	var yaw := atan2(n.x, n.y)
 	var lawn_mid := a + dir * (length / 2.0) + n * (1.6 + (gap - 2.4) / 2.0)
-	batch.add("lawn", Transform3D(Basis(Vector3.UP, yaw).scaled(Vector3(length - 1.0, 0.04, gap - 2.4)),
+	batch.add("lawn", Transform3D(Basis(Vector3.UP, yaw) * Basis.from_scale(Vector3(length - 1.0, 0.04, gap - 2.4)),
 			District.to_world(lawn_mid, 0.025)), Color(0.8, 1.05, 0.7).lerp(Color(1.0, 0.95, 0.8), rng.randf()))
 	# забор вдоль тротуара секциями, с разрывами у дорожек
 	var t := 1.5

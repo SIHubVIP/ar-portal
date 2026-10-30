@@ -1,0 +1,621 @@
+{
+  "schema": "rubin-concept-layout/1.0",
+  "date": "2026-10-30",
+  "units": "meters",
+  "city_extent_m": [
+    9000,
+    9000
+  ],
+  "city_area_km2": 81,
+  "district_size_m": [
+    3000,
+    3000
+  ],
+  "district_total_area_km2": 27,
+  "landscape_buffer_area_km2": 54,
+  "coordinate_system": {
+    "plan": "X east, Y south, origin NW",
+    "blender": "City: X=planX, Y=9000-planY, Z=elevation; district: X=localPlanX, Y=3000-localPlanY. Core coordinates relative to core center.",
+    "gltf": "X=BlenderX, Y=BlenderZ, Z=-BlenderY"
+  },
+  "districts": [
+    {
+      "id": "PG",
+      "name": "Погуляй",
+      "origin": [
+        1500,
+        3000
+      ],
+      "color": "#d9a66f",
+      "size_m": [
+        3000,
+        3000
+      ],
+      "sectors": [
+        {
+          "id": "PG_A1",
+          "local_grid_code": "A1",
+          "name": "Парк чужого счастья",
+          "description": "Колесо, пенопластовое НЛО, кассы, арена Танцора",
+          "bounds_m": [
+            0,
+            0,
+            1000,
+            1000
+          ],
+          "status": "preserved_layout_new_short_label",
+          "canonical_asset_id": null
+        },
+        {
+          "id": "PG_A2",
+          "local_grid_code": "A2",
+          "name": "Театр и клубные переулки",
+          "description": "Овация, Подвал 808, арена Портье",
+          "bounds_m": [
+            1000,
+            0,
+            2000,
+            1000
+          ],
+          "status": "preserved_layout_new_short_label",
+          "canonical_asset_id": null
+        },
+        {
+          "id": "PG_A3",
+          "local_grid_code": "A3",
+          "name": "Показательный квартал",
+          "description": "ЖК, клиника, спортзал, обсерватория",
+          "bounds_m": [
+            2000,
+            0,
+            3000,
+            1000
+          ],
+          "status": "preserved_layout_new_short_label",
+          "canonical_asset_id": null
+        },
+        {
+          "id": "PG_B1",
+          "local_grid_code": "B1",
+          "name": "Старые дворы",
+          "description": "Мастерские, Без лица, проходные арки",
+          "bounds_m": [
+            0,
+            1000,
+            1000,
+            2000
+          ],
+          "status": "preserved_layout_new_short_label",
+          "canonical_asset_id": null
+        },
+        {
+          "id": "PG_B2",
+          "local_grid_code": "B2",
+          "name": "Площадь с тарелкой",
+          "description": "МФЦ, ЗАГС, копицентр, очереди",
+          "bounds_m": [
+            1000,
+            1000,
+            2000,
+            2000
+          ],
+          "status": "preserved_layout_new_short_label",
+          "canonical_asset_id": null
+        },
+        {
+          "id": "PG_B3",
+          "local_grid_code": "B3",
+          "name": "Тридцать лайков",
+          "description": "Телецентр, реклама, арена Люси, КПП",
+          "bounds_m": [
+            2000,
+            1000,
+            3000,
+            2000
+          ],
+          "status": "preserved_layout_new_short_label",
+          "canonical_asset_id": null
+        },
+        {
+          "id": "PG_C1",
+          "local_grid_code": "C1",
+          "name": "Похмельная",
+          "description": "СТАРТ: кабриолет, киоск, гаражи, такси",
+          "bounds_m": [
+            0,
+            2000,
+            1000,
+            3000
+          ],
+          "status": "preserved_layout_new_short_label",
+          "canonical_asset_id": null
+        },
+        {
+          "id": "PG_C2",
+          "local_grid_code": "C2",
+          "name": "Сытый конец",
+          "description": "Рынок, пищевые склады, торговый коллектор",
+          "bounds_m": [
+            1000,
+            2000,
+            2000,
+            3000
+          ],
+          "status": "preserved_layout_new_short_label",
+          "canonical_asset_id": null
+        },
+        {
+          "id": "PG_C3",
+          "local_grid_code": "C3",
+          "name": "Служебный задворок",
+          "description": "Энергоузел, баня, архив R-12",
+          "bounds_m": [
+            2000,
+            2000,
+            3000,
+            3000
+          ],
+          "status": "preserved_layout_new_short_label",
+          "canonical_asset_id": null
+        }
+      ]
+    },
+    {
+      "id": "DL",
+      "name": "Деловой",
+      "origin": [
+        4500,
+        3000
+      ],
+      "color": "#77b7aa",
+      "size_m": [
+        3000,
+        3000
+      ],
+      "sectors": [
+        {
+          "id": "DL_A1",
+          "local_grid_code": "A1",
+          "name": "Школа покорности",
+          "description": "Школа, бывший НИИ, двор экзаменаторов",
+          "bounds_m": [
+            0,
+            0,
+            1000,
+            1000
+          ],
+          "status": "design_proposal",
+          "canonical_asset_id": null
+        },
+        {
+          "id": "DL_A2",
+          "local_grid_code": "A2",
+          "name": "Счастье по записи",
+          "description": "ЗАГС, свадебный двор, служба совместимости",
+          "bounds_m": [
+            1000,
+            0,
+            2000,
+            1000
+          ],
+          "status": "design_proposal",
+          "canonical_asset_id": null
+        },
+        {
+          "id": "DL_A3",
+          "local_grid_code": "A3",
+          "name": "Кредит доверчивым",
+          "description": "Кооператив, залоговый двор, ломбард",
+          "bounds_m": [
+            2000,
+            0,
+            3000,
+            1000
+          ],
+          "status": "design_proposal",
+          "canonical_asset_id": null
+        },
+        {
+          "id": "DL_B1",
+          "local_grid_code": "B1",
+          "name": "Двор свидетелей",
+          "description": "Семейные дворы, мастерские, проходная арка",
+          "bounds_m": [
+            0,
+            1000,
+            1000,
+            2000
+          ],
+          "status": "design_proposal",
+          "canonical_asset_id": null
+        },
+        {
+          "id": "DL_B2",
+          "local_grid_code": "B2",
+          "name": "Последний талон",
+          "description": "Администрация и очередь на согласование вторжения",
+          "bounds_m": [
+            1000,
+            1000,
+            2000,
+            2000
+          ],
+          "status": "design_proposal",
+          "canonical_asset_id": null
+        },
+        {
+          "id": "DL_B3",
+          "local_grid_code": "B3",
+          "name": "Архив живых",
+          "description": "Офисы, хранилище дел, копицентр",
+          "bounds_m": [
+            2000,
+            1000,
+            3000,
+            2000
+          ],
+          "status": "design_proposal",
+          "canonical_asset_id": null
+        },
+        {
+          "id": "DL_C1",
+          "local_grid_code": "C1",
+          "name": "Тихая доставка",
+          "description": "Станция, грузовой двор, курьерские проходы",
+          "bounds_m": [
+            0,
+            2000,
+            1000,
+            3000
+          ],
+          "status": "design_proposal",
+          "canonical_asset_id": null
+        },
+        {
+          "id": "DL_C2",
+          "local_grid_code": "C2",
+          "name": "Труд без оплаты",
+          "description": "Торговый пассаж, биржа труда, мелкие конторы",
+          "bounds_m": [
+            1000,
+            2000,
+            2000,
+            3000
+          ],
+          "status": "design_proposal",
+          "canonical_asset_id": null
+        },
+        {
+          "id": "DL_C3",
+          "local_grid_code": "C3",
+          "name": "Рассада будущего",
+          "description": "Теплицы, сады, коммунальные огороды",
+          "bounds_m": [
+            2000,
+            2000,
+            3000,
+            3000
+          ],
+          "status": "design_proposal",
+          "canonical_asset_id": null
+        }
+      ]
+    },
+    {
+      "id": "DS",
+      "name": "До свидания",
+      "origin": [
+        4500,
+        0
+      ],
+      "color": "#b994c7",
+      "size_m": [
+        3000,
+        3000
+      ],
+      "sectors": [
+        {
+          "id": "DS_A1",
+          "local_grid_code": "A1",
+          "name": "Ржавый путь",
+          "description": "Разобранные пути, депо, ремонтные сараи",
+          "bounds_m": [
+            0,
+            0,
+            1000,
+            1000
+          ],
+          "status": "design_proposal",
+          "canonical_asset_id": null
+        },
+        {
+          "id": "DS_A2",
+          "local_grid_code": "A2",
+          "name": "Вторчермет вселенной",
+          "description": "Скупка корабельных деталей, весы, свалка",
+          "bounds_m": [
+            1000,
+            0,
+            2000,
+            1000
+          ],
+          "status": "design_proposal",
+          "canonical_asset_id": null
+        },
+        {
+          "id": "DS_A3",
+          "local_grid_code": "A3",
+          "name": "Последний адрес",
+          "description": "Кладбищенская контора, роща, склад памятников",
+          "bounds_m": [
+            2000,
+            0,
+            3000,
+            1000
+          ],
+          "status": "design_proposal",
+          "canonical_asset_id": null
+        },
+        {
+          "id": "DS_B1",
+          "local_grid_code": "B1",
+          "name": "Общежитие согласных",
+          "description": "Двор мутантов, проходы, бывшая столовая",
+          "bounds_m": [
+            0,
+            1000,
+            1000,
+            2000
+          ],
+          "status": "design_proposal",
+          "canonical_asset_id": null
+        },
+        {
+          "id": "DS_B2",
+          "local_grid_code": "B2",
+          "name": "Базар под куполом",
+          "description": "Рынок людей и мутантов под станцией пришельцев",
+          "bounds_m": [
+            1000,
+            1000,
+            2000,
+            2000
+          ],
+          "status": "design_proposal",
+          "canonical_asset_id": null
+        },
+        {
+          "id": "DS_B3",
+          "local_grid_code": "B3",
+          "name": "Баня преображения",
+          "description": "Баня, служебные корпуса, очистка",
+          "bounds_m": [
+            2000,
+            1000,
+            3000,
+            2000
+          ],
+          "status": "design_proposal",
+          "canonical_asset_id": null
+        },
+        {
+          "id": "DS_C1",
+          "local_grid_code": "C1",
+          "name": "Гаражи без вопросов",
+          "description": "Лабиринт гаражей, КПП, мастерская",
+          "bounds_m": [
+            0,
+            2000,
+            1000,
+            3000
+          ],
+          "status": "design_proposal",
+          "canonical_asset_id": null
+        },
+        {
+          "id": "DS_C2",
+          "local_grid_code": "C2",
+          "name": "Котельная прощаний",
+          "description": "Кирпичная котельная, трубы, служебные мостики",
+          "bounds_m": [
+            1000,
+            2000,
+            2000,
+            3000
+          ],
+          "status": "design_proposal",
+          "canonical_asset_id": null
+        },
+        {
+          "id": "DS_C3",
+          "local_grid_code": "C3",
+          "name": "Последний сток",
+          "description": "Канал, коллектор, брошенный пост эвакуации",
+          "bounds_m": [
+            2000,
+            2000,
+            3000,
+            3000
+          ],
+          "status": "design_proposal",
+          "canonical_asset_id": null
+        }
+      ]
+    }
+  ],
+  "status": "concept and massing, not finished game",
+  "notes": [
+    "New user size 9x9 km supersedes older total 9 km2.",
+    "Positions of the three districts within the 9km square are a proposal.",
+    "Imagegen concept images compress distances. Metric JSON and mesh take priority.",
+    "Local sector IDs do not replace canonical LOC/ENV IDs."
+  ],
+  "key_sites": [
+    {
+      "id": "DS_B2",
+      "district": "DS",
+      "name": "Базар под куполом",
+      "local_xy_m": [
+        1500,
+        1500
+      ],
+      "core_extent_m": [
+        250,
+        250
+      ]
+    },
+    {
+      "id": "DS_C1",
+      "district": "DS",
+      "name": "Гаражи без вопросов",
+      "local_xy_m": [
+        500,
+        2500
+      ],
+      "core_extent_m": [
+        250,
+        250
+      ]
+    },
+    {
+      "id": "DS_C2",
+      "district": "DS",
+      "name": "Котельная прощаний",
+      "local_xy_m": [
+        1500,
+        2500
+      ],
+      "core_extent_m": [
+        250,
+        250
+      ]
+    }
+  ],
+  "pogulyay_boss_anchors": [
+    {
+      "id": "BOSS_01",
+      "name": "Люся Глушительница Лайков",
+      "loc_id": "LOC_039",
+      "xy_m": [
+        2440,
+        1350
+      ],
+      "arena_m": [
+        110,
+        90
+      ]
+    },
+    {
+      "id": "BOSS_02",
+      "name": "Портье Семь Лиц",
+      "loc_id": "LOC_038",
+      "xy_m": [
+        1780,
+        380
+      ],
+      "arena_m": [
+        90,
+        70
+      ]
+    },
+    {
+      "id": "BOSS_03",
+      "name": "Танцор Протокол-404",
+      "loc_id": "LOC_052",
+      "xy_m": [
+        460,
+        420
+      ],
+      "arena_m": [
+        120,
+        100
+      ]
+    }
+  ],
+  "pedestrian_design": {
+    "collector_total_width_m": 20,
+    "collector_carriageway_m": 6,
+    "local_total_width_m": 10,
+    "local_carriageway_m": 5,
+    "alley_width_m": 4,
+    "arch_clearance_m": 3.5,
+    "minimum_walkway_m": 2.5,
+    "chunk_size_m": 250,
+    "poi_target_spacing_m": [
+      80,
+      150
+    ],
+    "max_floors": 5
+  },
+  "hierarchy": {
+    "city": "CITY_9x9",
+    "detail_district": "DS_district",
+    "detailed_sectors": [
+      "DS_B2_sector",
+      "DS_C1_sector",
+      "DS_C2_sector"
+    ],
+    "core_scenes": [
+      "DS_B2_core_dome",
+      "DS_C1_core_garages",
+      "DS_C2_core_boiler"
+    ]
+  },
+  "transform_notes": "District-to-city translation in Z-up meters: dx=4500,dy=6000. Core anchors are in core_anchors. City X=planX,Y=9000-planY; district X=localPlanX,Y=3000-localPlanY. glTF stores (X,Z,-Y).",
+  "package_district": "DS",
+  "package_name": "До свидания",
+  "core_anchors": [
+    {
+      "id": "DS_B2",
+      "name": "Базар под куполом",
+      "core_scene": "DS_B2_core_dome",
+      "local_plan_xy_m": [
+        1500,
+        1500
+      ],
+      "district_mesh_xy_m": [
+        1500,
+        1500
+      ],
+      "core_extent_m": [
+        250,
+        250
+      ]
+    },
+    {
+      "id": "DS_C1",
+      "name": "Гаражи без вопросов",
+      "core_scene": "DS_C1_core_garages",
+      "local_plan_xy_m": [
+        500,
+        2500
+      ],
+      "district_mesh_xy_m": [
+        500,
+        500
+      ],
+      "core_extent_m": [
+        250,
+        250
+      ]
+    },
+    {
+      "id": "DS_C2",
+      "name": "Котельная прощаний",
+      "core_scene": "DS_C2_core_boiler",
+      "local_plan_xy_m": [
+        1500,
+        2500
+      ],
+      "district_mesh_xy_m": [
+        1500,
+        500
+      ],
+      "core_extent_m": [
+        250,
+        250
+      ]
+    }
+  ],
+  "revision_notes": "District bounds and sector names preserved from approved first pack. Only three central250m plazas detailed. CITY includes these exact updated meshes; other districts are preserved."
+}

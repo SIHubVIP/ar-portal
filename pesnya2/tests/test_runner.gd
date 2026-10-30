@@ -683,6 +683,41 @@ func test_delovoy_sites_build() -> void:
 	root.queue_free()
 
 
+func test_dosvidaniya_north_of_delovoy() -> void:
+	check(District.district_at(Vector2(4500, -1500)).id == "DS" and District.district_at(Vector2(4500, 1500)).id == "DL",
+			"«До свидания» к северу от Делового")
+	check(not District.in_city(Vector2(1500, -1500)) and District.in_city(Vector2(4000, 0)) and not District.walkable(Vector2(1500, -10)),
+			"над Погуляем пусто, стык Делового и «До свидания» — не край")
+	check(String(District.sector_at(Vector2(4500, -1500)).get("name", "")) == "Базар под куполом"
+			and String(District.sector_at(Vector2(3500, -500)).get("name", "")) == "Гаражи без вопросов"
+			and String(District.sector_at(Vector2(4500, -500)).get("name", "")) == "Котельная прощаний", "сектора «До свидания» по брифу")
+	check(District.chunk_of(Vector2(4500, -1500)) == Vector2i(18, -6) and District.chunk_of(Vector2(6000, -3000)) == Vector2i(23, -12),
+			"участки к северу — с отрицательным номером по y")
+	for id in ["ds_bazaar", "ds_garages", "ds_boiler", "ds_depot", "ds_scrap", "ds_cemetery", "ds_dorm", "ds_bath", "ds_canal"]:
+		check(not District.site(id).is_empty(), "площадка %s есть в макете" % id)
+	District.reachability()
+	check(District.reached(Vector2(4500, -1395)) and District.reached(Vector2(3500, -395)) and District.reached(Vector2(4500, -395)),
+			"до трёх площадок «До свидания» можно дойти пешком со двора")
+	check(not District.reached(Vector2(1500, -1500)), "в пустой квадрат над Погуляем не пройти")
+	var root := Node3D.new()
+	add_child(root)
+	var b := DistrictDressing.Batch.new()
+	for id in ["ds_bazaar", "ds_garages", "ds_boiler"]:
+		DistrictSites.build(root, District.site(id), b)
+	check(root.get_node_or_null("BazaarStation") != null and root.get_node_or_null("HoistEngine") != null
+			and root.get_node_or_null("HeatCore") != null, "станция над куполом, двигатель на тали, ядро у котельной")
+	var bodies := root.find_children("*", "StaticBody3D", true, false).size()
+	check(bodies > 60, "гаражи, корпуса и опоры площадок с коллизией: %d" % bodies)
+	root.queue_free()
+
+
+func test_rotated_box_keeps_its_size() -> void:
+	var b := DistrictDressing.Batch.new()
+	b.box("site", Vector3.ZERO, Vector3(4, 1, 1), PI / 4.0)
+	var xf: Transform3D = b.items.plain[0][0]
+	check(absf(xf.basis.x.length() - 4.0) < 0.01 and absf(xf.basis.z.length() - 1.0) < 0.01, "повёрнутая коробка не перекошена")
+
+
 func test_car_kit_builds_cached_cars() -> void:
 	var a := CarKit.mesh(Color(0.3, 0.45, 0.42))
 	check(a == CarKit.mesh(Color(0.3, 0.45, 0.42)), "машина одного цвета и вида — одна сетка")

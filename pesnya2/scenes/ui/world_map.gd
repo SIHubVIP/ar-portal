@@ -89,7 +89,7 @@ func open() -> void:
 	_quarter.shapes = shapes
 	if _district.zoom == 1.0 and _district.pan == Vector2.ZERO:
 		_district.zoom = 3.0
-		_district.pan = player_plan() - Vector2(District.WIDTH_M, District.SIZE_M) / 2.0
+		_district.pan = player_plan() - city().get_center()
 	_render()
 	_district.clamp_pan()
 
@@ -125,7 +125,7 @@ func _render() -> void:
 	if _tab == "district":
 		var here := player_plan()
 		var sec := District.sector_at(here)
-		_info.text = "Погуляй и Деловой, 6 × 3 км, 18 секторов. Ты в районе «%s», сектор «%s». Двигай карту пальцем, нажми на точку — " \
+		_info.text = "Три района по 3 × 3 км, 27 секторов. Ты в районе «%s», сектор «%s». Двигай карту пальцем, нажми на точку — " \
 				% [District.district_at(here).get("name", "Погуляй"), sec.get("name", "?")] + "покажу, что там. В оранжевых кругах живут мобы, в голубых — безопасно. NPC и боссы пока метки."
 		_district.queue_redraw()
 	else:
@@ -177,6 +177,11 @@ func _draw_quarter_overlay() -> void:
 
 
 ## Точка игрока на плане района, метры.
+## Рамка города в плане (0.15: три района, северо-западный квадрат пуст).
+static func city() -> Rect2:
+	return Rect2(0, District.NORTH_M, District.WIDTH_M, District.SIZE_M - District.NORTH_M)
+
+
 func player_plan() -> Vector2:
 	if player == null or not is_instance_valid(player):
 		return District.ORIGIN_M
@@ -227,7 +232,7 @@ class _DistrictCanvas extends Control:
 		return minf(size.x, size.y) * 0.96 * zoom / District.SIZE_M
 
 	func to_px(m: Vector2) -> Vector2:
-		return size / 2.0 + (m - Vector2(District.WIDTH_M, District.SIZE_M) / 2.0 - pan) * k()
+		return size / 2.0 + (m - WorldMap.city().get_center() - pan) * k()
 
 	func _gui_input(event: InputEvent) -> void:
 		if event is InputEventMouseButton or event is InputEventScreenTouch:
@@ -247,7 +252,7 @@ class _DistrictCanvas extends Control:
 	func clamp_pan() -> void:
 		if k() <= 0.0:
 			return
-		var lim := (Vector2(District.WIDTH_M, District.SIZE_M) - size / k()) / 2.0
+		var lim := (WorldMap.city().size - size / k()) / 2.0
 		lim = lim.max(Vector2.ZERO)
 		pan = pan.clamp(-lim, lim)
 		queue_redraw()
@@ -275,10 +280,10 @@ class _DistrictCanvas extends Control:
 		if d.is_empty():
 			return
 		var kk := k()
-		var o := to_px(Vector2.ZERO)
-		var full := Vector2(District.WIDTH_M, District.SIZE_M) * kk      # 0.14: Погуляй и Деловой
 		draw_rect(Rect2(Vector2.ZERO, size), Color(0.07, 0.08, 0.1))
-		draw_rect(Rect2(o, full), Color(0.2, 0.22, 0.23))
+		for dd in District.layout().get("districts", []):
+			var dr := District.district_rect(dd)
+			draw_rect(Rect2(to_px(dr.position), dr.size * kk), Color(0.2, 0.22, 0.23))
 		# сектора: подложка парка и рынка, граница, подпись
 		var sectors: Array = d.get("sectors", []) + District.layout().get("sectors", [])
 		for z in sectors:
@@ -305,7 +310,7 @@ class _DistrictCanvas extends Control:
 		# названия районов над картой
 		for dd in District.layout().get("districts", []):
 			var dr: Array = dd.r
-			WorldMap._text(self, to_px(Vector2((float(dr[0]) + float(dr[2])) / 2.0, -40.0)), String(dd.name).to_upper(), 26,
+			WorldMap._text(self, to_px(Vector2((float(dr[0]) + float(dr[2])) / 2.0, float(dr[1]) - 40.0)), String(dd.name).to_upper(), 26,
 					Color(1, 0.9, 0.6))
 		# двор старта
 		var sa := District.start_area()

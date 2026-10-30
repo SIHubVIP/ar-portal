@@ -112,7 +112,7 @@ static func _ground(w: Node3D) -> void:
 	mm.instance_count = 2400
 	for i in mm.instance_count:
 		var p := Vector3(rng.randf_range(COURT.position.x + 2, COURT.end.x - 2), 0.07, rng.randf_range(COURT.position.y + 4, COURT.end.y - 2))
-		mm.set_instance_transform(i, Transform3D(Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3(rng.randf_range(0.18, 0.42), 1,
+		mm.set_instance_transform(i, Transform3D(Basis(Vector3.UP, rng.randf() * TAU) * Basis.from_scale(Vector3(rng.randf_range(0.18, 0.42), 1,
 				rng.randf_range(0.12, 0.3))), p))
 		mm.set_instance_color(i, DistrictDressing.AUTUMN[rng.randi() % DistrictDressing.AUTUMN.size()].darkened(rng.randf() * 0.25))
 	var mmi := MultiMeshInstance3D.new()

@@ -21,6 +21,9 @@ static func build(root: Node3D, site: Dictionary, batch: DistrictDressing.Batch)
 	if String(site.id).begins_with("dl_"):
 		DelovoySites.build(root, site, batch)
 		return
+	if String(site.id).begins_with("ds_"):
+		DosvidSites.build(root, site, batch)
+		return
 	match String(site.id):
 		"market":
 			_market(root, site, batch)
@@ -178,7 +181,7 @@ static func _market(root: Node3D, site: Dictionary, batch: DistrictDressing.Batc
 			var p1 := Vector3(0, ry * sin(t1), -rz * cos(t1))
 			var mid := (p0 + p1) / 2.0
 			var tilt := atan2(p1.y - p0.y, p1.z - p0.z)
-			var basis := Basis(Vector3.RIGHT, -tilt).scaled(Vector3(bw, 0.25, p0.distance_to(p1) + 0.05))
+			var basis := Basis(Vector3.RIGHT, -tilt) * Basis.from_scale(Vector3(bw, 0.25, p0.distance_to(p1) + 0.05))
 			batch.add("site", Transform3D(basis, hc + Vector3(x0 + bw / 2.0, 5.5 + mid.y, mid.z)), col.darkened(0.05 * (j % 2)))
 	# торцы свода: кремовые полукруги со световым окном-«веером»
 	for side: float in [-1.0, 1.0]:
@@ -224,7 +227,7 @@ static func _market(root: Node3D, site: Dictionary, batch: DistrictDressing.Batc
 			for sz: float in [-1.0, 1.0]:
 				_b(batch, c + Vector3(sx * (r.size.x / 2.0 - 0.2), 1.4, sz * (r.size.y / 2.0 - 0.2)), Vector3(0.1, 2.8, 0.1),
 						Color(0.3, 0.3, 0.32))
-		batch.add("site", Transform3D(Basis(Vector3.RIGHT, -0.18).scaled(Vector3(r.size.x + 0.6, 0.08, r.size.y + 0.4)),
+		batch.add("site", Transform3D(Basis(Vector3.RIGHT, -0.18) * Basis.from_scale(Vector3(r.size.x + 0.6, 0.08, r.size.y + 0.4)),
 				c + Vector3(0, 3.0, 0)), awn)
 		_b(batch, c + Vector3(0, 2.75, r.size.y / 2.0 + 0.15), Vector3(r.size.x + 0.6, 0.35, 0.05), awn.darkened(0.2))
 		# прилавок к проходу (юг) и ящики с товаром
@@ -366,7 +369,7 @@ static func _square(root: Node3D, site: Dictionary, batch: DistrictDressing.Batc
 	var ux := ufo.transform
 	for i in 12:
 		var a3 := TAU * i / 12.0
-		batch.add("site", ux * Transform3D(Basis(Vector3.UP, PI / 2.0 - a3).scaled(Vector3(0.3, 0.3, 2.4)),
+		batch.add("site", ux * Transform3D(Basis(Vector3.UP, PI / 2.0 - a3) * Basis.from_scale(Vector3(0.3, 0.3, 2.4)),
 				Vector3(cos(a3) * 15.6, 0.32, sin(a3) * 15.6)), Color(0.12, 0.13, 0.16))
 		batch.add("glow", ux * Transform3D(Basis().scaled(Vector3.ONE * 0.6), Vector3(cos(a3 + 0.26) * 13.0, 1.75, sin(a3 + 0.26) * 13.0)),
 				Color(1.0, 0.75, 0.3) if i % 2 else Color(0.3, 1.0, 0.85))
@@ -419,7 +422,7 @@ static func _square(root: Node3D, site: Dictionary, batch: DistrictDressing.Batc
 	var bronze := Color(0.32, 0.36, 0.3)
 	_b(batch, mon + Vector3(0, 4.6, 0), Vector3(1.1, 2.6, 0.8), bronze)
 	batch.add("veg", Transform3D(Basis().scaled(Vector3.ONE * 0.65), mon + Vector3(0, 6.2, 0)), bronze)
-	batch.add("site", Transform3D(Basis(Vector3.RIGHT, -1.2).scaled(Vector3(0.28, 0.28, 1.6)), mon + Vector3(0.5, 5.6, -0.7)), bronze)
+	batch.add("site", Transform3D(Basis(Vector3.RIGHT, -1.2) * Basis.from_scale(Vector3(0.28, 0.28, 1.6)), mon + Vector3(0.5, 5.6, -0.7)), bronze)
 	_sign(batch, root, "ОН ТОЖЕ ЖДАЛ ТАЛОН", "board", Color(0.9, 0.85, 0.7), mon + Vector3(0, 1.8, 1.32), 0.0, 0.22,
 			{"bg": Color(0.3, 0.28, 0.25), "far": DistrictDressing.SIGN_FAR_M})
 	# архив и копицентр, вагончик регистрации пришельцев, кафе
@@ -491,7 +494,7 @@ static func _square_garden(root: Node3D, batch: DistrictDressing.Batch, rng: Ran
 		Props.collider(root, Vector3(16, 0.6, 7), at + Vector3(0, 0.3, 0))
 	# квас «из другой галактики»: жёлтая бочка на колёсах
 	var kvas := _w(1440, 1470)
-	batch.add("tank", Transform3D(Basis(Vector3.FORWARD, PI / 2.0).scaled(Vector3(1.4, 3.2, 1.4)), kvas + Vector3(0, 1.3, 0)),
+	batch.add("tank", Transform3D(Basis(Vector3.FORWARD, PI / 2.0) * Basis.from_scale(Vector3(1.4, 3.2, 1.4)), kvas + Vector3(0, 1.3, 0)),
 			Color(0.95, 0.75, 0.15))
 	for sx: float in [-1.0, 1.0]:
 		_b(batch, kvas + Vector3(sx * 0.9, 0.35, 0.75), Vector3(0.7, 0.7, 0.2), Color(0.1, 0.1, 0.1))
@@ -510,7 +513,7 @@ static func _square_garden(root: Node3D, batch: DistrictDressing.Batch, rng: Ran
 		var a := rng.randf() * TAU
 		var d := rng.randf_range(7.0, 12.0)
 		var pp := mon + Vector3(cos(a) * d, 0.12, sin(a) * d)
-		batch.add("veg", Transform3D(Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3(0.22, 0.18, 0.32)), pp),
+		batch.add("veg", Transform3D(Basis(Vector3.UP, rng.randf() * TAU) * Basis.from_scale(Vector3(0.22, 0.18, 0.32)), pp),
 				Color(0.5, 0.5, 0.55).lerp(Color(0.35, 0.36, 0.42), rng.randf()))
 
 
@@ -525,7 +528,7 @@ static func _park(root: Node3D, site: Dictionary, batch: DistrictDressing.Batch)
 			var foot := District.to_world(sup.get_center()) + Vector3(lean * 9.0, 0, side * 3.0)
 			var mid := (foot + hub + Vector3(0, 0, side * 1.2)) / 2.0
 			var d := hub - foot
-			batch.add("site", Transform3D(Basis(Vector3.BACK, -atan2(d.x, d.y)).scaled(Vector3(0.6, d.length(), 0.6)), mid),
+			batch.add("site", Transform3D(Basis(Vector3.BACK, -atan2(d.x, d.y)) * Basis.from_scale(Vector3(0.6, d.length(), 0.6)), mid),
 					Color(0.85, 0.85, 0.82))
 	Props.collider(root, Vector3(20, 4, 8), District.to_world(sup.get_center(), 2.0))
 	var wheel := Node3D.new()
@@ -669,7 +672,7 @@ static func _tv(root: Node3D, site: Dictionary, batch: DistrictDressing.Batch) -
 		_b(batch, base + Vector3(0, y0 + h / segs - 0.2, 0), Vector3(w, 0.15, 0.15), col)
 		_b(batch, base + Vector3(0, y0 + h / segs - 0.2, 0), Vector3(0.15, 0.15, w), col)
 		if i in [5, 8, 10]:
-			batch.add("tank", Transform3D(Basis(Vector3.RIGHT, PI / 2.0).scaled(Vector3(3.2, 0.4, 3.2)),
+			batch.add("tank", Transform3D(Basis(Vector3.RIGHT, PI / 2.0) * Basis.from_scale(Vector3(3.2, 0.4, 3.2)),
 					base + Vector3(0, y0, w / 2.0 + 1.0)), Color(0.9, 0.9, 0.88))
 	_b(batch, base + Vector3(0, h + 0.6, 0), Vector3(0.8, 0.8, 0.8), Color(1.0, 0.15, 0.1), 0.0, "glow")
 	Props.collider(root, Vector3(8, 10, 8), base + Vector3(0, 5, 0))

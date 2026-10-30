@@ -28,6 +28,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 SRC = ROOT / "docs" / "source" / "rubin" / "geometry_PG_district.json"
 SRC_DL = ROOT / "docs" / "source" / "rubin_delovoy" / "geometry_DL_district.json"
+SRC_DS = ROOT / "docs" / "source" / "rubin_dosvidaniya" / "geometry_DS_district.json"
 OUT = ROOT / "data" / "pogulyay_layout.json"
 DISTRICT = ROOT / "data" / "district_pogulyay.json"
 SEED = 29102026
@@ -58,6 +59,19 @@ DL_SECTOR_NAMES = {
     "A1": "Школа покорности", "A2": "Счастье по записи", "A3": "Кредит доверчивым",
     "B1": "Двор свидетелей", "B2": "Последний талон", "B3": "Архив живых",
     "C1": "Тихая доставка", "C2": "Труд без оплаты", "C3": "Рассада будущего",
+}
+# 0.15: «До свидания» — к северу от Делового (город 9 × 9: начало района 4500, 0), в плане
+# сдвиг (+3000, −3000): план y района — от −3000 до 0.
+DS_OFFSET = (3000.0, -3000.0)
+DS_CORES = {"ds_bazaar": (1500, 1500), "ds_garages": (500, 2500), "ds_boiler": (1500, 2500)}
+DS_SITE_OF = {
+    "DS_B2_": "ds_bazaar", "DS_C1_": "ds_garages", "DS_C2_": "ds_boiler", "DS_A1_": "ds_depot", "DS_A2_": "ds_scrap",
+    "DS_A3_": "ds_cemetery", "DS_B1_": "ds_dorm", "DS_B3_": "ds_bath", "DS_C3": "ds_canal",
+}
+DS_SECTOR_NAMES = {
+    "A1": "Ржавый путь", "A2": "Вторчермет вселенной", "A3": "Последний адрес",
+    "B1": "Общежитие согласных", "B2": "Базар под куполом", "B3": "Баня преображения",
+    "C1": "Гаражи без вопросов", "C2": "Котельная прощаний", "C3": "Последний сток",
 }
 # Точки мобов, которые новые объёмы накрыли: сдвиг на ближайшее свободное место перед домом.
 POINT_MOVES = {"M5-1": [1500, 548], "M10-2": [2400, 2690]}
@@ -136,9 +150,9 @@ def district_layout(geo, table, core_xy, arenas, point_xy, seed, core_sites, pro
                 x, y, w, h = ob["r"]
                 buildings.append({"r": [x, y, w, h], "h": ob["z"][1], "mat": ob["mat"], "kind": "site", "site": site["id"],
                                   "name": n})
-            elif n.startswith("PG_C1_garage_") and not n.endswith("roof"):
+            elif (n.startswith("PG_C1_garage_") and not n.endswith("roof")) or n == "DS_C1_garage":
                 x, y, w, h = ob["r"]
-                buildings.append({"r": [x, y, w, h], "h": ob["z"][1], "mat": "metal", "kind": "site", "site": "start",
+                buildings.append({"r": [x, y, w, h], "h": ob["z"][1], "mat": "metal", "kind": "site", "site": site["id"],
                                   "name": n})
 
     if protect_sites:
@@ -323,22 +337,26 @@ def district_layout(geo, table, core_xy, arenas, point_xy, seed, core_sites, pro
     return streets, kept, trees, plots, sites, len(lanes)
 
 
-def shift(dx, streets, buildings, trees, plots, sites):
-    """Сдвиг района по X (Деловой лежит к востоку от Погуляя)."""
+def shift(dx, streets, buildings, trees, plots, sites, dy=0.0):
+    """Сдвиг района в плане города (Деловой — к востоку от Погуляя, «До свидания» — к северу от Делового)."""
     for st in streets:
-        st["a"][0] += dx
-        st["b"][0] += dx
+        for end in (st["a"], st["b"]):
+            end[0] += dx
+            end[1] += dy
     for b in buildings:
         b["r"][0] += dx
+        b["r"][1] += dy
     for t in trees:
         t[0] = round(t[0] + dx, 1)
+        t[1] = round(t[1] + dy, 1)
     for p in plots:
         p["r"][0] += dx
+        p["r"][1] += dy
     for s in sites.values():
-        s["r"][0] += dx
-        s["r"][2] += dx
+        s["r"] = [s["r"][0] + dx, s["r"][1] + dy, s["r"][2] + dx, s["r"][3] + dy]
         for ob in s["objects"]:
             ob["r"][0] = round(ob["r"][0] + dx, 2)
+            ob["r"][1] = round(ob["r"][1] + dy, 2)
 
 
 def main():
@@ -367,9 +385,24 @@ def main():
     plots += d_plots
     sites.update(d_sites)
     n_lanes += d_lanes
+    ds_geo = json.loads(SRC_DS.read_text())["scenes"]["DS_district"]
+    s_streets, s_buildings, s_trees, s_plots, s_sites, s_lanes = district_layout(
+        ds_geo, DS_SITE_OF, DS_CORES, [], [], SEED + 2, tuple(DS_CORES), True)
+    for b in s_buildings:
+        b["district"] = "DS"
+    shift(DS_OFFSET[0], s_streets, s_buildings, s_trees, s_plots, s_sites, DS_OFFSET[1])
+    streets += s_streets
+    buildings += s_buildings
+    trees += s_trees
+    plots += s_plots
+    sites.update(s_sites)
+    n_lanes += s_lanes
     # стык районов: коллектор (y 2000) и местная улица (y 1000) продолжаются через разрыв 120 м
     streets.append({"a": [2940.0, 2000.0], "b": [3060.0, 2000.0], "w": 20.0, "kind": "collector", "link": True})
     streets.append({"a": [2940.0, 1000.0], "b": [3060.0, 1000.0], "w": 10.0, "kind": "local", "link": True})
+    # стык Делового и «До свидания»: местные улицы x 1000 и 2000 обоих районов через разрыв 120 м
+    for x in (4000.0, 5000.0):
+        streets.append({"a": [x, -60.0], "b": [x, 60.0], "w": 10.0, "kind": "local", "link": True})
     for b in buildings:
         b["r"] = [round(v, 2) for v in b["r"]]
         b["h"] = round(b["h"], 1)
@@ -379,14 +412,22 @@ def main():
             sid = "%s%d" % (row, j + 1)
             dl_sectors.append({"id": "DL_" + sid, "name": DL_SECTOR_NAMES[sid], "district": "DL",
                                "bounds_plan_m": [DL_OFFSET + j * 1000, i * 1000, DL_OFFSET + (j + 1) * 1000, (i + 1) * 1000]})
+    dx, dy = DS_OFFSET
+    for i, row in enumerate("ABC"):
+        for j in range(3):
+            sid = "%s%d" % (row, j + 1)
+            dl_sectors.append({"id": "DS_" + sid, "name": DS_SECTOR_NAMES[sid], "district": "DS",
+                               "bounds_plan_m": [dx + j * 1000, dy + i * 1000, dx + (j + 1) * 1000, dy + (i + 1) * 1000]})
     layout = {
-        "schema": "pogulyay-layout/1.1",
+        "schema": "pogulyay-layout/1.2",
         "source": "docs/source/rubin/geometry_PG_district.json (концепт-пакет «Рубин», 29.10.2026)",
         "coordinates": "метры плана района: X — восток, Y — юг, начало в северо-западном углу",
         "cores": {k: [v[0] - CORE_HALF, v[1] - CORE_HALF, CORE_HALF * 2, CORE_HALF * 2] for k, v in CORES.items()},
         "districts": [{"id": "PG", "name": "Погуляй", "r": [0, 0, SIZE, SIZE]},
                       {"id": "DL", "name": "Деловой", "r": [DL_OFFSET, 0, DL_OFFSET + SIZE, SIZE],
-                       "source": "docs/source/rubin_delovoy/geometry_DL_district.json (пакет «Рубин: Деловой», 30.10.2026)"}],
+                       "source": "docs/source/rubin_delovoy/geometry_DL_district.json (пакет «Рубин: Деловой», 30.10.2026)"},
+                      {"id": "DS", "name": "До свидания", "r": [dx, dy, dx + SIZE, dy + SIZE],
+                       "source": "docs/source/rubin_dosvidaniya/geometry_DS_district.json (пакет «Рубин: До свидания», 30.10.2026)"}],
         "sectors": dl_sectors,
         "streets": streets,
         "buildings": buildings,
