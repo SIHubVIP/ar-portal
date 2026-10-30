@@ -2,6 +2,7 @@
 """Новая карта Погуляя по утверждённому концепт-пакету «Рубин» (29.10.2026).
 
     python3 tools/importers/import_rubin_layout.py
+    python3 tools/importers/compact_city.py   # 0.17: затем сжать город втрое (D-059)
 
 Источник — docs/source/rubin/geometry_PG_district.json: сцена PG_district из пакета
 (метры, Z вверх, район X = план X, Y = 3000 − план Y). Из неё берутся без изменений:

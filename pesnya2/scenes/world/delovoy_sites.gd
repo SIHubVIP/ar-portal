@@ -124,7 +124,7 @@ static func _mfc(root: Node3D, site: Dictionary, batch: DistrictDressing.Batch) 
 	# пропускной ряд турникетов
 	for o in DistrictSites._all(site, "DL_B2_ticket_barrier"):
 		var r2 := DistrictSites._r(o)
-		var c2 := District.to_world(r2.get_center())
+		var c2 := DistrictSites.sw(r2.get_center())
 		DistrictSites._b(batch, c2 + Vector3(0, 0.55, 0), Vector3(0.4, 1.1, r2.size.y), Color(0.55, 0.57, 0.6))
 		DistrictSites._b(batch, c2 + Vector3(0, 1.0, 0), Vector3(0.1, 0.1, r2.size.y), Color(1.0, 0.25, 0.2, 0.2), 0.0, "glow")
 	# архив (восток) и копицентр (запад)
@@ -155,7 +155,7 @@ static func _mfc_ufo(root: Node3D, site: Dictionary, batch: DistrictDressing.Bat
 	var u := DistrictSites._r(DistrictSites._o(site, "DL_B2_mfc_ufo"))
 	var ufo := Node3D.new()
 	ufo.name = "StuckUfo"
-	ufo.position = District.to_world(u.get_center(), 10.5)
+	ufo.position = DistrictSites.sw(u.get_center(), 10.5)
 	ufo.rotation_degrees = Vector3(-22, -30, 12)
 	root.add_child(ufo)
 	Kit.cylinder(ufo, 15.0, 2.2, Vector3.ZERO, Color(0.42, 0.44, 0.5), 0.0, 12.5)
@@ -179,7 +179,7 @@ static func _mfc_ufo(root: Node3D, site: Dictionary, batch: DistrictDressing.Bat
 		var leg := ufo.position + Vector3(-8 + k * 5.0, -5.5, 8 - k * 1.5)
 		DistrictSites._b(batch, leg, Vector3(0.25, 11.0, 0.25), YELLOW)
 		DistrictSites._b(batch, leg + Vector3(0, -1.0 + k * 0.8, 0), Vector3(5.0, 0.15, 0.15), YELLOW, 0.4)
-	var base := District.to_world(u.get_center()) + Vector3(-4, 0, 18)
+	var base := DistrictSites.sw(u.get_center()) + Vector3(-4, 0, 18)
 	for k in 6:
 		DistrictSites._b(batch, base + Vector3(-10 + k * 4.0, 0.5, 0), Vector3(0.12, 1.0, 0.12), Color(0.8, 0.2, 0.15))
 	DistrictSites._b(batch, base + Vector3(0, 0.9, 0), Vector3(20, 0.12, 0.03), Color(0.95, 0.85, 0.2))
@@ -272,19 +272,19 @@ static func _credit(root: Node3D, site: Dictionary, batch: DistrictDressing.Batc
 	var cars := DistrictSites._all(site, "DL_A3_seized_car")
 	for i in cars.size():
 		var r := DistrictSites._r(cars[i])
-		var c := District.to_world(r.get_center())
+		var c := DistrictSites.sw(r.get_center())
 		var mi := CarKit.make(root, cols[i % cols.size()], false, i % 3)
 		mi.position = c
 		mi.rotation.y = PI / 2.0 if i % 2 == 0 else -PI / 2.0
 		Props.collider(root, Vector3(CarKit.LENGTH, 1.5, CarKit.WIDTH), c + Vector3(0, 0.75, 0))
 		DistrictSites._b(batch, c + Vector3(0, 1.43, 0), Vector3(0.3, 0.02, 0.25), Color(1.0, 0.55, 0.7))
 	for o in DistrictSites._all(site, "DL_A3_wheel_clamp"):
-		var c3 := District.to_world(DistrictSites._r(o).get_center())
+		var c3 := DistrictSites.sw(DistrictSites._r(o).get_center())
 		DistrictSites._b(batch, c3 + Vector3(0, 0.35, 0), Vector3(0.55, 0.6, 0.18), YELLOW)
 		DistrictSites._b(batch, c3 + Vector3(0, 0.35, 0.12), Vector3(0.2, 0.2, 0.1), Color(0.2, 0.2, 0.2))
 	# изъятая тарелка: на колодках, на цепях, с бирками и пломбой «ИЗЪЯТО»
 	var t := DistrictSites._r(DistrictSites._o(site, "DL_A3_seized_alien_transport"))
-	var tc := District.to_world(t.get_center())
+	var tc := DistrictSites.sw(t.get_center())
 	batch.add("tank", Transform3D(Basis().scaled(Vector3(17, 1.6, 17)), tc + Vector3(0, 2.0, 0)), Color(0.55, 0.58, 0.64))
 	batch.add("tank", Transform3D(Basis().scaled(Vector3(9, 1.0, 9)), tc + Vector3(0, 1.0, 0)), Color(0.3, 0.32, 0.36))
 	batch.add("crown", Transform3D(Basis().scaled(Vector3(6, 3.6, 6)), tc + Vector3(0, 3.2, 0)), Color(0.55, 0.85, 1.0))
@@ -309,7 +309,7 @@ static func _credit(root: Node3D, site: Dictionary, batch: DistrictDressing.Batc
 	# аукционные ограждения, молоток на кафедре, оценщик с планшетом
 	for o in DistrictSites._all(site, "DL_A3_auction_rail"):
 		var r4 := DistrictSites._r(o)
-		var c4 := District.to_world(r4.get_center())
+		var c4 := DistrictSites.sw(r4.get_center())
 		DistrictSites._b(batch, c4 + Vector3(0, 1.0, 0), Vector3(r4.size.x, 0.08, 0.08), Color(0.7, 0.7, 0.72))
 		DistrictSites._b(batch, c4 + Vector3(0, 0.5, 0), Vector3(r4.size.x, 0.06, 0.06), Color(0.7, 0.7, 0.72))
 		var x := r4.position.x
@@ -324,7 +324,7 @@ static func _credit(root: Node3D, site: Dictionary, batch: DistrictDressing.Batc
 		DistrictSites._person(root, DistrictSites._w(5440 + k * 13.0, 585.0 + rng.randf_range(-1.5, 1.5)), PI, rng)
 	# въездная вывеска на двух столбах
 	var es := DistrictSites._r(DistrictSites._o(site, "DL_A3_entry_sign"))
-	var ec := District.to_world(es.get_center())
+	var ec := DistrictSites.sw(es.get_center())
 	for sx: float in [-1.0, 1.0]:
 		DistrictSites._b(batch, ec + Vector3(sx * 7.6, 2.5, 0), Vector3(0.3, 5.0, 0.3), Color(0.25, 0.25, 0.27))
 		Props.collider(root, Vector3(0.4, 5.0, 0.4), ec + Vector3(sx * 7.6, 2.5, 0))
@@ -340,7 +340,7 @@ static func _yard(root: Node3D, site: Dictionary, batch: DistrictDressing.Batch)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 3500
 	var yard := DistrictSites._r(DistrictSites._o(site, "DL_B1_courtyard"))
-	batch.box("path", District.to_world(yard.get_center(), 0.03), Vector3(yard.size.x, 0.03, yard.size.y), 0.0,
+	batch.box("path", DistrictSites.sw(yard.get_center(), 0.03), Vector3(yard.size.x, 0.03, yard.size.y), 0.0,
 			Color(0.82, 0.8, 0.76))
 	# газоны по сторонам центрального прохода: проход свободен
 	for x0: float in [3412.0, 3512.0]:
@@ -373,27 +373,27 @@ static func _yard(root: Node3D, site: Dictionary, batch: DistrictDressing.Batch)
 	# лавки с бабушками-свидетельницами
 	var benches := DistrictSites._all(site, "DL_B1_bench")
 	for i in benches.size():
-		var c := District.to_world(DistrictSites._r(benches[i]).get_center())
+		var c := DistrictSites.sw(DistrictSites._r(benches[i]).get_center())
 		batch.model("bench", c, 0.0)
 		if i % 2 == 0:
 			DistrictSites._person(root, c + Vector3(-0.5, 0, 0.3), PI, rng, GRANNY)
 	DistrictSites._sign(batch, root, "ПОНЯТЫХ\nНЕ ЗАНИМАТЬ", "board", Color(0.1, 0.1, 0.1),
-			District.to_world(DistrictSites._r(benches[2]).get_center()) + Vector3(0, 1.6, -0.4), 0.0, 0.2,
+			DistrictSites.sw(DistrictSites._r(benches[2]).get_center()) + Vector3(0, 1.6, -0.4), 0.0, 0.2,
 			{"bg": Color(0.95, 0.95, 0.9), "far": DistrictDressing.SIGN_FAR_M})
 	# бельё и ковры на верёвках
 	for o in DistrictSites._all(site, "DL_B1_laundry_post"):
-		var c := District.to_world(DistrictSites._r(o).get_center())
+		var c := DistrictSites.sw(DistrictSites._r(o).get_center())
 		DistrictSites._b(batch, c + Vector3(0, 1.5, 0), Vector3(0.1, 3.0, 0.1), Color(0.35, 0.36, 0.38))
 	for o in DistrictSites._all(site, "DL_B1_clothesline"):
 		var r := DistrictSites._r(o)
-		var c := District.to_world(r.get_center(), 3.0)
+		var c := DistrictSites.sw(r.get_center(), 3.0)
 		DistrictSites._b(batch, c, Vector3(r.size.x, 0.02, 0.02), Color(0.85, 0.85, 0.82))
 		for k in 7:
 			batch.add("cloth", Transform3D(Basis().scaled(Vector3(0.7, 0.85, 0.03)), c + Vector3(-9.0 + k * 1.3, -0.45, 0)),
 					[Color(0.9, 0.3, 0.3), Color(0.95, 0.95, 0.9), Color(0.35, 0.5, 0.85), Color(0.95, 0.8, 0.3)][(k + int(r.position.x)) % 4])
 	for o in DistrictSites._all(site, "DL_B1_hanging_rug"):
 		var r := DistrictSites._r(o)
-		var c := District.to_world(r.get_center(), 2.1)
+		var c := DistrictSites.sw(r.get_center(), 2.1)
 		DistrictSites._b(batch, c, Vector3(r.size.x, 1.8, 0.05), Color(0.62, 0.12, 0.12))
 		DistrictSites._b(batch, c + Vector3(0, 0, 0.03), Vector3(r.size.x - 0.6, 1.2, 0.02), Color(0.85, 0.65, 0.25))
 		DistrictSites._b(batch, c + Vector3(0, 0, 0.045), Vector3(1.0, 0.6, 0.02), Color(0.15, 0.25, 0.5))
@@ -403,21 +403,21 @@ static func _yard(root: Node3D, site: Dictionary, batch: DistrictDressing.Batch)
 	# приподнятые грядки
 	for o in DistrictSites._all(site, "DL_B1_raised_garden"):
 		var r := DistrictSites._r(o)
-		var c := District.to_world(r.get_center())
+		var c := DistrictSites.sw(r.get_center())
 		DistrictSites._b(batch, c + Vector3(0, 0.25, 0), Vector3(r.size.x, 0.5, r.size.y), Color(0.45, 0.35, 0.25))
 		DistrictDressing._garden(batch, c + Vector3(0, 0.5, 0), r.size - Vector2(1, 1), rng)
 		Props.collider(root, Vector3(r.size.x, 0.5, r.size.y), c + Vector3(0, 0.25, 0))
 	# качели
 	for name in ["DL_B1_swing_l", "DL_B1_swing_r"]:
-		DistrictSites._b(batch, District.to_world(DistrictSites._r(DistrictSites._o(site, name)).get_center(), 1.5), Vector3(0.15, 3.0, 0.15), Color(0.8, 0.3, 0.2))
+		DistrictSites._b(batch, DistrictSites.sw(DistrictSites._r(DistrictSites._o(site, name)).get_center(), 1.5), Vector3(0.15, 3.0, 0.15), Color(0.8, 0.3, 0.2))
 	var top := DistrictSites._r(DistrictSites._o(site, "DL_B1_swing_top"))
-	var sc := District.to_world(top.get_center(), 3.1)
+	var sc := DistrictSites.sw(top.get_center(), 3.1)
 	DistrictSites._b(batch, sc, Vector3(top.size.x, 0.15, 0.15), Color(0.8, 0.3, 0.2))
 	for sx: float in [-1.4, 1.4]:
 		DistrictSites._b(batch, sc + Vector3(sx, -1.25, 0), Vector3(0.6, 0.08, 0.35), Color(0.3, 0.5, 0.75))
 		DistrictSites._b(batch, sc + Vector3(sx, -0.6, 0), Vector3(0.03, 1.2, 0.03), Color(0.4, 0.4, 0.42))
 	# бабушка держит зонд за антенну: зонд рвётся вверх, бабушка — ни в какую
-	var pr := District.to_world(DistrictSites._r(DistrictSites._o(site, "DL_B1_confiscated_alien_probe")).get_center())
+	var pr := DistrictSites.sw(DistrictSites._r(DistrictSites._o(site, "DL_B1_confiscated_alien_probe")).get_center())
 	var probe := Node3D.new()
 	probe.name = "ProbeHeld"
 	probe.position = pr + Vector3(0, 2.4, 0)
@@ -442,7 +442,7 @@ static func _yard(root: Node3D, site: Dictionary, batch: DistrictDressing.Batch)
 
 ## Жилой дом участка: BuildingKit.house по размеру схемы, высота — 5 этажей.
 static func _house(root: Node3D, r: Rect2, brick: bool, batch: DistrictDressing.Batch, rng: RandomNumberGenerator) -> void:
-	var at := District.to_world(r.get_center())
+	var at := DistrictSites.sw(r.get_center())
 	var built := BuildingKit.house(r.size.x, r.size.y, 5, at, brick, rng)
 	var height := 5 * BuildingKit.FLOOR_M + 0.4
 	var body := Props.collider(root, Vector3(r.size.x, height, r.size.y), at + Vector3(0, height / 2.0, 0), true)
@@ -461,7 +461,7 @@ static func _arch(root: Node3D, site: Dictionary, batch: DistrictDressing.Batch)
 	for name in ["DL_B1_arch_l", "DL_B1_arch_r"]:
 		DistrictSites._hall(root, DistrictSites._r(DistrictSites._o(site, name)), 15.4, true, brick)
 	var l := DistrictSites._r(DistrictSites._o(site, "DL_B1_arch_lintel"))
-	var c := District.to_world(l.get_center())
+	var c := DistrictSites.sw(l.get_center())
 	DistrictSites._b(batch, c + Vector3(0, 10.2, 0), Vector3(l.size.x, 10.4, l.size.y), brick)
 	Props.collider(root, Vector3(l.size.x, 10.4, l.size.y), c + Vector3(0, 10.2, 0), true)
 	DistrictSites._b(batch, c + Vector3(0, 4.9, l.size.y / 2.0 + 0.05), Vector3(l.size.x + 0.6, 0.4, 0.1), Color(0.75, 0.72, 0.65))
@@ -486,7 +486,7 @@ static func _office(root: Node3D, site: Dictionary, batch: DistrictDressing.Batc
 	DistrictSites._sign(batch, root, poster, "lightbox", Color(0.12, 0.15, 0.3), front + Vector3(-20, 6.5, 0.1), 0.0, 0.45,
 			{"bg": Color(0.95, 0.96, 1.0)})
 	var u := DistrictSites._r(DistrictSites._o(site, p + "_ufo"))
-	var uc := District.to_world(u.get_center(), 13.8)
+	var uc := DistrictSites.sw(u.get_center(), 13.8)
 	batch.add("tank", Transform3D(Basis().scaled(Vector3(22, 1.6, 22)), uc), Color(0.6, 0.62, 0.68))
 	batch.add("crown", Transform3D(Basis().scaled(Vector3(8, 4.5, 8)), uc + Vector3(0, 1.3, 0)), Color(0.5, 0.85, 1.0))
 	for i in 10:
@@ -515,7 +515,7 @@ static func _station(root: Node3D, site: Dictionary, batch: DistrictDressing.Bat
 			c + Vector3(0, 7.5, r.size.y / 2.0 + 0.1), 0.0, 0.5, {"bg": Color(0.2, 0.22, 0.25), "lamp": true})
 	for name in ["DL_C1_chimney", "DL_C1_chimney2"]:
 		var o := DistrictSites._o(site, name)
-		var foot := District.to_world(DistrictSites._r(o).get_center())
+		var foot := DistrictSites.sw(DistrictSites._r(o).get_center())
 		var h := float(o.z[1])
 		var bands := int(h / 5.0)
 		for i in bands:
@@ -546,7 +546,7 @@ static func _passage(root: Node3D, site: Dictionary, batch: DistrictDressing.Bat
 	var wares := [Color(0.9, 0.3, 0.3), Color(0.95, 0.8, 0.3), Color(0.4, 0.7, 0.4), Color(0.4, 0.5, 0.9)]
 	for o in DistrictSites._all(site, "DL_C2_stall_"):
 		var r := DistrictSites._r(o)
-		var c := District.to_world(r.get_center())
+		var c := DistrictSites.sw(r.get_center())
 		var col := Color(0.28, 0.5, 0.45) if o.mat == "teal" else Color(0.68, 0.18, 0.14)
 		DistrictSites._b(batch, c + Vector3(0, 1.2, 0), Vector3(r.size.x, 2.4, r.size.y), col)
 		DistrictSites._b(batch, c + Vector3(0, 2.55, 0.4), Vector3(r.size.x + 0.4, 0.15, r.size.y + 0.8), col.darkened(0.25))
@@ -555,11 +555,11 @@ static func _passage(root: Node3D, site: Dictionary, batch: DistrictDressing.Bat
 		if rng.randf() < 0.5:
 			DistrictSites._person(root, c + Vector3(r.size.x / 2.0 + 1.4, 0, 0), -PI / 2.0, rng)
 	for name in ["DL_C2_gate_l", "DL_C2_gate_r"]:
-		var g := District.to_world(DistrictSites._r(DistrictSites._o(site, name)).get_center())
+		var g := DistrictSites.sw(DistrictSites._r(DistrictSites._o(site, name)).get_center())
 		DistrictSites._b(batch, g + Vector3(0, 3.0, 0), Vector3(0.5, 6.0, 0.5), Color(0.3, 0.3, 0.32))
 		Props.collider(root, Vector3(0.6, 6.0, 0.6), g + Vector3(0, 3.0, 0))
 	var sg := DistrictSites._r(DistrictSites._o(site, "DL_C2_sign"))
-	DistrictSites._sign(batch, root, "ТРУД БЕЗ ОПЛАТЫ", "board", Color(1.0, 0.9, 0.6), District.to_world(sg.get_center(), 6.2) + Vector3(0, 0, 0.3), 0.0,
+	DistrictSites._sign(batch, root, "ТРУД БЕЗ ОПЛАТЫ", "board", Color(1.0, 0.9, 0.6), DistrictSites.sw(sg.get_center(), 6.2) + Vector3(0, 0, 0.3), 0.0,
 			0.8, {"bg": Color(0.55, 0.1, 0.08), "lamp": true})
 
 
@@ -569,7 +569,7 @@ static func _greenhouses(root: Node3D, site: Dictionary, batch: DistrictDressing
 	var first := Vector3.ZERO
 	for i in 4:
 		var r := DistrictSites._r(DistrictSites._o(site, "DL_C3%d" % i))
-		var c := District.to_world(r.get_center())
+		var c := DistrictSites.sw(r.get_center())
 		if i == 0:
 			first = c
 		batch.box("greenhouse", c + Vector3(0, 2.0, 0), Vector3(r.size.x, 4.0, r.size.y))

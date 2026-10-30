@@ -173,8 +173,7 @@ func _chunk_steps(root: Node3D, c: Vector2i) -> Array[Callable]:
 		if is_instance_valid(root):
 			DistrictDressing.layout_fill(root, rect, batch))
 	for st in District.sites():
-		var sr: Array = st.r
-		var sc := Vector2((float(sr[0]) + float(sr[2])) / 2.0, (float(sr[1]) + float(sr[3])) / 2.0)
+		var sc := District.site_rect(st).get_center()
 		if rect.has_point(sc) and st.id != "start":
 			steps.append(func() -> void:
 				if is_instance_valid(root):

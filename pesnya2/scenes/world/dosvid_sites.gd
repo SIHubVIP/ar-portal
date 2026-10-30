@@ -53,11 +53,11 @@ static func _all(site: Dictionary, prefix: String) -> Array:
 
 
 static func _w(x: float, y: float, h := 0.0) -> Vector3:
-	return District.to_world(Vector2(x, y), h)
+	return DistrictSites.sw(Vector2(x, y), h)
 
 
 static func _c(r: Rect2, h := 0.0) -> Vector3:
-	return District.to_world(r.get_center(), h)
+	return DistrictSites.sw(r.get_center(), h)
 
 
 static func _b(batch: DistrictDressing.Batch, center: Vector3, size: Vector3, color: Color, yaw := 0.0, kind := "site") -> void:

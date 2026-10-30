@@ -1,6 +1,6 @@
 class_name WorldMap
 extends PanelContainer
-## Большая карта. Вкладка «Район» — Погуляй 3 × 3 км по манифесту владельца (data/district_pogulyay.json):
+## Большая карта. Вкладка «Район» — Погуляй 1 × 1 км (0.17, компактный город) по манифесту владельца (data/district_pogulyay.json):
 ## сектора A1..C3, дороги с шириной коридора, дома со схемы, все 75 точек реестра с подписью по нажатию.
 ## Вкладка «Квартал» — двор старта с живыми точками (как мини-карта, но крупно).
 
@@ -125,7 +125,7 @@ func _render() -> void:
 	if _tab == "district":
 		var here := player_plan()
 		var sec := District.sector_at(here)
-		_info.text = "Три района по 3 × 3 км, 27 секторов. Ты в районе «%s», сектор «%s». Двигай карту пальцем, нажми на точку — " \
+		_info.text = "Три района по 1 × 1 км, 27 секторов. Ты в районе «%s», сектор «%s». Двигай карту пальцем, нажми на точку — " \
 				% [District.district_at(here).get("name", "Погуляй"), sec.get("name", "?")] + "покажу, что там. В оранжевых кругах живут мобы, в голубых — безопасно. NPC и боссы пока метки."
 		_district.queue_redraw()
 	else:
@@ -358,10 +358,10 @@ class _DistrictCanvas extends Control:
 		MapIcons.arrow(self, me, Vector2(facing.x, facing.z).normalized(), MiniMap.CYAN, r)
 		WorldMap._text(self, me + Vector2(0, -r * 2.6), "Ты здесь", 16, MiniMap.CYAN)
 		# масштаб и север
-		var bar := 500.0 * kk
+		var bar := 200.0 * kk
 		var b0 := Vector2(20, size.y - 24)
 		draw_line(b0, b0 + Vector2(bar, 0), Color(0.9, 0.9, 0.85), 2)
-		WorldMap._text(self, b0 + Vector2(bar / 2, -14), "500 м", 15, Color(0.9, 0.9, 0.85))
+		WorldMap._text(self, b0 + Vector2(bar / 2, -14), "200 м", 15, Color(0.9, 0.9, 0.85))
 		WorldMap._text(self, Vector2(size.x - 50, 24), "↑ СЕВЕР", 15, Color(1, 0.8, 0.4))
 		# легенда
 		var lx := 20.0

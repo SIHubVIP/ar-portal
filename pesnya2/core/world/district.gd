@@ -1,6 +1,8 @@
 class_name District
 extends RefCounted
-## Район «Погуляй» 3000 × 3000 м. План: X на восток, Y на юг, метры от северо-западного угла.
+## Район «Погуляй» 1000 × 1000 м (0.17, компактный город, D-059: было 3 × 3 км, из каждого
+## сектора оставлено окно 333 м вокруг площадки, tools/importers/compact_city.py).
+## План: X на восток, Y на юг, метры от северо-западного угла.
 ## В Godot 1 единица = 1 метр, север = -Z. Все переводы координат — только здесь.
 ##
 ## Точки реестра (NPC, боссы, мобы, места) — data/district_pogulyay.json (манифест ТЗ).
@@ -8,22 +10,26 @@ extends RefCounted
 ## утверждённого пакета «Рубин» (tools/importers/import_rubin_layout.py) — коллектор 20 м,
 ## местные улицы 10 м, переулки, дома 2–5 этажей и наполнение промежутков.
 ##
-## Начало координат Godot — у прежнего кабриолета (360, 2690): двор «Похмельной» по макету
-## занимает 268…452 × 2550…2740, арка — в северном корпусе на x = 360.
+## Начало координат Godot — у прежнего кабриолета: в исходных метрах «Рубин» (360, 2690),
+## в компактном плане ORIGIN_M. Двор «Похмельной» по макету занимает 268…452 × 2550…2740
+## исходного плана, арка — в северном корпусе на x = 360. Окно двора — чистый сдвиг, поэтому
+## мировые координаты двора (StartYard) не изменились.
 
-const SIZE_M := 3000.0
+const SIZE_M := 1000.0
 const CHUNK_M := 250.0
-const CHUNKS := 12
+const CHUNKS := 4
 ## 0.14 (D-056): город шире — к востоку от Погуляя Деловой (план x 3000…6000, та же полоса по y).
 ## Участки по X — CHUNKS_X; точки реестра и сектора манифеста по-прежнему только в Погуляе.
-const WIDTH_M := 6000.0
-const CHUNKS_X := 24
+const WIDTH_M := 2000.0
+const CHUNKS_X := 8
 ## 0.15 (D-057): к северу от Делового — «До свидания» (план x 3000…6000, y −3000…0). План y
 ## города теперь от NORTH_M до SIZE_M, участки по y — от CHUNK_Y0 до CHUNKS − 1; северо-западный
 ## квадрат (над Погуляем) пуст и непроходим.
-const NORTH_M := -3000.0
-const CHUNK_Y0 := -12
-const ORIGIN_M := Vector2(360, 2690)
+const NORTH_M := -1000.0
+const CHUNK_Y0 := -4
+const ORIGIN_M := Vector2(140, 856.67)
+## Начало координат в исходных метрах «Рубин»: двор старта и площадки считают в них.
+const SOURCE_ORIGIN_M := Vector2(360, 2690)
 
 static var _data: Dictionary = {}
 static var _layout: Dictionary = {}
@@ -61,7 +67,7 @@ static func m(arr: Array) -> Vector2:
 	return Vector2(float(arr[0]), float(arr[1]))
 
 
-## Участок по ТЗ п. 10: floor(x / 250); край города (6000 по X, 3000 по Y) — последний участок.
+## Участок по ТЗ п. 10: floor(x / 250); край города (2000 по X, 1000 по Y) — последний участок.
 static func chunk_of(plan: Vector2) -> Vector2i:
 	return Vector2i(clampi(floori(plan.x / CHUNK_M), 0, CHUNKS_X - 1), clampi(floori(plan.y / CHUNK_M), CHUNK_Y0, CHUNKS - 1))
 
@@ -225,6 +231,23 @@ static func site(id: String) -> Dictionary:
 	return {}
 
 
+## Сдвиг окна площадки: исходные метры «Рубин» + сдвиг = компактный план (D-059).
+static func site_shift(s: Dictionary) -> Vector2:
+	var sh: Array = s.get("shift", [0, 0])
+	return Vector2(float(sh[0]), float(sh[1]))
+
+
+## Прямоугольник площадки в компактном плане.
+static func site_rect(s: Dictionary) -> Rect2:
+	var r: Array = s.r
+	return Rect2(Vector2(float(r[0]), float(r[1])) + site_shift(s), Vector2(float(r[2]) - float(r[0]), float(r[3]) - float(r[1])))
+
+
+## Точка площадки из исходных метров «Рубин» в мир.
+static func site_to_world(s: Dictionary, p: Vector2, h := 0.0) -> Vector3:
+	return to_world(p + site_shift(s), h)
+
+
 ## Расстояние от точки до отрезка дороги.
 static func dist_to_segment(p: Vector2, a: Vector2, b: Vector2) -> float:
 	var ab := b - a
@@ -235,7 +258,7 @@ static func dist_to_segment(p: Vector2, a: Vector2, b: Vector2) -> float:
 ## Двор «Похмельной» собран вручную (StartYard): участки не строят в нём дома и дороги.
 ## Корпуса двора, гаражи и двор 268…452 × 2550…2740; южная улица — уже за ним.
 static func start_area() -> Rect2:
-	return Rect2(248, 2536, 222, 208)
+	return Rect2(Vector2(248, 2536) - SOURCE_ORIGIN_M + ORIGIN_M, Vector2(222, 208))
 
 
 ## Двор выходит на север через арку северного корпуса: отсюда начинается проверка доступности.

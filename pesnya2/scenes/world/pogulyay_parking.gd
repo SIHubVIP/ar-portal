@@ -17,8 +17,8 @@ const EXIT_ARCH := StartYard.EXIT_ARCH
 ## Такси «Межрайон» (0.14, три района с 0.15): у будки во дворе, у площади «Последний талон»
 ## в Деловом и у ворот «Базара под куполом» в «До свидания».
 const TAXI_YARD := StartYard.BOOTH + Vector3(10, 0, 7)
-const TAXI_DL_PLAN := Vector2(4600, 1598)
-const TAXI_DS_PLAN := Vector2(4560, -1399)
+const TAXI_DL_PLAN := Vector2(1633.33, 571.33)      # у МФЦ Делового (исходный план 4600, 1598)
+const TAXI_DS_PLAN := Vector2(1593.33, -425.67)     # у базара «До свидания» (4560, −1399)
 
 var player: Player
 var camera: IsoCamera
@@ -41,6 +41,7 @@ var _autotest := false
 var chunks: DistrictChunks
 var mobs: DistrictMobs
 var arena: BossArena
+var main002: QuestMain002
 var street_life: StreetLife
 var _pavel: Node3D
 var _safe_tick := 0.0
@@ -87,6 +88,10 @@ func _ready() -> void:
 	hud.set_player(player)
 	hud.pointer.camera = camera
 	_build_marker()
+	main002 = QuestMain002.new()
+	main002.world = self
+	add_child(main002)
+	main002.build(TAXI_DL_PLAN)
 	hud.controls.attack.connect(player.basic_attack)
 	hud.controls.dodge.connect(player.dodge)
 	hud.controls.ability.connect(player.use_ability)
@@ -846,7 +851,11 @@ func map_points() -> Array:
 func objective() -> Array:
 	var state := QuestService.state_of(QID)
 	if state == QuestService.COMPLETED:
-		return [EXIT_ARCH + Vector3(0, 0, -14), "Погуляй", "Двор пройден. Через арку — в остальной Погуляй"]
+		# 0.17: дальше ведёт MAIN_002 — контора ЖКХ в Деловом (раньше стрелка гасла у арки)
+		var next := main002.objective()
+		if next[0] != Vector3.INF:
+			return next
+		return [Vector3.INF, "", ""]
 	if state != QuestService.ACTIVE and state != QuestService.TURN_IN_READY:
 		return [Vector3.INF, "", ""]
 	if QuestService.is_on_stage(QID, "MAIN_001_S01"):
@@ -1125,7 +1134,7 @@ func _run_autotest() -> void:
 		print("AUTOTEST_FAIL")
 	# 0.7: живая улица и группа мобов у M10-1
 	var mp := District.pos(District.point("M10-1"))
-	player.global_position = District.to_world(mp + Vector2(0, 40), 0.5)
+	player.global_position = District.to_world(mp + Vector2(0, -35), 0.5)   # 0.17: южнее — уже двор
 	chunks.load_now()
 	await _frames(40)
 	mobs.update_now()
@@ -1202,6 +1211,44 @@ func _run_autotest() -> void:
 		print("AUTOTEST_FAIL")
 		get_tree().quit(1)
 		return
+	# 0.17: MAIN_002 — стрелка ведёт в контору ЖКХ, там задание принимается и проходится до выбора
+	var arrow: Vector3 = objective()[0]
+	player.global_position = main002.window_pos
+	await _frames(3)
+	var accepted := QuestService.state_of("MAIN_002") == QuestService.ACTIVE and arrow.distance_to(main002.window_pos) < 0.5
+	for i in 6:
+		hud.dialog.skip()
+		await _frames(2)
+	player.global_position = main002.receipt_pos
+	await _frames(3)
+	player.global_position = main002.back_door
+	await _frames(2)
+	for it in _interactables:
+		if it.label == "Чёрный ход" and it.enabled.call():
+			it.cb.call()
+	for i in 4:
+		hud.dialog.skip()
+		await _frames(2)
+	player.global_position = main002.registry_pos
+	for it in _interactables:
+		if it.label == "Реестры" and it.enabled.call():
+			it.cb.call()
+	for i in 3:
+		if hud.dialog.is_open() and QuestService.is_on_stage("MAIN_002", "MAIN_002_S04") and hud.dialog._options.get_child_count() >= 2:
+			break
+		hud.dialog.skip()
+		await _frames(2)
+	var asked := QuestService.is_on_stage("MAIN_002", "MAIN_002_S04") and hud.dialog.is_open()
+	main002._choose("A")          # кнопка выбора: ответ А, как нажал бы игрок
+	for i in 4:
+		hud.dialog.skip()
+		await _frames(2)
+	log.call("MAIN_002: стрелка в контору %s, принято %s, выбор показан %s, итог %s, выбор %s" % [arrow.distance_to(main002.window_pos) < 0.5,
+			accepted, asked, QuestService.state_of("MAIN_002"), QuestService.records["MAIN_002"].choice])
+	if not accepted or not asked or QuestService.state_of("MAIN_002") != QuestService.COMPLETED:
+		print("AUTOTEST_FAIL")
+	player.global_position = back
+	await _frames(10)
 	GameState.add_item("ITEM_P1_SCRAP", 2)
 	_enter_base()
 

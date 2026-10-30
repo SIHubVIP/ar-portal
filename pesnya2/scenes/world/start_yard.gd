@@ -7,7 +7,7 @@ extends RefCounted
 ## киоск «НЛО напрокат», шлагбаум с будкой «Парковка платная. Сон тоже», аллея деревьев и
 ## скамеек, технический слив вдоль гаражей. Облик — по концептам PG_C1_start_art и 01_start:
 ## осень, тёплые окна, площадка, мусорки, бельё, следы вчерашней ночи.
-## Мировые координаты = план − District.ORIGIN_M (360, 2690). Выходы — арка на севере и проход
+## Мировые координаты = план − District.SOURCE_ORIGIN_M (360, 2690). Выходы — арка на севере и проход
 ## южнее гаражей на востоке; до конца MAIN_001 оба закрыты воротами.
 
 const COURT := Rect2(-92, -140, 184, 190)
@@ -68,6 +68,11 @@ static func open_exit(w: Node3D, instant := false) -> void:
 			gate.create_tween().tween_property(gate, "position:y", gate.position.y + 4.5, 1.2)
 
 
+## Точка двора из исходных метров «Рубин» в мир (окно двора — чистый сдвиг, D-059).
+static func _sw(p: Vector2, h := 0.0) -> Vector3:
+	return District.site_to_world(_site, p, h)
+
+
 static func _o(name: String) -> Dictionary:
 	return DistrictSites._o(_site, name)
 
@@ -75,7 +80,7 @@ static func _o(name: String) -> Dictionary:
 ## Прямоугольник объекта пакета в мировых координатах (x, z).
 static func _wr(name: String) -> Rect2:
 	var r := DistrictSites._r(_o(name))
-	var p := District.to_world(r.position)
+	var p := _sw(r.position)
 	return Rect2(Vector2(p.x, p.z), r.size)
 
 
@@ -241,7 +246,7 @@ static func _garages(w: Node3D) -> void:
 
 static func _lot(w: Node3D) -> void:
 	var lot := DistrictSites._r(_o("PG_C1_parking"))
-	var p := District.to_world(lot.position)
+	var p := _sw(lot.position)
 	var r := Rect2(Vector2(p.x, p.z), lot.size)
 	var asphalt := Kit.box(w, Vector3(r.size.x, 0.05, r.size.y), _c3(r, 0.06), Color.WHITE)
 	asphalt.material_override = Surfaces.asphalt(Color(1.75, 1.72, 1.75))
@@ -271,7 +276,7 @@ static func _lot(w: Node3D) -> void:
 		if String(o.name) != "PG_C1_car":
 			continue
 		var cr := DistrictSites._r(o)
-		_car(w, District.to_world(cr.get_center()), PI / 2.0 + rng.randf_range(-0.25, 0.25), cars[i % cars.size()])
+		_car(w, _sw(cr.get_center()), PI / 2.0 + rng.randf_range(-0.25, 0.25), cars[i % cars.size()])
 		i += 1
 	# места вдоль краёв заняты наполовину; у кабриолета и находок — пусто
 	var slot := r.position.x + 2.4
@@ -382,7 +387,7 @@ static func _booth(w: Node3D) -> void:
 
 static func _drain(w: Node3D) -> void:
 	var o := DistrictSites._r(_o("PG_C1_drain_channel"))
-	var p := District.to_world(o.position)
+	var p := _sw(o.position)
 	var len_z := o.size.y
 	var cx := p.x + o.size.x / 2.0
 	var cz := p.z + len_z / 2.0
@@ -492,9 +497,9 @@ static func _yard_life(w: Node3D) -> void:
 static func _lot_details(w: Node3D) -> void:
 	var b := _yb
 	var lot := DistrictSites._r(_o("PG_C1_parking"))
-	var east := lot.end.x - District.ORIGIN_M.x + 1.0
-	var z := lot.position.y - District.ORIGIN_M.y + 3.0
-	while z < lot.end.y - District.ORIGIN_M.y - 4.0:
+	var east := lot.end.x - District.SOURCE_ORIGIN_M.x + 1.0
+	var z := lot.position.y - District.SOURCE_ORIGIN_M.y + 3.0
+	while z < lot.end.y - District.SOURCE_ORIGIN_M.y - 4.0:
 		var p := Vector3(east, 0, z)
 		DistrictSites._b(b, p + Vector3(0, 0.45, 0), Vector3(0.22, 0.9, 0.22), Color(0.2, 0.2, 0.22))
 		DistrictSites._b(b, p + Vector3(0, 0.75, 0), Vector3(0.24, 0.12, 0.24), Color(0.95, 0.8, 0.15))
@@ -541,7 +546,7 @@ static func _courtyard(w: Node3D) -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 2588
 	for o in DistrictSites._all(_site, "PG_C1_courtyard_tree_trunk"):
-		var c := District.to_world(DistrictSites._r(o).get_center())
+		var c := _sw(DistrictSites._r(o).get_center())
 		DistrictDressing._tree(batch, c, rng, 1.9)
 		DistrictDressing._tree(batch, c + Vector3(rng.randf_range(8, 12), 0, rng.randf_range(-6, 6)), rng, 1.5)
 	# газон и края двора заросли, как на концепте: деревья вдоль западного дома и у площадки
@@ -553,7 +558,7 @@ static func _courtyard(w: Node3D) -> void:
 		for k in 3:
 			_bush(p + Vector3(rng.randf_range(-5, 5), 0, rng.randf_range(-5, 5)), rng)
 	for o in DistrictSites._all(_site, "PG_C1_bench"):
-		var c := District.to_world(DistrictSites._r(o).get_center())
+		var c := _sw(DistrictSites._r(o).get_center())
 		Props.collider(w, Vector3(2.4, 0.5, 0.7), c + Vector3(0, 0.25, 0))
 		batch.model("bench", c, 0.0)
 		batch.props.append([c + Vector3(1.8, 0, 0.3), "bin"])

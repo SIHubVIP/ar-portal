@@ -297,7 +297,7 @@ func refresh_quest() -> void:
 			_tr_head.text = "НОВОЕ ЗАДАНИЕ"
 			_tr_title.text = next[0].title
 			_tr_goal.text = "Где: %s" % next[0].location
-			_tr_detail.text = "Нажми, чтобы открыть журнал"
+			_tr_detail.text = _objective_detail if _objective_detail != "" else "Нажми, чтобы открыть журнал"
 		return
 	_tracker.visible = true
 	var q: Dictionary = act[0]

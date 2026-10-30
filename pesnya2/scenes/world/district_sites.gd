@@ -17,7 +17,22 @@ const AWNINGS := [Color(0.72, 0.16, 0.12), Color(0.16, 0.48, 0.36), Color(0.2, 0
 const WARM := Color(1.0, 0.78, 0.45)
 
 
+## Сдвиг окна площадки (0.17, компактный город): код площадок считает в исходных метрах
+## плана «Рубин», sw() переводит их в мир через окно сектора. На время build — сдвиг этой площадки.
+static var shift := Vector2.ZERO
+
+
+static func sw(p: Vector2, h := 0.0) -> Vector3:
+	return District.to_world(p + shift, h)
+
+
 static func build(root: Node3D, site: Dictionary, batch: DistrictDressing.Batch) -> void:
+	shift = District.site_shift(site)
+	_build(root, site, batch)
+	shift = Vector2.ZERO
+
+
+static func _build(root: Node3D, site: Dictionary, batch: DistrictDressing.Batch) -> void:
 	if String(site.id).begins_with("dl_"):
 		DelovoySites.build(root, site, batch)
 		return
@@ -62,7 +77,7 @@ static func _r(o: Dictionary) -> Rect2:
 
 
 static func _w(x: float, y: float, h := 0.0) -> Vector3:
-	return District.to_world(Vector2(x, y), h)
+	return DistrictSites.sw(Vector2(x, y), h)
 
 
 static func _b(batch: DistrictDressing.Batch, center: Vector3, size: Vector3, color: Color, yaw := 0.0, kind := "site") -> void:
@@ -72,7 +87,7 @@ static func _b(batch: DistrictDressing.Batch, center: Vector3, size: Vector3, co
 ## Корпус: сетка BuildingKit.block и тело-окклюдер (камера вырезает его перед героем).
 static func _hall(root: Node3D, r: Rect2, h: float, brick: bool, wall: Color, roof := Color(0.3, 0.3, 0.32),
 		shops := false) -> Vector3:
-	var c := District.to_world(r.get_center())
+	var c := DistrictSites.sw(r.get_center())
 	var body := Props.collider(root, Vector3(r.size.x, h, r.size.y), c + Vector3(0, h / 2.0, 0), true)
 	var mi := MeshInstance3D.new()
 	mi.mesh = BuildingKit.block(r.size.x, r.size.y, h, brick, wall, roof, shops)
@@ -83,7 +98,7 @@ static func _hall(root: Node3D, r: Rect2, h: float, brick: bool, wall: Color, ro
 
 ## Плитка площади: светлые плиты (текстура участка), поверх дороги и земли.
 static func _paving(batch: DistrictDressing.Batch, r: Rect2, y := 0.035) -> void:
-	batch.box("path", District.to_world(r.get_center(), y), Vector3(r.size.x, 0.04, r.size.y))
+	batch.box("path", DistrictSites.sw(r.get_center(), y), Vector3(r.size.x, 0.04, r.size.y))
 
 
 static func _person(root: Node3D, pos: Vector3, yaw: float, rng: RandomNumberGenerator, look := {}) -> Node3D:
@@ -153,7 +168,7 @@ static func _tree_row(batch: DistrictDressing.Batch, site: Dictionary, prefix: S
 		var r := _r(o)
 		var rng := RandomNumberGenerator.new()
 		rng.seed = hash(Vector2i(int(r.position.x), int(r.position.y)))
-		DistrictDressing._tree(batch, District.to_world(r.get_center()), rng, 1.4)
+		DistrictDressing._tree(batch, DistrictSites.sw(r.get_center()), rng, 1.4)
 
 
 # ---------- рынок «Сытый конец» ----------
@@ -220,7 +235,7 @@ static func _market(root: Node3D, site: Dictionary, batch: DistrictDressing.Batc
 	for i in stalls.size():
 		var st: Dictionary = stalls[i]
 		var r := _r(st)
-		var c := District.to_world(r.get_center())
+		var c := DistrictSites.sw(r.get_center())
 		var awn: Color = RED if st.mat == "red" else AWNINGS[1 + (i % 3)]
 		var alien_parts := i == 7 or i == 10
 		for sx: float in [-1.0, 1.0]:
@@ -254,10 +269,10 @@ static func _market(root: Node3D, site: Dictionary, batch: DistrictDressing.Batc
 			_person(root, c + Vector3(rng.randf_range(-2, 2), 0, r.size.y / 2.0 - 1.8), 0.0, rng,
 					{"skirt": rng.randf() < 0.5, "style": "scarf" if rng.randf() < 0.4 else "short"})
 	# «Захватчикам без сдачи»: растяжка над рядами, продавец взвешивает реактор
-	var mid_row := District.to_world(Vector2(1500, 2640))
+	var mid_row := DistrictSites.sw(Vector2(1500, 2640))
 	_sign(batch, root, "ЗАХВАТЧИКАМ\nБЕЗ СДАЧИ", "poster", RED, mid_row + Vector3(18, 3.6, -6.3), 0.0, 0.6,
 			{"bg": Color(0.97, 0.93, 0.85)})
-	var scales := District.to_world(Vector2(1518, 2626))
+	var scales := DistrictSites.sw(Vector2(1518, 2626))
 	_b(batch, scales + Vector3(0, 1.25, 0), Vector3(0.9, 0.3, 0.6), Color(0.85, 0.85, 0.82))
 	_b(batch, scales + Vector3(0, 1.45, 0), Vector3(0.7, 0.05, 0.7), Color(0.7, 0.7, 0.72))
 	batch.add("glow", Transform3D(Basis().scaled(Vector3.ONE * 0.6), scales + Vector3(0, 1.8, 0)), Color(0.3, 0.9, 1.0))
@@ -266,13 +281,13 @@ static func _market(root: Node3D, site: Dictionary, batch: DistrictDressing.Batc
 			{"far": DistrictDressing.SIGN_FAR_M})
 	# покупатели в проходах
 	for k in 9:
-		var p := District.to_world(Vector2(rng.randf_range(1460, 1540), [2610.0, 2627.0, 2643.0, 2660.0][k % 4]))
+		var p := DistrictSites.sw(Vector2(rng.randf_range(1460, 1540), [2610.0, 2627.0, 2643.0, 2660.0][k % 4]))
 		if k == 4:
 			_alien(root, p, rng.randf() * TAU, rng)
 		else:
 			_person(root, p, rng.randf() * TAU, rng)
 	# вход в торговый коллектор — будущая сцена
-	var hatch := District.to_world(Vector2(1440, 2668))
+	var hatch := DistrictSites.sw(Vector2(1440, 2668))
 	batch.add("tank", Transform3D(Basis().scaled(Vector3(1.6, 0.12, 1.6)), hatch + Vector3(0, 0.06, 0)), Color(0.18, 0.18, 0.2))
 	_sign(batch, root, "ТОРГОВЫЙ КОЛЛЕКТОР\nВХОД ПО ПРОПУСКАМ", "board", Color(0.95, 0.9, 0.2), hatch + Vector3(0, 1.4, -1.2), 0.0,
 			0.22, {"bg": Color(0.15, 0.15, 0.17), "far": DistrictDressing.SIGN_FAR_M})
@@ -280,8 +295,8 @@ static func _market(root: Node3D, site: Dictionary, batch: DistrictDressing.Batc
 	# ворота «Сытый конец» и ограда двора с юга
 	var gl := _r(_o(site, "PG_C2_market_gate_l"))
 	var gr := _r(_o(site, "PG_C2_market_gate_r"))
-	var gate := District.to_world((gl.get_center() + gr.get_center()) / 2.0)
-	var half := gate.distance_to(District.to_world(gl.get_center()))
+	var gate := DistrictSites.sw((gl.get_center() + gr.get_center()) / 2.0)
+	var half := gate.distance_to(DistrictSites.sw(gl.get_center()))
 	for side: float in [-1.0, 1.0]:
 		var post := gate + Vector3(side * half, 0, 0)
 		_b(batch, post + Vector3(0, 3.0, 0), Vector3(0.5, 6.0, 0.5), Color(0.25, 0.22, 0.2))
@@ -294,10 +309,10 @@ static func _market(root: Node3D, site: Dictionary, batch: DistrictDressing.Batc
 	var x := 1410.0
 	while x < 1590.0:
 		if absf(x - 1500.0) > half + 1.0:
-			batch.model("fence", District.to_world(Vector2(x, 2700)), 0.0, 0.7)
+			batch.model("fence", DistrictSites.sw(Vector2(x, 2700)), 0.0, 0.7)
 		x += 2.0
 	for k in 6:
-		_lantern(batch, District.to_world(Vector2(1420 + k * 32, 2604)))
+		_lantern(batch, DistrictSites.sw(Vector2(1420 + k * 32, 2604)))
 
 
 # ---------- площадь с тарелкой ----------
@@ -348,7 +363,7 @@ static func _square(root: Node3D, site: Dictionary, batch: DistrictDressing.Batc
 	var ufo_o := _r(_o(site, "PG_B2_mfc_ufo"))
 	var ufo := Node3D.new()
 	ufo.name = "CrashedUfo"
-	ufo.position = District.to_world(ufo_o.get_center(), 14.5)
+	ufo.position = DistrictSites.sw(ufo_o.get_center(), 14.5)
 	ufo.rotation_degrees = Vector3(14, 25, -18)
 	root.add_child(ufo)
 	Kit.cylinder(ufo, 17.0, 2.4, Vector3.ZERO, Color(0.3, 0.32, 0.37), 0.0, 14.5)
@@ -406,7 +421,7 @@ static func _square(root: Node3D, site: Dictionary, batch: DistrictDressing.Batc
 	# турникеты пропускного ряда
 	for o in _all(site, "PG_B2_ticket_barrier"):
 		var r2 := _r(o)
-		var c2 := District.to_world(r2.get_center())
+		var c2 := DistrictSites.sw(r2.get_center())
 		_b(batch, c2 + Vector3(0, 0.55, 0), Vector3(0.4, 1.1, r2.size.y), Color(0.55, 0.57, 0.6))
 		_b(batch, c2 + Vector3(0, 1.0, 0), Vector3(0.1, 0.1, r2.size.y), Color(0.3, 1.0, 0.5, 0.2), 0.0, "glow")
 	# памятник на круглой клумбе: указывает на МФЦ
@@ -522,15 +537,15 @@ static func _square_garden(root: Node3D, batch: DistrictDressing.Batch, rng: Ran
 ## A1: колесо обозрения (кабинки не переворачиваются) и пенопластовое НЛО у касс.
 static func _park(root: Node3D, site: Dictionary, batch: DistrictDressing.Batch) -> void:
 	var sup := _r(_o(site, "PG_A1_wheel_support"))
-	var hub := District.to_world(sup.get_center(), 29.5)
+	var hub := DistrictSites.sw(sup.get_center(), 29.5)
 	for side: float in [-1.0, 1.0]:
 		for lean: float in [-1.0, 1.0]:
-			var foot := District.to_world(sup.get_center()) + Vector3(lean * 9.0, 0, side * 3.0)
+			var foot := DistrictSites.sw(sup.get_center()) + Vector3(lean * 9.0, 0, side * 3.0)
 			var mid := (foot + hub + Vector3(0, 0, side * 1.2)) / 2.0
 			var d := hub - foot
 			batch.add("site", Transform3D(Basis(Vector3.BACK, -atan2(d.x, d.y)) * Basis.from_scale(Vector3(0.6, d.length(), 0.6)), mid),
 					Color(0.85, 0.85, 0.82))
-	Props.collider(root, Vector3(20, 4, 8), District.to_world(sup.get_center(), 2.0))
+	Props.collider(root, Vector3(20, 4, 8), DistrictSites.sw(sup.get_center(), 2.0))
 	var wheel := Node3D.new()
 	wheel.name = "FerrisWheel"
 	wheel.position = hub
@@ -558,7 +573,7 @@ static func _park(root: Node3D, site: Dictionary, batch: DistrictDressing.Batch)
 	var spin := rim.create_tween().set_loops()
 	spin.tween_property(rim, "rotation:z", TAU, 160.0).from(0.0)
 	var fake := _r(_o(site, "PG_A1_fake_ufo"))
-	var fc := District.to_world(fake.get_center())
+	var fc := DistrictSites.sw(fake.get_center())
 	batch.add("tank", Transform3D(Basis().scaled(Vector3(22, 1.6, 22)), fc + Vector3(0, 2.2, 0)), Color(0.75, 0.78, 0.82))
 	batch.add("tank", Transform3D(Basis().scaled(Vector3(14, 1.4, 14)), fc + Vector3(0, 0.9, 0)), Color(0.5, 0.52, 0.58))
 	batch.add("crown", Transform3D(Basis().scaled(Vector3(8, 5, 8)), fc + Vector3(0, 3.6, 0)), Color(0.45, 0.9, 0.85))
@@ -616,7 +631,7 @@ static func _showcase(root: Node3D, site: Dictionary, batch: DistrictDressing.Ba
 	var c := _hall(root, r, 12.0, false, Color(0.9, 0.9, 0.86), Color(0.3, 0.32, 0.35), true)
 	_paving(batch, _r(_o(site, "PG_A3_plaza")))
 	var u := _r(_o(site, "PG_A3_ufo"))
-	var uc := District.to_world(u.get_center(), 13.5)
+	var uc := DistrictSites.sw(u.get_center(), 13.5)
 	batch.add("tank", Transform3D(Basis().scaled(Vector3(30, 2.0, 30)), uc), Color(0.62, 0.64, 0.7))
 	batch.add("crown", Transform3D(Basis().scaled(Vector3(12, 6, 12)), uc + Vector3(0, 1.6, 0)), Color(0.5, 0.85, 1.0))
 	for i in 14:
@@ -659,7 +674,7 @@ static func _tv(root: Node3D, site: Dictionary, batch: DistrictDressing.Batch) -
 	_sign(batch, root, "ТРИДЦАТЬ ЛАЙКОВ —\nИ ТЫ В ЭФИРЕ", "neon", Color(1.0, 0.3, 0.8), c + Vector3(0, 6.5, r.size.y / 2.0 + 0.1), 0.0,
 			0.6, {"flicker": true})
 	var m := _r(_o(site, "PG_B3_mast"))
-	var base := District.to_world(m.get_center())
+	var base := DistrictSites.sw(m.get_center())
 	var h := 65.0
 	var segs := 13
 	for i in segs:
@@ -687,7 +702,7 @@ static func _boiler(root: Node3D, site: Dictionary, batch: DistrictDressing.Batc
 	for name in ["PG_C3_chimney", "PG_C3_chimney2"]:
 		var o := _r(_o(site, name))
 		var h := float(_o(site, name).z[1])
-		var foot := District.to_world(o.get_center())
+		var foot := DistrictSites.sw(o.get_center())
 		var bands := int(h / 5.0)
 		for i in bands:
 			batch.add("tank", Transform3D(Basis().scaled(Vector3(3.4 - i * 0.08, h / bands, 3.4 - i * 0.08)),

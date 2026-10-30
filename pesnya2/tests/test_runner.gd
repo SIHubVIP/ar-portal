@@ -25,6 +25,11 @@ func check(cond: bool, what: String) -> void:
 		failed.append(what)
 
 
+## Точка у площадки: исходные метры «Рубин» → компактный план через окно площадки (D-059).
+func _site_point(id: String, source: Vector2) -> Vector2:
+	return source + District.site_shift(District.site(id))
+
+
 func _reset_world() -> void:
 	GameState.reset("CLASS_1")
 	QuestService.reset()
@@ -404,11 +409,11 @@ func test_district_manifest_counts() -> void:
 	for p in d.points:
 		kinds[p.type] = int(kinds.get(p.type, 0)) + 1
 	check(kinds == {"npc": 15, "boss": 3, "mob": 30, "place": 18, "safe": 5, "underground": 4}, "75 точек по типам ТЗ")
-	check(d.chunks.size() == 144 and d.sectors.size() == 9, "144 участка, 9 секторов")
+	check(d.sectors.size() == 9 and d.has("compact"), "9 секторов, район ужат (D-059)")
 	# макет «Рубин» (0.11): коллектор, местные улицы, аллеи, тропы и проезды; дома 2–5 этажей и мелкая застройка
 	check(District.road_segments().size() > 300, "улицы макета на месте: %d" % District.road_segments().size())
 	var big := District.buildings().filter(func(b: Dictionary) -> bool: return b.kind == "house")
-	check(big.size() > 150 and District.houses().size() > 3000, "дома макета и застройка промежутков: %d / %d" % [big.size(),
+	check(big.size() > 50 and District.houses().size() > 1500, "дома макета и застройка промежутков: %d / %d" % [big.size(),
 			District.houses().size()])
 	check(District.site("market").objects.size() > 0 and District.site("square").objects.size() > 0
 			and District.site("start").objects.size() > 0, "ядра рынка, площади и старта — из пакета")
@@ -417,15 +422,9 @@ func test_district_manifest_counts() -> void:
 func test_district_chunks_follow_tz_formula() -> void:
 	check(District.chunk_of(Vector2(0, 0)) == Vector2i(0, 0), "угол — участок 0,0")
 	check(District.chunk_of(Vector2(249.9, 250)) == Vector2i(0, 1), "граница 250 м — следующий участок")
-	check(District.chunk_of(Vector2(6000, 3000)) == Vector2i(23, 11), "край 6000 × 3000 м — последний участок")
-	check(District.chunk_of(Vector2(2999, 2999)) == Vector2i(11, 11), "угол Погуляя — участок 11, 11")
+	check(District.chunk_of(Vector2(2000, 1000)) == Vector2i(7, 3), "край 2000 × 1000 м — последний участок")
+	check(District.chunk_of(Vector2(999, 999)) == Vector2i(3, 3), "угол Погуляя — участок 3, 3")
 	var ok := true
-	for c in District.data().chunks:
-		var idx := Vector2i(int(c.index[0]), int(c.index[1]))
-		var b: Array = c.bounds_plan_m
-		ok = ok and c.id == "c%02d_%02d" % [idx.x, idx.y] and District.chunk_rect(idx) == Rect2(b[0], b[1], b[2] - b[0], b[3] - b[1])
-	check(ok, "участки манифеста совпадают с chunk_rect")
-	ok = true
 	for p in District.points():
 		ok = ok and District.chunk_of(District.pos(p)) == Vector2i(int(p.chunk[0]), int(p.chunk[1]))
 	check(ok, "точки лежат в своих участках")
@@ -433,12 +432,16 @@ func test_district_chunks_follow_tz_formula() -> void:
 
 func test_district_coordinates_round_trip() -> void:
 	check(District.to_world(District.ORIGIN_M) == Vector3.ZERO, "старт — ноль мира")
+	var om: Array = District.layout().get("origin_m", [])
+	check(om.size() == 2 and Vector2(om[0], om[1]).distance_to(District.ORIGIN_M) < 0.05,
+			"начало мира в коде совпадает с компактной раскладкой")
 	var ok := true
 	for p in District.points():
 		var g: Array = p.godot_position_m
 		# формула манифеста (центр района) отличается от нашей только постоянным сдвигом (D-030)
+		# 0.17: компактный план, мировые координаты точек пересчитаны от того же начала (D-059)
 		var shift := District.to_world(District.pos(p)) - Vector3(g[0], 0, g[2])
-		ok = ok and shift.is_equal_approx(Vector3(1500 - District.ORIGIN_M.x, 0, 1500 - District.ORIGIN_M.y)) \
+		ok = ok and shift.length() < 0.05 \
 				and District.to_plan(District.to_world(District.pos(p))).is_equal_approx(District.pos(p))
 	check(ok, "план ↔ мир без искажений, сдвиг постоянный")
 
@@ -656,17 +659,17 @@ func test_signboard_styles_build_real_objects() -> void:
 
 
 func test_delovoy_district_joins_pogulyay() -> void:
-	check(District.district_at(Vector2(1500, 1500)).id == "PG" and District.district_at(Vector2(4500, 1500)).id == "DL",
+	check(District.district_at(Vector2(500, 500)).id == "PG" and District.district_at(Vector2(1500, 500)).id == "DL",
 			"Погуляй на западе, Деловой на востоке")
-	check(String(District.sector_at(Vector2(4500, 1500)).get("name", "")) == "Последний талон"
-			and String(District.sector_at(Vector2(5500, 500)).get("name", "")) == "Кредит доверчивым"
-			and String(District.sector_at(Vector2(3500, 1500)).get("name", "")) == "Двор свидетелей", "сектора Делового по брифу")
+	check(String(District.sector_at(Vector2(1500, 500)).get("name", "")) == "Последний талон"
+			and String(District.sector_at(Vector2(1833, 167)).get("name", "")) == "Кредит доверчивым"
+			and String(District.sector_at(Vector2(1167, 500)).get("name", "")) == "Двор свидетелей", "сектора Делового по брифу")
 	for id in ["dl_mfc", "dl_credit", "dl_yard", "dl_school", "dl_zags", "dl_archive", "dl_station", "dl_passage", "dl_greenhouses"]:
 		check(not District.site(id).is_empty(), "площадка %s есть в макете" % id)
 	District.reachability()
-	check(District.reached(Vector2(4500, 1590)) and District.reached(Vector2(5500, 598)) and District.reached(Vector2(3500, 1590)),
-			"до трёх площадок Делового можно дойти пешком со двора")
-	check(District.chunk_of(Vector2(4500, 1500)).x > 11, "участки Делового — правее Погуляя")
+	check(District.reached(_site_point("dl_mfc", Vector2(4500, 1590))) and District.reached(_site_point("dl_credit", Vector2(5500, 598)))
+			and District.reached(_site_point("dl_yard", Vector2(3500, 1590))), "до трёх площадок Делового можно дойти пешком со двора")
+	check(District.chunk_of(Vector2(1500, 500)).x > 3, "участки Делового — правее Погуляя")
 
 
 func test_delovoy_sites_build() -> void:
@@ -684,21 +687,21 @@ func test_delovoy_sites_build() -> void:
 
 
 func test_dosvidaniya_north_of_delovoy() -> void:
-	check(District.district_at(Vector2(4500, -1500)).id == "DS" and District.district_at(Vector2(4500, 1500)).id == "DL",
+	check(District.district_at(Vector2(1500, -500)).id == "DS" and District.district_at(Vector2(1500, 500)).id == "DL",
 			"«До свидания» к северу от Делового")
-	check(not District.in_city(Vector2(1500, -1500)) and District.in_city(Vector2(4000, 0)) and not District.walkable(Vector2(1500, -10)),
+	check(not District.in_city(Vector2(500, -500)) and District.in_city(Vector2(1333, 0)) and not District.walkable(Vector2(500, -3)),
 			"над Погуляем пусто, стык Делового и «До свидания» — не край")
-	check(String(District.sector_at(Vector2(4500, -1500)).get("name", "")) == "Базар под куполом"
-			and String(District.sector_at(Vector2(3500, -500)).get("name", "")) == "Гаражи без вопросов"
-			and String(District.sector_at(Vector2(4500, -500)).get("name", "")) == "Котельная прощаний", "сектора «До свидания» по брифу")
-	check(District.chunk_of(Vector2(4500, -1500)) == Vector2i(18, -6) and District.chunk_of(Vector2(6000, -3000)) == Vector2i(23, -12),
+	check(String(District.sector_at(Vector2(1500, -500)).get("name", "")) == "Базар под куполом"
+			and String(District.sector_at(Vector2(1167, -167)).get("name", "")) == "Гаражи без вопросов"
+			and String(District.sector_at(Vector2(1500, -167)).get("name", "")) == "Котельная прощаний", "сектора «До свидания» по брифу")
+	check(District.chunk_of(Vector2(1500, -500)) == Vector2i(6, -2) and District.chunk_of(Vector2(2000, -1000)) == Vector2i(7, -4),
 			"участки к северу — с отрицательным номером по y")
 	for id in ["ds_bazaar", "ds_garages", "ds_boiler", "ds_depot", "ds_scrap", "ds_cemetery", "ds_dorm", "ds_bath", "ds_canal"]:
 		check(not District.site(id).is_empty(), "площадка %s есть в макете" % id)
 	District.reachability()
-	check(District.reached(Vector2(4500, -1395)) and District.reached(Vector2(3500, -395)) and District.reached(Vector2(4500, -395)),
-			"до трёх площадок «До свидания» можно дойти пешком со двора")
-	check(not District.reached(Vector2(1500, -1500)), "в пустой квадрат над Погуляем не пройти")
+	check(District.reached(_site_point("ds_bazaar", Vector2(4500, -1395))) and District.reached(_site_point("ds_garages", Vector2(3500, -395)))
+			and District.reached(_site_point("ds_boiler", Vector2(4500, -395))), "до трёх площадок «До свидания» можно дойти пешком со двора")
+	check(not District.reached(Vector2(500, -500)), "в пустой квадрат над Погуляем не пройти")
 	var root := Node3D.new()
 	add_child(root)
 	var b := DistrictDressing.Batch.new()
@@ -962,7 +965,7 @@ func test_boss_arena_reward_once() -> void:
 	arena.player = pl
 	add_child(arena)
 	arena.build()
-	check(arena.columns.size() == 10 and arena.boss != null and arena.rect().size == Vector2(110, 90), "арена 110 × 90 с десятью тумбами")
+	check(arena.columns.size() == 10 and arena.boss != null and arena.rect().size == Vector2(72, 58), "арена 72 × 58 (ужата с городом) с десятью тумбами")
 	check(District.district_at(District.to_plan(arena.center)).id == "PG" and arena.rect().has_point(Vector2(arena.center.x, arena.center.z)),
 			"площадь Люси — в Погуляе у точки B1")
 	arena.start_fight()
