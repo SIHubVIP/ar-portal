@@ -667,6 +667,22 @@ func test_car_kit_builds_cached_cars() -> void:
 	check(glow, "у машины на ходу фары светятся")
 
 
+func test_yard_cat_runs_from_hero() -> void:
+	var hero_node := Node3D.new()
+	add_child(hero_node)
+	var cat := YardCat.new()
+	cat.area = Rect2(-10, -10, 20, 20)
+	cat.player = hero_node
+	add_child(cat)
+	hero_node.position = Vector3(1.5, 0, 0)
+	for i in 30:
+		cat._physics_process(0.05)
+	check(cat.position.x < -1.0, "кот удирает от героя: %s" % cat.position)
+	check(cat.area.has_point(Vector2(cat.position.x, cat.position.z)), "и не выходит из своего двора")
+	cat.queue_free()
+	hero_node.queue_free()
+
+
 func test_district_chunk_is_dressed() -> void:
 	var root := Node3D.new()
 	add_child(root)

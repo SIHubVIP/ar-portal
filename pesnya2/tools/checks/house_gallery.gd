@@ -60,6 +60,8 @@ func _ready() -> void:
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("--yaw="):
 			yaw = float(arg.trim_prefix("--yaw="))
+		if arg.begins_with("--size="):
+			cam.size = float(arg.trim_prefix("--size="))
 	cam.position = Vector3(0, 60, 0) + Vector3(sin(deg_to_rad(yaw)), 0, cos(deg_to_rad(yaw))) * 60.0
 	add_child(cam)
 	cam.look_at(Vector3(0, 4, 5), Vector3.UP)

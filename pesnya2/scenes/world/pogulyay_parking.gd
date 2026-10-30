@@ -127,6 +127,14 @@ func _ready() -> void:
 	var leaves := Leaves.new()
 	leaves.target = player
 	add_child(leaves)
+	# дворовые коты: рыжий у будки и серый у гаражей
+	for c: Array in [[Rect2(8, 16, 30, 22), Color(0.9, 0.5, 0.18)], [Rect2(62, -125, 22, 60), Color(0.45, 0.45, 0.48)]]:
+		var cat := YardCat.new()
+		cat.area = c[0]
+		cat.fur = c[1]
+		cat.player = player
+		cat.position = Vector3(c[0].get_center().x, 0, c[0].get_center().y)
+		add_child(cat)
 	mobs = DistrictMobs.new()
 	mobs.player = player
 	add_child(mobs)

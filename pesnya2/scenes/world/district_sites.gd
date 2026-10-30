@@ -197,6 +197,8 @@ static func _market(root: Node3D, site: Dictionary, batch: DistrictDressing.Batc
 	var fc := _hall(root, flank, 9.0, true, Color(0.55, 0.3, 0.22))
 	_sign(batch, root, "ПИЩЕВЫЕ СКЛАДЫ\n«ДО ПОСЛЕДНЕЙ КРОШКИ»", "board", Color(0.95, 0.9, 0.8),
 			fc + Vector3(flank.size.x / 2.0 + 0.05, 6.5, 0), 90.0, 0.55, {"bg": Color(0.25, 0.22, 0.2), "lamp": true})
+	_sign(batch, root, "ИНОПЛАНЕТНЫЕ ЗАПЧАСТИ\nОПТОМ И В РОЗНИЦУ", "lightbox", Color(0.15, 0.9, 0.7),
+			fc + Vector3(flank.size.x / 2.0 + 0.05, 4.2, -26), 90.0, 0.5, {"bg": Color(0.08, 0.12, 0.16), "ink": Color(0.3, 1.0, 0.8)})
 	_sign(batch, root, "РЫНОК ЖИВ ♥", "graffiti", Color(0.95, 0.9, 0.85), fc + Vector3(flank.size.x / 2.0 + 0.05, 2.0, 30), 90.0, 0.7)
 	var store := _r(_o(site, "PG_C2_market_store"))
 	var sc := _hall(root, store, 6.0, false, Color(0.78, 0.72, 0.6))

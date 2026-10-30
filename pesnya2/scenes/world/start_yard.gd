@@ -46,6 +46,7 @@ static func build(w: Node3D) -> void:
 	_booth(w)
 	_drain(w)
 	_yard_life(w)
+	_lot_details(w)
 	_courtyard(w)
 	_story(w)
 	_walls_talk(w)
@@ -484,6 +485,55 @@ static func _yard_life(w: Node3D) -> void:
 		for k in 2:
 			DistrictSites._person(w, p + Vector3(-0.5 + k * 1.0, 0, 0.2), PI, rng, {"skirt": true, "style": "bun",
 					"hair": Color(0.85, 0.85, 0.82)})
+
+
+## Мелочи у парковки (0.13, концепт 01_start): столбики вдоль восточного края, паркомат,
+## инспектор-пришелец в жилетке с ховербайком, ящики и шины у киоска.
+static func _lot_details(w: Node3D) -> void:
+	var b := _yb
+	var lot := DistrictSites._r(_o("PG_C1_parking"))
+	var east := lot.end.x - District.ORIGIN_M.x + 1.0
+	var z := lot.position.y - District.ORIGIN_M.y + 3.0
+	while z < lot.end.y - District.ORIGIN_M.y - 4.0:
+		var p := Vector3(east, 0, z)
+		DistrictSites._b(b, p + Vector3(0, 0.45, 0), Vector3(0.22, 0.9, 0.22), Color(0.2, 0.2, 0.22))
+		DistrictSites._b(b, p + Vector3(0, 0.75, 0), Vector3(0.24, 0.12, 0.24), Color(0.95, 0.8, 0.15))
+		Props.collider(w, Vector3(0.24, 0.9, 0.24), p + Vector3(0, 0.45, 0))
+		z += 3.2
+	# паркомат: серый столб с экраном, жёлтая наклейка «оплата снами»
+	var meter := BOOTH + Vector3(-4.2, 0, 2.2)
+	DistrictSites._b(b, meter + Vector3(0, 0.75, 0), Vector3(0.35, 1.5, 0.3), Color(0.55, 0.58, 0.6))
+	DistrictSites._b(b, meter + Vector3(0, 1.2, 0.16), Vector3(0.22, 0.16, 0.02), Color(0.3, 0.9, 0.6), 0.0, "glow")
+	DistrictSites._b(b, meter + Vector3(0, 0.85, 0.16), Vector3(0.24, 0.14, 0.02), Color(0.95, 0.85, 0.2))
+	Props.collider(w, Vector3(0.4, 1.5, 0.35), meter + Vector3(0, 0.75, 0))
+	_sign(w, "ОПЛАТА СНАМИ", meter + Vector3(0, 1.75, 0.17), 0.0, 0.16, Color(0.1, 0.1, 0.1), "board",
+			{"bg": Color(0.95, 0.85, 0.2)})
+	# инспектор парковки: пришелец в жилетке, рядом ховербайк качается над асфальтом
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 2626
+	var warden := Vector3(east + 5.5, 0, 6.0)
+	DistrictSites._alien(w, warden, -PI / 2.0, rng)
+	_sign(w, "ИНСПЕКТОР\nТАРЕЛОК", warden + Vector3(0, 2.3, 0), 90.0, 0.2, Color(0.1, 0.1, 0.1), "board",
+			{"bg": Color(0.95, 0.85, 0.15)})
+	var bike := Node3D.new()
+	bike.name = "HoverBike"
+	bike.position = warden + Vector3(1.6, 0.45, 1.2)
+	bike.rotation.y = 0.4
+	w.add_child(bike)
+	Kit.box(bike, Vector3(0.7, 0.3, 2.0), Vector3.ZERO, Color(0.2, 0.22, 0.4))
+	Kit.box(bike, Vector3(0.5, 0.25, 0.7), Vector3(0, 0.25, -0.3), Color(0.12, 0.12, 0.15))
+	Kit.box(bike, Vector3(0.6, 0.35, 0.08), Vector3(0, 0.35, 0.8), Color(0.5, 0.8, 1.0, 0.6))
+	Kit.box(bike, Vector3(0.75, 0.06, 2.05), Vector3(0, -0.17, 0), Color(0.7, 0.3, 1.0), 4.0)
+	bike.create_tween().set_loops().set_trans(Tween.TRANS_SINE).tween_property(bike, "position:y", 0.6, 1.1).from(0.4)
+	Props.collider(w, Vector3(0.8, 0.8, 2.1), warden + Vector3(1.6, 0.4, 1.2))
+	# у киоска: ящики, шины, бутылки — склад «запчастей»
+	for k in 5:
+		b.model("boxes", KIOSK + Vector3(-4.5 + rng.randf_range(-0.6, 0.6), 0, 3.5 + k * 1.1), rng.randf() * TAU)
+	b.model("tires", KIOSK + Vector3(4.6, 0, 3.0), 0.3)
+	b.model("tires", KIOSK + Vector3(5.2, 0, 4.4), 1.2)
+	for k in 8:
+		DistrictSites._b(b, KIOSK + Vector3(-3.0 + rng.randf_range(-1.5, 1.5), 0.15, 5.5 + rng.randf_range(-1, 1)),
+				Vector3(0.08, 0.3, 0.08), [Color(0.2, 0.45, 0.2), Color(0.45, 0.3, 0.15), Color(0.85, 0.85, 0.8)][k % 3])
 
 
 static func _courtyard(w: Node3D) -> void:

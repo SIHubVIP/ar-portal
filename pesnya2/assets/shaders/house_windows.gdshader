@@ -13,6 +13,7 @@ uniform float floor_h = 3.0;
 uniform float bay_w = 2.6;
 uniform float lit_share = 0.36;
 uniform float plinth_h = 0.6;
+uniform float ivy = 0.6;            // доля фасадов с плющом (0.13): осенний, растёт от земли
 // «house_cut»: дом между камерой и героем вырезается кругом (see_through.gdshader)
 uniform bool cut = false;
 // мелкие дома в MultiMesh: вырез только того, что ближе героя к камере, всегда включён
@@ -80,6 +81,19 @@ void fragment() {
 		col *= mix(0.62, 1.0, smoothstep(0.0, 1.2, wpos.y));
 		if (wpos.y < plinth_h) {
 			col = vec3(0.36, 0.34, 0.32) * (0.85 + 0.3 * noise(vec2(u, wpos.y) * 2.0));
+		}
+		// плющ: только на части фасадов, языками от земли вверх, листва — мелким шумом
+		float ivy_on = step(hash(vec2(facade * 0.71, 3.1)), ivy);
+		float reach = 3.5 + 11.0 * noise(vec2(u * 0.12, facade * 0.3));
+		float ivy_mask = ivy_on * (1.0 - smoothstep(reach - 1.5, reach, wpos.y)) * smoothstep(0.22, 0.42, noise(vec2(u * 0.3, wpos.y * 0.15)));
+		float leaf = noise(vec2(u, wpos.y) * 7.0);
+		bool ivy_px = ivy_mask * (0.55 + 0.7 * leaf) > 0.5;
+		if (ivy_px) {
+			float tone = noise(vec2(u * 0.2 + 7.0, wpos.y * 0.2));
+			vec3 ivy_col = mix(vec3(0.3, 0.46, 0.16), vec3(0.85, 0.45, 0.12), smoothstep(0.3, 0.6, tone));
+			ivy_col = mix(ivy_col, vec3(0.58, 0.13, 0.07), smoothstep(0.62, 0.85, tone));
+			col = ivy_col * (0.65 + 0.5 * leaf);
+			rough = 0.8;
 		}
 		vec2 cell = vec2(floor(u / bay_w), floor(wpos.y / floor_h));
 		vec2 f = vec2(fract(u / bay_w), fract(wpos.y / floor_h));
