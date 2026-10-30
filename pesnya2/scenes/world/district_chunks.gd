@@ -397,16 +397,17 @@ func _mat(kind: String) -> Material:
 	var m: Material
 	match kind:
 		# 0.10: текстуры вместо ровной заливки — земля дворов, мокрый асфальт, переулки
+		# 0.16: без видимой сетки — две выборки текстуры, крупные пятна и проплешины
 		"ground":
-			m = Surfaces.dirt(Color(1.45, 1.5, 0.95))     # осенний газон с землёй
+			m = Surfaces.ground("dirt", 4.0, Color(1.45, 1.5, 0.95), Color(0.62, 0.52, 0.4), 0.8)  # газон и голая земля
 		"road":
-			m = Surfaces.asphalt()
+			m = Surfaces.ground("asphalt", 4.0, Color.WHITE, Color(0.7, 0.7, 0.72), 0.5)              # тёмные заплатки
 		"street":
-			m = Surfaces.asphalt(Color(1.12, 1.1, 1.1))
+			m = Surfaces.ground("asphalt", 4.0, Color(1.12, 1.1, 1.1), Color(0.75, 0.74, 0.74), 0.4)
 		"lane":
-			m = Surfaces.asphalt(Color(1.45, 1.35, 1.25))
+			m = Surfaces.ground("asphalt", 4.0, Color(1.45, 1.35, 1.25), Color(1.15, 1.08, 0.95), 0.4)  # пыль
 		"path":
-			m = Surfaces.slabs(Color(0.92, 0.88, 0.82))
+			m = Surfaces.ground("slabs", 2.0, Color(0.92, 0.88, 0.82), Color(0.8, 0.85, 0.7), 0.35)     # мох в швах
 		_:
 			# прежние «house_N» (прогрев шейдеров): стены домов BuildingKit
 			m = BuildingKit.wall_material(int(kind.right(1)) % 2 == 0)

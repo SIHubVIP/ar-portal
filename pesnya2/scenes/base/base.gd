@@ -11,6 +11,8 @@ var _interactables: Array = []
 
 
 func _ready() -> void:
+	if OS.get_cmdline_user_args().has("--won"):       # скриншот стенда: Люся уже побеждена
+		GameState.granted[BossArena.key()] = true
 	var env := Environment.new()
 	env.background_mode = Environment.BG_COLOR
 	env.background_color = Color(0.05, 0.05, 0.07)
@@ -39,22 +41,24 @@ func _ready() -> void:
 	Kit.solid_box(self, Vector3(3, 1.4, 1.2), Vector3(-5, 0.7, -6), Color(0.5, 0.35, 0.2))
 	Kit.label(self, "Сундук", Vector3(-5, 2.2, -6), 40, Color(1, 0.9, 0.6))
 	_interactables.append({"pos": Vector3(-5, 0, -4.5), "label": "Сундук", "cb": func(): hud.open_storage()})
-	# верстак
+	# верстак (0.16): рецепты Crafting, материалы из сумок и сундука
 	Kit.solid_box(self, Vector3(3, 1.0, 1.2), Vector3(5, 0.5, -6), Color(0.35, 0.3, 0.28))
-	Kit.label(self, "Верстак (скоро)", Vector3(5, 2.0, -6), 40, Color(0.8, 0.9, 1))
-	_interactables.append({"pos": Vector3(5, 0, -4.5), "label": "Верстак", "cb": func():
-		hud.show_toast("Крафт откроется вместе с рецептами квестов NPC.")})
-	# стенд трофеев: пока пустые постаменты под 15 боссов
-	for i in 5:
-		Kit.cylinder(self, 0.4, 1.0, Vector3(-6.5, 0.5, -2 + i * 1.6), Color(0.3, 0.3, 0.35))
-	Kit.label(self, "Трофеи: 0 / 15", Vector3(-6.5, 2.2, 1), 36, Color(0.9, 0.9, 0.9))
+	Kit.box(self, Vector3(3.1, 0.08, 1.3), Vector3(5, 1.04, -6), Color(0.45, 0.33, 0.22))
+	Kit.box(self, Vector3(2.8, 1.6, 0.06), Vector3(5, 2.0, -7.6), Color(0.3, 0.32, 0.3))   # щит с инструментом
+	for k in 5:
+		Kit.box(self, Vector3(0.08, 0.5 + k * 0.08, 0.04), Vector3(4.0 + k * 0.5, 2.0, -7.55), Color(0.6, 0.6, 0.62))
+	Kit.cylinder(self, 0.18, 0.25, Vector3(6.1, 1.2, -6), Color(0.25, 0.4, 0.6))           # тиски
+	Kit.box(self, Vector3(0.4, 0.3, 0.3), Vector3(4.0, 1.23, -5.8), Color(0.75, 0.2, 0.15)) # ящик с гайками
+	Kit.label(self, "Верстак", Vector3(5, 2.0, -6), 40, Color(0.8, 0.9, 1))
+	_interactables.append({"pos": Vector3(5, 0, -4.5), "label": "Верстак", "cb": _workbench})
+	_build_trophies()
 	# выход
 	Kit.box(self, Vector3(3, 0.05, 2), EXIT_POS + Vector3(0, 0.03, 0), Color(0.3, 1, 0.5, 0.5), 1.0)
 	Kit.label(self, "Выход в Рубин", EXIT_POS + Vector3(0, 2, 0), 44, Color(0.6, 1, 0.7))
 	_interactables.append({"pos": EXIT_POS, "label": "Выйти", "cb": WorldRouter.leave_base})
 
 	player = Player.new()
-	player.position = Vector3(0, 0, 3)
+	player.position = Vector3(-3.5, 0, 0) if OS.get_cmdline_user_args().has("--won") else Vector3(0, 0, 3)
 	add_child(player)
 	camera = IsoCamera.new()
 	camera.target = player
@@ -82,6 +86,63 @@ func _ready() -> void:
 		hud.open_storage.call_deferred()
 	if OS.get_cmdline_user_args().has("--autotest"):
 		_autotest.call_deferred()
+
+
+## Стенд трофеев: 15 постаментов по числу боссов, на побеждённых — трофей.
+func _build_trophies() -> void:
+	var won := Crafting.trophies().map(func(b: Dictionary) -> String: return b.id)
+	# подсветка стенда и верстака: в углах гаража иначе темно
+	for at in [Vector3(-6, 3.2, 0), Vector3(5, 3.0, -5)]:
+		var l := OmniLight3D.new()
+		l.position = at
+		l.omni_range = 6.0
+		l.light_energy = 1.6
+		l.light_color = Color(1, 0.9, 0.75)
+		add_child(l)
+	var i := 0
+	for b in GameData.bosses:
+		var at := Vector3(-7.0 + (i / 5) * 1.0, 0, -2.4 + (i % 5) * 1.2)
+		Kit.cylinder(self, 0.3, 0.9, at + Vector3(0, 0.45, 0), Color(0.3, 0.3, 0.35))
+		if won.has(b.id):
+			_trophy(String(b.id), at + Vector3(0, 0.9, 0))
+		i += 1
+	Kit.label(self, "Трофеи: %d / %d" % [won.size(), GameData.bosses.size()], Vector3(-6, 2.2, 3.4), 36, Color(0.9, 0.9, 0.9))
+	_interactables.append({"pos": Vector3(-4.6, 0, 0), "label": "Трофеи", "cb": func() -> void:
+		var names := Crafting.trophies().map(func(b: Dictionary) -> String: return b.name)
+		hud.show_toast("Трофеи: " + (", ".join(names) if not names.is_empty() else "пока ни одного. Боссы ждут"))})
+
+
+func _trophy(boss_id: String, at: Vector3) -> void:
+	if boss_id == "BOSS_01":
+		# кольцевая лампа Люси и её микрофон
+		var tor := TorusMesh.new()
+		tor.inner_radius = 0.16
+		tor.outer_radius = 0.22
+		var ring := MeshInstance3D.new()
+		ring.mesh = tor
+		ring.material_override = Kit.mat(Color(1, 0.75, 0.9), 2.0)
+		ring.rotation.x = PI / 2
+		ring.position = at + Vector3(0, 0.3, 0)
+		add_child(ring)
+		Kit.sphere(self, 0.07, at + Vector3(0, 0.3, 0), Color(0.9, 0.2, 0.4), 1.5)
+	else:
+		Kit.cylinder(self, 0.12, 0.3, at + Vector3(0, 0.15, 0), Color(0.95, 0.75, 0.25), 0.6, 0.2)
+
+
+## Верстак: список рецептов; недостающее видно сразу, нажатие собирает вещь в ранец.
+func _workbench() -> void:
+	var opts: Array = []
+	for r in Crafting.RECIPES:
+		var id: String = r.id
+		var ok := Crafting.can_craft(id)
+		opts.append({"text": "%s — %s" % [GameData.item_name(r.out), Crafting.needs_text(id)], "tone": "green" if ok else "plain",
+				"locked": not ok, "why": "не хватает: " + Crafting.missing(id), "cb": func() -> void:
+					if Crafting.craft(id):
+						SaveService.save_game()
+						hud.show_toast("Собрано: %s" % GameData.item_name(r.out))})
+	opts.append({"text": "Отойти от верстака", "tone": "plain", "cb": func() -> void: pass})
+	hud._set_controls(false)
+	hud.dialog.ask("journal", "Верстак гаража №13. Материалы берутся из сумок и сундука.", opts)
 
 
 func _physics_process(_delta: float) -> void:
@@ -130,5 +191,11 @@ func _autotest() -> void:
 		await get_tree().physics_frame
 	_stash()
 	print("AUTOTEST база: хранилище %s" % str(GameState.storage))
+	# верстак: две детали дрона из сундука + одна в ранце — шапочка из фольги
+	GameState.add_item("ITEM_P1_SCRAP", 1)
+	var crafted := Crafting.craft("R_FOIL_HAT")
+	print("AUTOTEST верстак: шапочка %s, осталось обломков %d" % [crafted, Crafting.have("ITEM_P1_SCRAP")])
+	if not crafted:
+		print("AUTOTEST_FAIL")
 	SaveService.save_game()
 	WorldRouter.leave_base()

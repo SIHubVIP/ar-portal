@@ -890,3 +890,104 @@ func test_inventory_drag_to_doll_and_back() -> void:
 	panel.drop({"id": cap, "from": "backpack", "index": 7}, {"id": "", "from": "equip", "slot": "head"})
 	check(GameState.equipment.get("head", "") == cap, "перетащил на голову — надета")
 	panel.queue_free()
+
+
+func test_boss_lyusya_phases_and_cover() -> void:
+	var root := Node3D.new()
+	add_child(root)
+	var pl := Player.new()
+	root.add_child(pl)
+	var boss := Boss.new()
+	boss.position = Vector3(0, 0, -12)
+	boss.player = pl
+	root.add_child(boss)
+	check(boss.display_name() == "Люся Глушительница Лайков" and boss.data.phases.size() == 3, "Люся читает три фазы из bosses.json")
+	check(Boss._lane_hit(Vector3.ZERO, Vector3.FORWARD, Vector3(1.0, 0, -20)) and not Boss._lane_hit(Vector3.ZERO, Vector3.FORWARD, Vector3(2.5, 0, -20))
+			and not Boss._lane_hit(Vector3.ZERO, Vector3.FORWARD, Vector3(0, 0, 5)), "полоса 2.5 м: в ней — попал, сбоку и сзади — нет")
+	check(Boss._sector_hit(Vector3.ZERO, Vector3.FORWARD, Vector3(-10, 0, -10)) and not Boss._sector_hit(Vector3.ZERO, Vector3.FORWARD, Vector3(-10, 0, -2)),
+			"сектор 100°: под 45° задевает, под 79° — нет")
+	var col := AdColumn.new()
+	col.position = Vector3(0, 0, -6)
+	root.add_child(col)
+	check(AdColumn.blocker(get_tree(), boss.position, pl.position) == col and AdColumn.blocker(get_tree(), boss.position, Vector3(6, 0, 0)) == null,
+			"тумба на линии огня закрывает, в стороне — нет")
+	# фаза 1: полоса на героя упирается в тумбу
+	boss.active = true
+	boss._start_attack()
+	check(boss.pending_kinds() == ["lane"], "фаза 1 — прицельная очередь полосой")
+	var hp0 := GameState.hp
+	boss._resolve()
+	check(is_equal_approx(GameState.hp, hp0) and col.hp == AdColumn.MAX_HP - 1 and boss.blocked_by_cover == 1,
+			"за тумбой урона нет, с тумбы сорван плакат")
+	col.take_cover_hit(boss.position)
+	col.take_cover_hit(boss.position)
+	check(not col.is_standing() and AdColumn.blocker(get_tree(), boss.position, pl.position) == null, "третий выстрел валит тумбу — укрытия больше нет")
+	boss._start_attack()
+	boss._resolve()
+	check(GameState.hp < hp0, "без укрытия полоса попадает")
+	col.restore()
+	check(col.is_standing() and col.hp == AdColumn.MAX_HP, "новый бой — тумба снова стоит")
+	# переход в фазу 2: ударная волна отбрасывает героя
+	pl.position = Vector3(0, 0, -6.5) + Vector3(3, 0, 0)
+	boss.take_hit(boss.max_hp * 0.31, pl.position)
+	check(boss.phase == 2 and pl._knock.length() > 5.0, "70%% — вспышка спонсорства, героя отбросило волной")
+	boss._invuln_left = 0.0
+	boss._start_attack()
+	check("sector" in boss.pending_kinds(), "фаза 2 — сектор")
+	boss._clear_pending()
+	boss.take_hit(boss.max_hp * 0.35, pl.position)
+	check(boss.phase == 3, "35%% — указ о немедленной победе")
+	boss._invuln_left = 0.0
+	var kinds := []
+	for i in 3:
+		boss._start_attack()
+		kinds.append(boss.pending_kinds())
+		GameState.heal(GameState.max_hp)
+		boss._resolve()
+	check(kinds[0] == ["lane", "lane", "lane"] and kinds[1] == ["circle", "circle", "circle"] and boss.in_window(),
+			"три сигнала: веер полос, круги, затем окно атаки")
+	var before := boss.hp
+	boss.take_hit(10.0, pl.position)
+	check(is_equal_approx(before - boss.hp, 15.0), "в окно атаки урон в полтора раза больше")
+	boss.reset()
+	check(boss.hp == boss.max_hp and boss.phase == 1 and not boss.active, "сброс: здоровье и фаза с начала")
+	GameState.heal(GameState.max_hp)
+	root.queue_free()
+
+
+func test_boss_arena_reward_once() -> void:
+	var pl := Player.new()
+	add_child(pl)
+	var arena := BossArena.new()
+	arena.player = pl
+	add_child(arena)
+	arena.build()
+	check(arena.columns.size() == 10 and arena.boss != null and arena.rect().size == Vector2(110, 90), "арена 110 × 90 с десятью тумбами")
+	check(District.district_at(District.to_plan(arena.center)).id == "PG" and arena.rect().has_point(Vector2(arena.center.x, arena.center.z)),
+			"площадь Люси — в Погуляе у точки B1")
+	arena.start_fight()
+	check(arena.boss.active, "бой начался")
+	var babki := GameState.babki
+	arena.boss.take_hit(99999.0, pl.position)
+	check(arena.is_won() and GameState.item_count("ITEM_P3_MUTE_CORE") == 1 and GameState.babki == babki + 250
+			and not arena.boss.is_in_group("enemies"), "победа: ядро глушилки, 250 бабок, босс больше не цель")
+	check(not GameState.grant(BossArena.key(), "повтор", BossArena.REWARD), "награда за босса — один раз")
+	arena.queue_free()
+	pl.queue_free()
+
+
+func test_workbench_crafts_from_bags_and_storage() -> void:
+	check(not Crafting.can_craft("R_FOIL_HAT") and Crafting.missing("R_FOIL_HAT").contains("×3"), "без материалов — нельзя, видно, чего не хватает")
+	GameState.add_item("ITEM_P1_SCRAP", 1)
+	GameState.storage["ITEM_P1_SCRAP"] = 4
+	check(Crafting.craft("R_FOIL_HAT"), "шапочка из фольги: обломок из ранца и два из сундука")
+	check(GameState.item_count("ITEM_P1_SCRAP") == 0 and int(GameState.storage.get("ITEM_P1_SCRAP", 0)) == 2
+			and GameState.item_count("ITEM_P2_FOIL_HAT") == 1, "списано сначала из сумок, потом из сундука")
+	check(not Crafting.can_craft("R_MIC_BAT"), "бита Люси — только с ядром глушилки")
+	GameState.grant(BossArena.key(), "тест", BossArena.REWARD)
+	GameState.storage["ITEM_P1_SCRAP"] = 3
+	check(Crafting.craft("R_MIC_BAT") and GameState.equip("ITEM_P3_MIC_BAT") and GameState.stat("damage") >= 16.0,
+			"ядро с босса → бита «Микрофон Люси», урон +16")
+	check(Crafting.trophies().size() == 1 and Crafting.trophies()[0].id == "BOSS_01", "трофей Люси на стенде")
+	for r in Crafting.RECIPES:
+		check(GameData.item_by_id.has(r.out) and r.needs.keys().all(func(k): return GameData.item_by_id.has(k)), "рецепт %s из настоящих предметов" % r.id)

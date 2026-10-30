@@ -28,6 +28,10 @@ var dialog: DialogView
 var inventory: InventoryPanel
 var _pause: PanelContainer
 var _death: PanelContainer
+var boss_box: VBoxContainer
+var _boss_name: Label
+var _boss_bar: ProgressBar
+var _boss_phase: Label
 
 
 func _ready() -> void:
@@ -102,6 +106,7 @@ func _ready() -> void:
 	_toast.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_toast.modulate.a = 0.0
 
+	_build_boss(root)
 	_build_pause(root)
 	inventory = InventoryPanel.new()
 	root.add_child(inventory)
@@ -340,6 +345,43 @@ func show_toast(text: String) -> void:
 	tw.tween_property(_toast, "modulate:a", 1.0, 0.15)
 	tw.tween_interval(2.6)
 	tw.tween_property(_toast, "modulate:a", 0.0, 0.4)
+
+
+# ---------- босс (0.16) ----------
+
+## Полоса босса внизу между джойстиком и кнопками способностей: видна всё время боя.
+func _build_boss(root: Control) -> void:
+	boss_box = VBoxContainer.new()
+	boss_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	boss_box.add_theme_constant_override("separation", 2)
+	root.add_child(boss_box)
+	_place(boss_box, Vector2(0.5, 1), Vector2(-360, -118), Vector2(170, -36))
+	_boss_name = _label(boss_box, "", 26)
+	_boss_name.add_theme_font_override("font", load("res://assets/fonts/RussoOne-Regular.ttf"))
+	_boss_name.add_theme_color_override("font_color", Color(1, 0.55, 0.75))
+	_boss_bar = _bar(boss_box, Color(0.9, 0.2, 0.45), Vector2(530, 20))
+	_boss_bar.max_value = 1.0
+	_boss_bar.step = 0.001
+	_boss_phase = _label(boss_box, "", 18)
+	for l in [_boss_name, _boss_phase]:
+		l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	boss_box.visible = false
+
+
+func show_boss(title: String) -> void:
+	_boss_name.text = title
+	_boss_bar.value = 1.0
+	_boss_phase.text = ""
+	boss_box.visible = true
+
+
+func set_boss(ratio: float, phase_text: String) -> void:
+	_boss_bar.value = ratio
+	_boss_phase.text = phase_text
+
+
+func hide_boss() -> void:
+	boss_box.visible = false
 
 
 # ---------- диалог и выбор ----------

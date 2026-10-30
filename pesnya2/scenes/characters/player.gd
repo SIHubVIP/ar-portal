@@ -33,6 +33,7 @@ var safe_zone := ""
 var _attack_ready_at := 0.0
 var _dodge_left := 0.0
 var _dodge_dir := Vector3.ZERO
+var _knock := Vector3.ZERO
 var _walk_phase := 0.0
 var _rig: Node3D
 var _anim: AnimationPlayer
@@ -139,6 +140,11 @@ func _physics_process(delta: float) -> void:
 	if _dodge_left > 0.0:
 		_dodge_left -= delta
 		velocity = _dodge_dir * (DODGE_DISTANCE / DODGE_TIME)
+	elif _knock.length() > 0.3:
+		# отбрасывание ударной волной босса (0.16): управление возвращается, когда толчок погас
+		velocity.x = _knock.x
+		velocity.z = _knock.z
+		_knock = _knock.lerp(Vector3.ZERO, clampf(6.0 * delta, 0.0, 1.0))
 	else:
 		velocity.x = dir.x * SPEED
 		velocity.z = dir.z * SPEED
@@ -233,6 +239,13 @@ func dodge() -> void:
 		return
 	dash(facing, DODGE_TIME)
 	play_action("Dodge", 0.4)
+
+
+## Толчок со стороны: ударная волна, взрыв. Уклон в момент толчка спасает и от него.
+func knock(push: Vector3) -> void:
+	if is_dodging() or safe_zone != "":
+		return
+	_knock = push * Vector3(1, 0, 1)
 
 
 func dash(dir: Vector3, seconds: float) -> void:

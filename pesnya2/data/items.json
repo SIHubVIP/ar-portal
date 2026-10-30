@@ -202,6 +202,39 @@
    "desc": "−15 кукухи. На этикетке кот, который видел некоторое дерьмо.",
    "loot": "drone",
    "origin": "editorial_P2"
+  },
+  {
+   "id": "ITEM_P3_MUTE_CORE",
+   "name": "Ядро глушилки лайков",
+   "type": "material",
+   "rarity": "rare",
+   "origin": "editorial_P3",
+   "desc": "Сердце микрофона Люси. Если поднести к уху, слышно, как где-то отписываются."
+  },
+  {
+   "id": "ITEM_P3_BANNER_VEST",
+   "name": "Жилет из рекламного баннера",
+   "type": "armor",
+   "slot": "body",
+   "rarity": "uncommon",
+   "stats": {
+    "armor": 4,
+    "max_hp": 15
+   },
+   "origin": "editorial_P3",
+   "desc": "Сшит из растяжки «Кредит за 5 минут». Пули вязнут в процентах."
+  },
+  {
+   "id": "ITEM_P3_MIC_BAT",
+   "name": "Бита «Микрофон Люси»",
+   "type": "weapon",
+   "slot": "weapon",
+   "rarity": "rare",
+   "stats": {
+    "damage": 16
+   },
+   "origin": "editorial_P3",
+   "desc": "Глушит не только лайки. На ручке наклейка: «Стрим окончен»."
   }
  ],
  "loot_tables": {

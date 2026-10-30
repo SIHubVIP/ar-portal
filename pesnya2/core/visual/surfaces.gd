@@ -7,6 +7,7 @@ extends RefCounted
 const TILE_M := 2.0
 
 static var _cache: Dictionary = {}
+const GROUND_SHADER := preload("res://assets/shaders/ground.gdshader")
 
 
 static func cobble() -> StandardMaterial3D:
@@ -49,6 +50,24 @@ static func _material(name: String, normal_scale: float, tile := TILE_M, tint :=
 	m.uv1_scale = Vector3.ONE / tile
 	m.albedo_color = tint
 	m.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
+	_cache[key] = m
+	return m
+
+
+## Земля района без повторов (0.16, assets/shaders/ground.gdshader): только для плоских
+## поверхностей — газона кварталов, дорог и дорожек. patch — цвет проплешин, amount — их сила.
+static func ground(name: String, tile: float, tint := Color.WHITE, patch := Color.WHITE, amount := 0.0) -> ShaderMaterial:
+	var key := "ground:%s|%s|%s|%s" % [name, tint.to_html(), patch.to_html(), amount]
+	if _cache.has(key):
+		return _cache[key]
+	var m := ShaderMaterial.new()
+	m.shader = GROUND_SHADER
+	m.set_shader_parameter("albedo_tex", load("res://assets/textures/%s_albedo.png" % name))
+	m.set_shader_parameter("normal_tex", load("res://assets/textures/%s_normal.png" % name))
+	m.set_shader_parameter("tint", tint)
+	m.set_shader_parameter("tile", tile)
+	m.set_shader_parameter("patch_color", patch)
+	m.set_shader_parameter("patch_amount", amount)
 	_cache[key] = m
 	return m
 

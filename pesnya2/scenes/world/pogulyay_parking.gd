@@ -40,6 +40,7 @@ var _objective_tick := 0.0
 var _autotest := false
 var chunks: DistrictChunks
 var mobs: DistrictMobs
+var arena: BossArena
 var street_life: StreetLife
 var _pavel: Node3D
 var _safe_tick := 0.0
@@ -144,6 +145,11 @@ func _ready() -> void:
 	mobs = DistrictMobs.new()
 	mobs.player = player
 	add_child(mobs)
+	arena = BossArena.new()
+	arena.player = player
+	arena.hud = hud
+	add_child(arena)
+	arena.won.connect(func(_id: String) -> void: _queue_save())
 	street_life = StreetLife.new()
 	street_life.player = player
 	add_child(street_life)
@@ -194,6 +200,20 @@ func _ready() -> void:
 				var m := mobs.get_children().filter(func(n: Node) -> bool: return n is EnemyDrone)
 				if not m.is_empty():
 					player.global_position = (m[0] as Node3D).global_position + Vector3(4, 0, 4))
+		if arg == "--boss":                 # скриншот босса: герой на площади Люси, бой идёт
+			player.position = arena.center + Vector3(-6, 0, 12)
+			GameState.level = 8
+			GameState.recalc_max_hp()
+			GameState.heal(GameState.max_hp)
+			var medic := Timer.new()          # для съёмки герой не падает: кадры снимаются медленно
+			medic.wait_time = 0.5
+			medic.autostart = true
+			medic.timeout.connect(func() -> void: GameState.heal(GameState.max_hp))
+			add_child(medic)
+		if arg == "--boss2":                # скриншот второй фазы: через секунду Люся теряет 31 %
+			get_tree().create_timer(1.0).timeout.connect(func() -> void:
+				if arena.boss != null:
+					arena.boss.take_hit(arena.boss.max_hp * 0.31, player.global_position))
 		if arg == "--free":                 # проверка этапа 1: выход со двора открыт сразу
 			StartYard.open_exit(self, true)
 	chunks.load_now()
@@ -1139,6 +1159,23 @@ func _run_autotest() -> void:
 	log.call("такси «Межрайон»: %s, обратно во двор %s" % [str(rode), home])
 	if rode != [true, true, true] or not home:
 		print("AUTOTEST_FAIL")
+	player.global_position = back
+	await _frames(20)
+	# 0.16: босс Люся на рекламной площади — бой, фаза 2, победа и награда
+	player.global_position = arena.center + Vector3(-6, 0, 12)
+	chunks.load_now()
+	await _frames(10)
+	var started := arena.boss != null and arena.boss.active and hud.boss_box.visible
+	arena.boss.take_hit(arena.boss.max_hp * 0.31, player.global_position)
+	var phase2 := arena.boss.phase == 2
+	arena.boss._invuln_left = 0.0
+	arena.boss.take_hit(99999.0, player.global_position)
+	await _frames(5)
+	log.call("босс «%s»: бой %s, фаза 2 %s, победа %s, ядро глушилки %d" % [arena.boss.display_name(), started, phase2,
+			arena.is_won(), Crafting.have("ITEM_P3_MUTE_CORE")])
+	if not started or not phase2 or not arena.is_won():
+		print("AUTOTEST_FAIL")
+	GameState.heal(GameState.max_hp)
 	player.global_position = back
 	await _frames(20)
 	# 0.8: кинокамера разговора и возврат в изометрию
