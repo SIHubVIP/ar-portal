@@ -12,6 +12,8 @@ const FAILED_RECOVERABLE := "FAILED_RECOVERABLE"
 
 ## quest_id -> {state, stage, progress, checkpoint, choice}
 var records: Dictionary = {}
+## Отслеживаемое задание (0.21): последнее принятое или продвинутое. По нему ведут стрелка и трекер.
+var tracked := ""
 
 
 func _ready() -> void:
@@ -20,6 +22,7 @@ func _ready() -> void:
 
 func reset() -> void:
 	records.clear()
+	tracked = ""
 	for q in GameData.quests:
 		records[q.id] = {"state": LOCKED, "stage": 0, "progress": 0, "checkpoint": 0, "choice": ""}
 	refresh_availability()
@@ -52,6 +55,7 @@ func accept(id: String) -> bool:
 	r.progress = 0
 	r.checkpoint = 0
 	_set_state(id, ACTIVE)
+	tracked = id
 	EventBus.quest_stage_changed.emit(id, 0)
 	return true
 
@@ -125,6 +129,14 @@ func active_quests() -> Array:
 	return GameData.quests.filter(func(q): return state_of(q.id) in [ACTIVE, TURN_IN_READY, FAILED_RECOVERABLE])
 
 
+## Задание для трекера: отслеживаемое, если оно ещё в работе, иначе первое активное.
+func tracked_quest() -> Dictionary:
+	if tracked != "" and state_of(tracked) in [ACTIVE, TURN_IN_READY, FAILED_RECOVERABLE]:
+		return GameData.quest(tracked)
+	var act := active_quests()
+	return act[0] if not act.is_empty() else {}
+
+
 func _next_stage(id: String) -> void:
 	var r: Dictionary = records[id]
 	var stages: Array = GameData.quest(id).stages
@@ -136,6 +148,7 @@ func _next_stage(id: String) -> void:
 		return
 	if stages[r.stage].checkpoint:
 		r.checkpoint = r.stage
+	tracked = id
 	EventBus.quest_stage_changed.emit(id, r.stage)
 
 

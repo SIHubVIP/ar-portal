@@ -260,10 +260,10 @@ func _cell(parent: Node, id: String, count: int, sel: Dictionary, hint := "") ->
 			l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 			l.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		return b
-	var path := ICONS % id
-	if ResourceLoader.exists(path):
+	var tex := icon_for(id)
+	if tex != null:
 		var icon := TextureRect.new()
-		icon.texture = load(path)
+		icon.texture = tex
 		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		icon.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -296,8 +296,7 @@ func _droppable(b: Button, sel: Dictionary) -> void:
 		if sel.id == "":
 			return null
 		var ghost := TextureRect.new()
-		if ResourceLoader.exists(ICONS % sel.id):
-			ghost.texture = load(ICONS % sel.id)
+		ghost.texture = icon_for(sel.id)
 		ghost.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		ghost.size = Vector2(CELL, CELL)
 		ghost.modulate.a = 0.85
@@ -464,6 +463,14 @@ func _render_storage() -> void:
 
 
 # ---------- элементы ----------
+
+## Значок вещи: свой рисунок из assets/icons, иначе общий значок вида из assets/ui (вещи поручений).
+static func icon_for(id: String) -> Texture2D:
+	if ResourceLoader.exists(ICONS % id):
+		return load(ICONS % id)
+	var ui: String = GameData.item_by_id.get(id, {}).get("icon", "")
+	return UiSkin.icon(ui) if ui != "" else null
+
 
 func _panel(parent: Node, bg: Color) -> PanelContainer:
 	var p := PanelContainer.new()

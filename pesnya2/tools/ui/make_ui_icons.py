@@ -435,6 +435,36 @@ def a37(i):   # Обновление без согласия
     i.paint(poly([(256, 220), (300, 290), (212, 290)]), rgb("fff3d6"))
 
 
+# ---------- вещи поручений (0.21): уникальная, трофей, собранная ----------
+
+def q_unique():
+    i = Icon()
+    i.part(lambda d: d.polygon(burst(256, 256, 210, 150, 12), fill=255), rgb("6fd3ff"), shade=False)
+    i.part(rr((150, 130, 362, 382), 36), rgb("3a4a6a"))
+    i.part(rr((185, 165, 327, 300), 18), rgb("8fe0ff"))
+    for k in range(4):
+        i.ink(rr((180 + k * 40, 330, 200 + k * 40, 370), 6))
+    i.paint(lambda d: d.polygon(star_pts(256, 232, 46, 20), fill=255), rgb("fff3d6"))
+    i.save("q_unique")
+
+
+def q_stack():
+    i = Icon()
+    for (x, y) in ((110, 250), (250, 250), (180, 130)):
+        i.part(rr((x, y, x + 150, y + 140), 24), rgb("d9893b"))
+        i.ink(thick([(x + 20, y + 70), (x + 130, y + 70)], 10))
+    i.save("q_stack")
+
+
+def q_craft():
+    i = Icon()
+    i.part(lambda d: d.polygon(star_pts(256, 256, 200, 160, 10), fill=255), rgb("9aa3ad"))
+    i.part(ell((150, 150, 362, 362)), rgb("c77dff"))
+    i.part(ell((210, 210, 302, 302)), rgb("fff3d6"), line=14)
+    i.part(lambda d: d.polygon(star_pts(380, 120, 70, 28, 4), fill=255), rgb("ffcc33"), line=12)
+    i.save("q_craft")
+
+
 _FONTS = {}
 
 
@@ -448,7 +478,8 @@ def _font(size):
 
 if __name__ == "__main__":
     os.makedirs(OUT, exist_ok=True)
-    for f in (bag, quests, menu, map_icon, heart, coin, rep, kukukha, close, lock, fist, dodge, hand):
+    for f in (bag, quests, menu, map_icon, heart, coin, rep, kukukha, close, lock, fist, dodge, hand, q_unique, q_stack,
+              q_craft):
         f()
     rot("rot_right", False)
     rot("rot_left", True)

@@ -378,7 +378,7 @@ func refresh_quest() -> void:
 			_tr_detail.text = _objective_detail if _objective_detail != "" else "Нажми, чтобы открыть журнал"
 		return
 	_tracker.visible = true
-	var q: Dictionary = act[0]
+	var q: Dictionary = QuestService.tracked_quest()
 	var st := QuestService.current_stage(q.id)
 	var state := QuestService.state_of(q.id)
 	_tr_head.text = "%s · %s" % ["СЮЖЕТ" if q.kind == "main" else "ПОРУЧЕНИЕ", String(q.district).to_upper()]
@@ -538,6 +538,12 @@ func ask_choice(title: String, options: Array, on_pick: Callable) -> void:
 				"cb": func(): on_pick.call(o.key)})
 		i += 1
 	dialog.ask("journal", title, opts)
+
+
+## Вопрос от говорящего с вариантами: [{text, tone, cb}] (поручения жителей, 0.21).
+func ask_from(speaker: String, text: String, options: Array) -> void:
+	_set_controls(false)
+	dialog.ask(speaker, text, options)
 
 
 func _finish_dialog() -> void:

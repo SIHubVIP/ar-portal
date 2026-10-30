@@ -240,6 +240,9 @@ func _render_detail(q: Dictionary) -> void:
 
 static func _stage_text(st: Dictionary) -> String:
 	var t: String = st.text
+	# хвосты карточек «, 3/3 (70% за победу)» — служебные, игроку они ни к чему (0.21)
+	var re := RegEx.create_from_string(",? \\d+/\\d+ \\(\\d+%( за победу)?\\)")
+	t = re.sub(t, "", true)
 	if t.begins_with("Решение: "):
 		return "Принять решение. От него зависит, кто тебе потом поможет"
 	return t

@@ -182,7 +182,8 @@ func _chunk_steps(root: Node3D, c: Vector2i) -> Array[Callable]:
 	for p in District.data().get("points", []):
 		var pm2 := District.pos(p)
 		# одна копия NPC: пока Павел у киоска во дворе, метки в парке нет
-		if rect.has_point(pm2) and not start.has_point(pm2) and District.override_for(p.id).is_empty():
+		# 0.21: жители (npc) стоят сами — NpcErrands; столб с табличкой им не нужен
+		if p.type != "npc" and rect.has_point(pm2) and not start.has_point(pm2) and District.override_for(p.id).is_empty():
 			steps.append(_point_marker.bind(root, p))
 	# flush ждёт, пока все отложенные улицы допишут свои мелочи
 	var flush_step := func(self_ref: Callable) -> void:

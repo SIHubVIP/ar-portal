@@ -42,6 +42,7 @@ var chunks: DistrictChunks
 var mobs: DistrictMobs
 var arena: BossArena
 var main002: QuestMain002
+var errands: NpcErrands
 var street_life: StreetLife
 var _pavel: Node3D
 var _safe_tick := 0.0
@@ -92,6 +93,10 @@ func _ready() -> void:
 	main002.world = self
 	add_child(main002)
 	main002.build(TAXI_DL_PLAN)
+	errands = NpcErrands.new()
+	errands.world = self
+	add_child(errands)
+	errands.build()
 	hud.controls.attack.connect(player.basic_attack)
 	hud.controls.dodge.connect(player.dodge)
 	hud.controls.ability.connect(player.use_ability)
@@ -220,6 +225,22 @@ func _ready() -> void:
 			get_tree().create_timer(1.0).timeout.connect(func() -> void:
 				if arena.boss != null:
 					arena.boss.take_hit(arena.boss.max_hp * 0.31, player.global_position))
+		if arg.begins_with("--errand="):   # скриншот поручения: --errand=NPC_14_1[:npc] — принято, герой у врага
+			var eq := arg.trim_prefix("--errand=").get_slice(":", 0)
+			var at_npc := arg.ends_with(":npc")
+			get_tree().create_timer(0.8).timeout.connect(func() -> void:
+				var en: Node3D = errands._npcs[eq]
+				if at_npc:
+					player.global_position = en.global_position + Vector3(2.5, 0, 3.0)
+					return
+				errands._accept(eq)
+				hud.dialog.skip()
+				var medic := Timer.new()     # кадры снимаются медленно — для съёмки герой не падает
+				medic.wait_time = 0.3
+				medic.autostart = true
+				medic.timeout.connect(func() -> void: GameState.heal(GameState.max_hp))
+				add_child(medic)
+				player.global_position = errands._spots[eq][0] + Vector3(2, 0, 2))
 		if arg == "--free":                 # проверка этапа 1: выход со двора открыт сразу
 			StartYard.open_exit(self, true)
 	chunks.load_now()
@@ -826,7 +847,8 @@ func _npc_mark(npc: Node3D, dialogue_id: String) -> void:
 	npc.add_to_group("map_npc")
 
 
-const _MAP_KIND := {"npc": "npc", "boss": "enemy", "mob": "enemy", "underground": "transport", "safe": "base"}
+## Жители (npc) с 0.21 стоят в мире сами (NpcErrands, группа map_npc) — метка реестра им не нужна.
+const _MAP_KIND := {"boss": "enemy", "mob": "enemy", "underground": "transport", "safe": "base"}
 
 
 ## Живые точки для мини-карты и карты квартала: [{pos, kind, label}]. Плюс точки реестра района
@@ -839,6 +861,7 @@ func map_points() -> Array:
 	for d in _drones:
 		if is_instance_valid(d):
 			out.append({"pos": d.global_position, "kind": "enemy", "label": ""})
+	out.append_array(errands.map_points())
 	out.append({"pos": EXIT_ARCH, "kind": "transport", "label": "Арка"})
 	out.append({"pos": GARAGE_POS, "kind": "base", "label": "Гараж"})
 	out.append({"pos": KIOSK_POS, "kind": "shop", "label": "Киоск"})
@@ -853,6 +876,10 @@ func map_points() -> Array:
 
 ## Текущая цель отслеживаемого задания: [позиция, подпись, прогресс]. INF — цели нет.
 func objective() -> Array:
+	# 0.21: отслеживается поручение жителя — стрелка ведёт по нему
+	var tq: String = QuestService.tracked_quest().get("id", "")
+	if GameData.errand_by_quest.has(tq):
+		return errands.objective(tq)
 	var state := QuestService.state_of(QID)
 	if state == QuestService.COMPLETED:
 		# 0.17: дальше ведёт MAIN_002 — контора ЖКХ в Деловом (раньше стрелка гасла у арки)
@@ -1135,6 +1162,53 @@ func _run_autotest() -> void:
 	player.global_position = back
 	await _frames(40)
 	if player.safe_zone != "" or not healed or not no_hit:
+		print("AUTOTEST_FAIL")
+	# 0.21: поручение Павла (N07) от «!» до награды — как прошёл бы игрок
+	var eq := "NPC_07_1"
+	var en: Node3D = errands._npcs[eq]
+	var ex: Dictionary = errands.errand(eq)
+	player.global_position = en.global_position + Vector3(1.2, 0, 1.2)
+	chunks.load_now()
+	await _frames(10)
+	var seen_npc: bool = en.visible and errands._marks[eq].visible
+	_on_interact()
+	await _frames(2)
+	for i in 6:
+		hud.dialog.skip()
+		await _frames(2)
+	errands._accept(eq)       # кнопка «Берусь»
+	hud.dialog.skip()
+	await _frames(4)
+	var elite_ok: bool = errands._alive(errands._elite) and objective()[0].distance_to(errands._elite.global_position) < 0.5
+	var babki_e := GameState.babki
+	errands._elite.take_hit(99999.0, player.global_position)
+	await _frames(40)
+	for d in get_tree().get_nodes_in_group("loot"):
+		d.pick()
+	await _frames(4)
+	var stack_ok: bool = NpcErrands.stage_type(eq) == "collect_stack" and not errands._group.is_empty()
+	for round in 6:
+		for m in errands._group:
+			if errands._alive(m):
+				m.take_hit(99999.0, player.global_position)
+		await _frames(40)
+		for d in get_tree().get_nodes_in_group("loot"):
+			d.pick()
+		await _frames(4)
+		if NpcErrands.stage_type(eq) != "collect_stack":
+			break
+	var craft_ok := NpcErrands.stage_type(eq) == "craft"
+	player.global_position = en.global_position + Vector3(1.2, 0, 1.2)
+	await _frames(4)
+	_on_interact()
+	for i in 8:
+		await _frames(2)
+		hud.dialog.skip()
+	await _frames(4)
+	var done_ok: bool = QuestService.state_of(eq) == QuestService.COMPLETED and GameState.item_count(ex.craft.item.id) == 0 \
+			and GameState.item_count(ex.elite.item.id) == 0 and GameState.babki > babki_e
+	log.call("поручение Павла: житель с «!» %s, враг и стрелка %s, сбор %s, сборка %s, сдано %s" % [seen_npc, elite_ok, stack_ok, craft_ok, done_ok])
+	if not (seen_npc and elite_ok and stack_ok and craft_ok and done_ok):
 		print("AUTOTEST_FAIL")
 	# 0.7: живая улица и группа мобов у M10-1
 	var mp := District.pos(District.point("M10-1"))

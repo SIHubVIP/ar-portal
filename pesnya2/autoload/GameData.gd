@@ -19,6 +19,9 @@ var scenes: Array = []
 var scene_by_id: Dictionary = {}
 var items: Array = []
 var item_by_id: Dictionary = {}
+## Поручения жителей Погуляя (0.21, data/errands.json): первые задания 15 NPC.
+var errands: Array = []
+var errand_by_quest: Dictionary = {}
 var loot_tables: Dictionary = {}
 var max_level := 55
 ## Редакторские описания способностей и уровни открытия
@@ -54,6 +57,14 @@ func load_all() -> void:
 	class_by_id = _index(classes)
 	ability_by_id = _index(abilities)
 	scene_by_id = _index(scenes)
+	# вещи поручений и портреты жителей — из errands.json, чтобы сохранения находили их сразу
+	errands = _read("res://data/errands.json").get("errands", [])
+	errand_by_quest.clear()
+	for e in errands:
+		errand_by_quest[e.quest] = e
+		for part in [e.elite, e.stack, e.craft]:
+			items.append(part.item)
+		dialogues_speakers[e.speaker] = {"name": e.name, "portrait": e.portrait}
 	item_by_id = _index(items)
 
 

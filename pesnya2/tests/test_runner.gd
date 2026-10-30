@@ -1113,3 +1113,29 @@ func test_big_multimesh_is_split_into_cells() -> void:
 		culled = culled and (c as MultiMeshInstance3D).visibility_range_end > 0.0
 	check(n == 5 and total == 200 and culled, "200 вещей на 200 м режутся на 5 клеток по 40 м, мелочь гаснет вдали")
 	root.queue_free()
+
+
+func test_errands_cover_pogulyay_npcs() -> void:
+	check(GameData.errands.size() == 15, "15 поручений жителей Погуляя")
+	var ok := true
+	for e in GameData.errands:
+		var q := GameData.quest(e.quest)
+		ok = ok and q.npc_id == e.npc and not District.point(e.point).is_empty()
+		ok = ok and MobTypes.PROFILES.has(e.elite.base) and MobTypes.PROFILES.has(e.stack.base)
+		for part in [e.elite, e.stack, e.craft]:
+			ok = ok and GameData.item_by_id.get(part.item.id, {}).get("type", "") == "quest" and UiSkin.icon(part.item.icon) != null
+		ok = ok and GameData.dialogues_speakers.has(e.speaker) and e.lines.hello.size() >= 1 and e.lines.done.size() >= 1
+		ok = ok and int(e.stack.count) == int(String(q.stages[2].text).get_slice("/", 1).get_slice(" ", 0))
+	check(ok, "у каждого поручения — житель на карте, вещи со значками, портрет, реплики и число трофеев из карточки")
+	var k := NpcErrands.level_k("NPC_13_1")
+	check(k.x > NpcErrands.level_k("NPC_07_1").x and is_equal_approx(NpcErrands.level_k("NPC_07_1").x, 1.08), "враги поручения крепче с рекомендуемым уровнем")
+
+
+func test_tracked_quest_follows_last_accepted() -> void:
+	QuestService.reset()
+	QuestService.accept("MAIN_001")
+	QuestService.accept("NPC_07_1")
+	check(QuestService.tracked_quest().get("id", "") == "NPC_07_1", "трекер ведёт последнее принятое задание")
+	QuestService.advance("MAIN_001", "MAIN_001_S01", 99)
+	check(QuestService.tracked_quest().get("id", "") == "MAIN_001", "и переключается на продвинутое")
+	QuestService.reset()
