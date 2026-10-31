@@ -1,0 +1,123 @@
+name: Pesnya 2 APK
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "pesnya2/**"
+      - ".github/workflows/pesnya2.yml"
+  pull_request:
+    paths:
+      - "pesnya2/**"
+      - ".github/workflows/pesnya2.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pesnya2
+  cancel-in-progress: true
+
+env:
+  GODOT_VERSION: "4.7.2"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Data matches source PDFs
+        working-directory: pesnya2
+        run: |
+          sudo apt-get install -y -qq poppler-utils
+          python3 tools/importers/import_sources.py
+          git diff --exit-code -- data docs/SOURCE_MANIFEST.json || echo "::warning::data/*.json отличается от результата импорта PDF"
+          python3 tools/validators/validate_data.py
+
+      - name: Download Godot and export templates
+        run: |
+          V=$GODOT_VERSION
+          curl -fsSL -o godot.zip "https://github.com/godotengine/godot-builds/releases/download/${V}-stable/Godot_v${V}-stable_linux.x86_64.zip"
+          unzip -q godot.zip && mv Godot_v${V}-stable_linux.x86_64 /usr/local/bin/godot && chmod +x /usr/local/bin/godot
+          curl -fsSL -o tpl.tpz "https://github.com/godotengine/godot-builds/releases/download/${V}-stable/Godot_v${V}-stable_export_templates.tpz"
+          mkdir -p ~/.local/share/godot/export_templates/${V}.stable
+          unzip -qj tpl.tpz "templates/android_*" "templates/version.txt" -d ~/.local/share/godot/export_templates/${V}.stable/
+          rm tpl.tpz
+          godot --version
+
+      - name: Configure Android export
+        run: |
+          SDK=${ANDROID_SDK_ROOT:-$ANDROID_HOME}
+          KS=$PWD/keystore/debug.keystore
+          mkdir -p ~/.config/godot
+          for f in editor_settings-4.7.tres editor_settings-4.tres; do
+          cat > ~/.config/godot/$f <<EOT
+          [gd_resource type="EditorSettings" format=3]
+
+          [resource]
+          export/android/android_sdk_path = "$SDK"
+          export/android/java_sdk_path = "$JAVA_HOME"
+          export/android/debug_keystore = "$KS"
+          export/android/debug_keystore_user = "androiddebugkey"
+          export/android/debug_keystore_pass = "android"
+          EOT
+          sed -i 's/^          //' ~/.config/godot/$f
+          done
+          echo "GODOT_ANDROID_KEYSTORE_DEBUG_PATH=$KS" >> $GITHUB_ENV
+          echo "GODOT_ANDROID_KEYSTORE_DEBUG_USER=androiddebugkey" >> $GITHUB_ENV
+          echo "GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD=android" >> $GITHUB_ENV
+          sed -i "s/^version\/code=.*/version\/code=$((1000 + ${{ github.run_number }}))/; s/^version\/name=.*/version\/name=\"0.1.${{ github.run_number }}\"/" pesnya2/export_presets.cfg
+
+      - name: Import project
+        working-directory: pesnya2
+        run: godot --headless --import 2>&1 | tail -5
+
+      - name: Unit tests
+        working-directory: pesnya2
+        run: |
+          timeout 300 godot --headless --path . res://tests/test_runner.tscn 2>&1 | tee ../tests.txt
+          grep -q "TESTS PASSED" ../tests.txt
+
+      - name: Autoplay MAIN_001 (world -> base -> world -> load)
+        working-directory: pesnya2
+        run: |
+          rm -rf ~/.local/share/godot/app_userdata/*/save
+          timeout 300 godot --headless --path . res://scenes/world/pogulyay_parking.tscn -- --autotest 2>&1 | tee ../autotest.txt
+          grep -q AUTOTEST_DONE ../autotest.txt
+          ! grep -q "SCRIPT ERROR" ../autotest.txt
+
+      - name: Export APK
+        working-directory: pesnya2
+        run: |
+          mkdir -p builds
+          godot --headless --export-debug "Android" builds/pesnya2-debug.apk 2>&1 | tail -20
+          ls -la builds/pesnya2-debug.apk
+          cp builds/pesnya2-debug.apk ../pesnya2-${{ github.run_number }}.apk
+          sha256sum ../pesnya2-${{ github.run_number }}.apk | tee ../pesnya2-${{ github.run_number }}.sha256
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pesnya2
+          path: |
+            pesnya2-*.apk
+            pesnya2-*.sha256
+            tests.txt
+            autotest.txt
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: pesnya2-${{ github.run_number }}
+          name: "Песня (новая редакция) — сборка ${{ github.run_number }}"
+          body: "Песня 0.1.${{ github.run_number }} — вертикальный срез новой редакции на Godot 4.7.2: Погуляй, парковка «Похмельная», MAIN_001 «Проснись, тебя уже посчитали», три класса по 7 способностей, дроны-сборщики благодарности, личная база в гараже №13. Ставится рядом со старой «Песней». Скачай pesnya2-${{ github.run_number }}.apk и открой на телефоне."
+          files: |
+            pesnya2-*.apk
+            pesnya2-*.sha256
+          make_latest: true

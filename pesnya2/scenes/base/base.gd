@@ -1,0 +1,201 @@
+extends Node3D
+## Личная база — отдельная инстанс-сцена вне карты Рубина (ТЗ, раздел 15):
+## большое хранилище, верстак, стенд трофеев и безопасная точка восстановления.
+
+const EXIT_POS := Vector3(0, 0, 6)
+
+var player: Player
+var camera: IsoCamera
+var hud: Hud
+var _interactables: Array = []
+
+
+func _ready() -> void:
+	if OS.get_cmdline_user_args().has("--won"):       # скриншот стенда: Люся уже побеждена
+		GameState.granted[BossArena.key()] = true
+	var env := Environment.new()
+	env.background_mode = Environment.BG_COLOR
+	env.background_color = Color(0.05, 0.05, 0.07)
+	env.ambient_light_color = Color(0.6, 0.55, 0.5)
+	env.ambient_light_energy = 0.6
+	env.glow_enabled = true
+	var we := WorldEnvironment.new()
+	we.environment = env
+	add_child(we)
+	var lamp := OmniLight3D.new()
+	lamp.position = Vector3(0, 4.5, 0)
+	lamp.omni_range = 16.0
+	lamp.light_energy = 2.0
+	lamp.light_color = Color(1, 0.85, 0.65)
+	lamp.shadow_enabled = true
+	add_child(lamp)
+	Kit.box(self, Vector3(0.4, 0.2, 0.4), Vector3(0, 4.6, 0), Color(1, 0.9, 0.6), 4.0)
+	# гараж №13 изнутри
+	Kit.solid_box(self, Vector3(16, 1, 16), Vector3(0, -0.5, 0), Color(0.35, 0.33, 0.32))
+	Kit.solid_box(self, Vector3(16, 5, 0.5), Vector3(0, 2.5, -8), Color(0.45, 0.42, 0.4))
+	Kit.solid_box(self, Vector3(0.5, 5, 16), Vector3(-8, 2.5, 0), Color(0.42, 0.4, 0.38))
+	Kit.solid_box(self, Vector3(0.5, 5, 16), Vector3(8, 2.5, 0), Color(0.42, 0.4, 0.38), 0.0, true)
+	Kit.solid_box(self, Vector3(16, 5, 0.5), Vector3(0, 2.5, 8.2), Color(0.42, 0.4, 0.38), 0.0, true)
+	Kit.label(self, "ГАРАЖ №13 · ЛИЧНАЯ БАЗА", Vector3(0, 3.6, -7.7), 60, Color(1, 0.8, 0.3), false)
+	# хранилище
+	Kit.solid_box(self, Vector3(3, 1.4, 1.2), Vector3(-5, 0.7, -6), Color(0.5, 0.35, 0.2))
+	Kit.label(self, "Сундук", Vector3(-5, 2.2, -6), 40, Color(1, 0.9, 0.6))
+	_interactables.append({"pos": Vector3(-5, 0, -4.5), "label": "Сундук", "cb": func(): hud.open_storage()})
+	# верстак (0.16): рецепты Crafting, материалы из сумок и сундука
+	Kit.solid_box(self, Vector3(3, 1.0, 1.2), Vector3(5, 0.5, -6), Color(0.35, 0.3, 0.28))
+	Kit.box(self, Vector3(3.1, 0.08, 1.3), Vector3(5, 1.04, -6), Color(0.45, 0.33, 0.22))
+	Kit.box(self, Vector3(2.8, 1.6, 0.06), Vector3(5, 2.0, -7.6), Color(0.3, 0.32, 0.3))   # щит с инструментом
+	for k in 5:
+		Kit.box(self, Vector3(0.08, 0.5 + k * 0.08, 0.04), Vector3(4.0 + k * 0.5, 2.0, -7.55), Color(0.6, 0.6, 0.62))
+	Kit.cylinder(self, 0.18, 0.25, Vector3(6.1, 1.2, -6), Color(0.25, 0.4, 0.6))           # тиски
+	Kit.box(self, Vector3(0.4, 0.3, 0.3), Vector3(4.0, 1.23, -5.8), Color(0.75, 0.2, 0.15)) # ящик с гайками
+	Kit.label(self, "Верстак", Vector3(5, 2.0, -6), 40, Color(0.8, 0.9, 1))
+	_interactables.append({"pos": Vector3(5, 0, -4.5), "label": "Верстак", "cb": _workbench})
+	_build_trophies()
+	# выход
+	Kit.box(self, Vector3(3, 0.05, 2), EXIT_POS + Vector3(0, 0.03, 0), Color(0.3, 1, 0.5, 0.5), 1.0)
+	Kit.label(self, "Выход в Рубин", EXIT_POS + Vector3(0, 2, 0), 44, Color(0.6, 1, 0.7))
+	_interactables.append({"pos": EXIT_POS, "label": "Выйти", "cb": WorldRouter.leave_base})
+
+	player = Player.new()
+	player.position = Vector3(-3.5, 0, 0) if OS.get_cmdline_user_args().has("--won") else Vector3(0, 0, 3)
+	add_child(player)
+	camera = IsoCamera.new()
+	camera.target = player
+	camera.size = 16.0
+	add_child(camera)
+	camera.make_current()
+	hud = Hud.new()
+	add_child(hud)
+	hud.set_player(player)
+	hud.controls.attack.connect(player.basic_attack)
+	hud.controls.dodge.connect(player.dodge)
+	hud.controls.ability.connect(player.use_ability)
+	hud.controls.interact.connect(_on_interact)
+	hud.pause_action.connect(_on_pause_action)
+	hud.controls.camera_rotate.connect(camera.rotate_by)
+	hud.controls.camera_zoom.connect(camera.zoom_by)
+	hud.controls.camera_tilt.connect(camera.tilt_by)
+	hud.inventory.closed.connect(func(): SaveService.save_game())
+	GameState.heal(GameState.max_hp)
+	hud.show_toast("База: здесь безопасно, здоровье восстановлено")
+	if OS.get_cmdline_user_args().has("--open=storage"):
+		GameState.add_item("ITEM_P1_SCRAP", 2)
+		GameState.add_item("ITEM_P2_BEER")
+		GameState.storage["ITEM_P2_PIPE"] = 1
+		hud.open_storage.call_deferred()
+	if OS.get_cmdline_user_args().has("--autotest"):
+		_autotest.call_deferred()
+
+
+## Стенд трофеев: 15 постаментов по числу боссов, на побеждённых — трофей.
+func _build_trophies() -> void:
+	var won := Crafting.trophies().map(func(b: Dictionary) -> String: return b.id)
+	# подсветка стенда и верстака: в углах гаража иначе темно
+	for at in [Vector3(-6, 3.2, 0), Vector3(5, 3.0, -5)]:
+		var l := OmniLight3D.new()
+		l.position = at
+		l.omni_range = 6.0
+		l.light_energy = 1.6
+		l.light_color = Color(1, 0.9, 0.75)
+		add_child(l)
+	var i := 0
+	for b in GameData.bosses:
+		var at := Vector3(-7.0 + (i / 5) * 1.0, 0, -2.4 + (i % 5) * 1.2)
+		Kit.cylinder(self, 0.3, 0.9, at + Vector3(0, 0.45, 0), Color(0.3, 0.3, 0.35))
+		if won.has(b.id):
+			_trophy(String(b.id), at + Vector3(0, 0.9, 0))
+		i += 1
+	Kit.label(self, "Трофеи: %d / %d" % [won.size(), GameData.bosses.size()], Vector3(-6, 2.2, 3.4), 36, Color(0.9, 0.9, 0.9))
+	_interactables.append({"pos": Vector3(-4.6, 0, 0), "label": "Трофеи", "cb": func() -> void:
+		var names := Crafting.trophies().map(func(b: Dictionary) -> String: return b.name)
+		hud.show_toast("Трофеи: " + (", ".join(names) if not names.is_empty() else "пока ни одного. Боссы ждут"))})
+
+
+func _trophy(boss_id: String, at: Vector3) -> void:
+	if boss_id == "BOSS_01":
+		# кольцевая лампа Люси и её микрофон
+		var tor := TorusMesh.new()
+		tor.inner_radius = 0.16
+		tor.outer_radius = 0.22
+		var ring := MeshInstance3D.new()
+		ring.mesh = tor
+		ring.material_override = Kit.mat(Color(1, 0.75, 0.9), 2.0)
+		ring.rotation.x = PI / 2
+		ring.position = at + Vector3(0, 0.3, 0)
+		add_child(ring)
+		Kit.sphere(self, 0.07, at + Vector3(0, 0.3, 0), Color(0.9, 0.2, 0.4), 1.5)
+	else:
+		Kit.cylinder(self, 0.12, 0.3, at + Vector3(0, 0.15, 0), Color(0.95, 0.75, 0.25), 0.6, 0.2)
+
+
+## Верстак: список рецептов; недостающее видно сразу, нажатие собирает вещь в ранец.
+func _workbench() -> void:
+	var opts: Array = []
+	for r in Crafting.RECIPES:
+		var id: String = r.id
+		var ok := Crafting.can_craft(id)
+		opts.append({"text": "%s — %s" % [GameData.item_name(r.out), Crafting.needs_text(id)], "tone": "green" if ok else "plain",
+				"locked": not ok, "why": "не хватает: " + Crafting.missing(id), "cb": func() -> void:
+					if Crafting.craft(id):
+						SaveService.save_game()
+						hud.show_toast("Собрано: %s" % GameData.item_name(r.out))})
+	opts.append({"text": "Отойти от верстака", "tone": "plain", "cb": func() -> void: pass})
+	hud._set_controls(false)
+	hud.dialog.ask("journal", "Верстак гаража №13. Материалы берутся из сумок и сундука.", opts)
+
+
+func _physics_process(_delta: float) -> void:
+	var it := _nearest()
+	hud.controls.interact_label = it.get("label", "")
+
+
+func _nearest() -> Dictionary:
+	for it in _interactables:
+		if player.global_position.distance_to(it.pos) <= 2.5:
+			return it
+	return {}
+
+
+func _on_interact() -> void:
+	var it := _nearest()
+	if not it.is_empty():
+		it.cb.call()
+
+
+func _stash() -> void:
+	var moved := GameState.stash_backpack()
+	SaveService.save_game()
+	hud.show_toast("В хранилище перенесено: %d" % moved if moved > 0 else "Ранец пуст (квестовые вещи остаются при себе)")
+
+
+func _on_pause_action(action: String) -> void:
+	match action:
+		"save":
+			hud.show_toast("Сохранено" if SaveService.save_game() else "Не удалось сохранить")
+		"base":
+			hud.toggle_pause()
+			hud.show_toast("Вы уже на базе")
+		"zoom_in":
+			camera.zoom_by(-3.0)
+		"zoom_out":
+			camera.zoom_by(3.0)
+		"title":
+			SaveService.save_game()
+			get_tree().paused = false
+			WorldRouter.go_to_title()
+
+
+func _autotest() -> void:
+	for i in 10:
+		await get_tree().physics_frame
+	_stash()
+	print("AUTOTEST база: хранилище %s" % str(GameState.storage))
+	# верстак: две детали дрона из сундука + одна в ранце — шапочка из фольги
+	GameState.add_item("ITEM_P1_SCRAP", 1)
+	var crafted := Crafting.craft("R_FOIL_HAT")
+	print("AUTOTEST верстак: шапочка %s, осталось обломков %d" % [crafted, Crafting.have("ITEM_P1_SCRAP")])
+	if not crafted:
+		print("AUTOTEST_FAIL")
+	SaveService.save_game()
+	WorldRouter.leave_base()

@@ -1,0 +1,2340 @@
+{
+ "schema_version": "1.1",
+ "district_id": "pogulyay",
+ "name": "Погуляй",
+ "status": "design_specification_not_implemented",
+ "dimensions_m": [
+  1000,
+  1000
+ ],
+ "city_dimensions_m": [
+  9000,
+  9000
+ ],
+ "units": "metres",
+ "coordinate_system": {
+  "plan_origin": "northwest",
+  "plan_x": "east",
+  "plan_y": "south",
+  "godot_formula": "Vector3(plan_x - 1500, elevation, plan_y - 1500)"
+ },
+ "chunk_size_m": 250,
+ "sectors": [
+  {
+   "id": "A1",
+   "name": "Парк чужого счастья",
+   "bounds_plan_m": [
+    0.0,
+    0.0,
+    333.33,
+    333.33
+   ]
+  },
+  {
+   "id": "A2",
+   "name": "Театр и клубные переулки",
+   "bounds_plan_m": [
+    333.33,
+    0.0,
+    666.67,
+    333.33
+   ]
+  },
+  {
+   "id": "A3",
+   "name": "Показательный квартал",
+   "bounds_plan_m": [
+    666.67,
+    0.0,
+    1000.0,
+    333.33
+   ]
+  },
+  {
+   "id": "B1",
+   "name": "Старые дворы",
+   "bounds_plan_m": [
+    0.0,
+    333.33,
+    333.33,
+    666.67
+   ]
+  },
+  {
+   "id": "B2",
+   "name": "Площадь с тарелкой",
+   "bounds_plan_m": [
+    333.33,
+    333.33,
+    666.67,
+    666.67
+   ]
+  },
+  {
+   "id": "B3",
+   "name": "Тридцать лайков",
+   "bounds_plan_m": [
+    666.67,
+    333.33,
+    1000.0,
+    666.67
+   ]
+  },
+  {
+   "id": "C1",
+   "name": "Похмельная",
+   "bounds_plan_m": [
+    0.0,
+    666.67,
+    333.33,
+    1000.0
+   ]
+  },
+  {
+   "id": "C2",
+   "name": "Сытый конец",
+   "bounds_plan_m": [
+    333.33,
+    666.67,
+    666.67,
+    1000.0
+   ]
+  },
+  {
+   "id": "C3",
+   "name": "Служебный задворок",
+   "bounds_plan_m": [
+    666.67,
+    666.67,
+    1000.0,
+    1000.0
+   ]
+  }
+ ],
+ "points": [
+  {
+   "id": "N01",
+   "type": "npc",
+   "name": "Тёма «Три Миллиона»",
+   "meta": "Квесты NPC_01 · акты 1–3",
+   "text": "Прямой эфир подписался на похищение. Клуб «Тридцать лайков» и телецентр связывают его цепочку заданий.",
+   "plan_position_m": [
+    717.47,
+    469.27
+   ],
+   "godot_position_m": [
+    577.47,
+    0,
+    -387.4
+   ],
+   "chunk": [
+    2,
+    1
+   ],
+   "placement_status": "proposed_requires_navmesh_validation",
+   "quest_line_id": "NPC_01"
+  },
+  {
+   "id": "N02",
+   "type": "npc",
+   "name": "Левша Рифма",
+   "meta": "Квесты NPC_02 · акты 1–3",
+   "text": "Студия «Подвал 808». Песни без лицензии и концерт для эвакуации музыкантов.",
+   "plan_position_m": [
+    410.87,
+    203.55
+   ],
+   "godot_position_m": [
+    270.87,
+    0,
+    -653.12
+   ],
+   "chunk": [
+    1,
+    0
+   ],
+   "placement_status": "proposed_requires_navmesh_validation",
+   "quest_line_id": "NPC_02"
+  },
+  {
+   "id": "N03",
+   "type": "npc",
+   "name": "Белла Сверхценная",
+   "meta": "Квесты NPC_03 · акты 2–4",
+   "text": "Ресторан «Сытый конец». Суп признан саботажем, а посетители — ингредиентами.",
+   "plan_position_m": [
+    483.33,
+    716.67
+   ],
+   "godot_position_m": [
+    343.33,
+    0,
+    -140.0
+   ],
+   "chunk": [
+    1,
+    2
+   ],
+   "placement_status": "proposed_requires_navmesh_validation",
+   "quest_line_id": "NPC_03"
+  },
+  {
+   "id": "N04",
+   "type": "npc",
+   "name": "Аркадий Позитив",
+   "meta": "Квесты NPC_04 · акты 2–4",
+   "text": "Агентство «Рост 300%». Обязательная трансформация под видом карьерного роста.",
+   "plan_position_m": [
+    644.45,
+    539.95
+   ],
+   "godot_position_m": [
+    504.45,
+    0,
+    -316.72
+   ],
+   "chunk": [
+    2,
+    2
+   ],
+   "placement_status": "proposed_requires_navmesh_validation",
+   "quest_line_id": "NPC_04"
+  },
+  {
+   "id": "N05",
+   "type": "npc",
+   "name": "Дина «Овация»",
+   "meta": "Квесты NPC_05 · акты 1–3",
+   "text": "Театр «Овация». Аплодисменты по подписке; отсутствие хлопков становится уликой.",
+   "plan_position_m": [
+    500.24,
+    243.74
+   ],
+   "godot_position_m": [
+    360.24,
+    0,
+    -612.93
+   ],
+   "chunk": [
+    2,
+    0
+   ],
+   "placement_status": "proposed_requires_navmesh_validation",
+   "quest_line_id": "NPC_05"
+  },
+  {
+   "id": "N06",
+   "type": "npc",
+   "name": "Миша Пломба",
+   "meta": "Квесты NPC_06 · акты 2–4",
+   "text": "Копицентр «Много копий». Принтер копирует пропуск вместе с личностью.",
+   "plan_position_m": [
+    570.69,
+    509.22
+   ],
+   "godot_position_m": [
+    430.69,
+    0,
+    -347.45
+   ],
+   "chunk": [
+    2,
+    2
+   ],
+   "placement_status": "proposed_requires_navmesh_validation",
+   "quest_line_id": "NPC_06"
+  },
+  {
+   "id": "N07",
+   "type": "npc",
+   "name": "Павел Тарелкин",
+   "meta": "Квесты NPC_07 · акты 1–3",
+   "text": "НЛО напрокат, банкетный павильон, парк аттракционов. Пенопластовая тарелка отвлекает настоящих пришельцев.",
+   "plan_position_m": [
+    238.43,
+    233.89
+   ],
+   "godot_position_m": [
+    98.43,
+    0,
+    -622.78
+   ],
+   "chunk": [
+    0,
+    0
+   ],
+   "placement_status": "proposed_requires_navmesh_validation",
+   "quest_line_id": "NPC_07"
+  },
+  {
+   "id": "N08",
+   "type": "npc",
+   "name": "Валера Космос",
+   "meta": "Квесты NPC_08 · акты 3–5",
+   "text": "Обсерватория «Седьмой этаж». Гороскоп совпадает с секретным расписанием рейдов.",
+   "plan_position_m": [
+    842.55,
+    114.42
+   ],
+   "godot_position_m": [
+    702.55,
+    0,
+    -742.25
+   ],
+   "chunk": [
+    3,
+    0
+   ],
+   "placement_status": "proposed_requires_navmesh_validation",
+   "quest_line_id": "NPC_08"
+  },
+  {
+   "id": "N09",
+   "type": "npc",
+   "name": "Зоя Номерок",
+   "meta": "Квесты NPC_09 · акты 1–3",
+   "text": "МФЦ «Окно № 0». Очередь подключена к устройству перепрошивки. Восстание — строго по талонам.",
+   "plan_position_m": [
+    489.26,
+    450.48
+   ],
+   "godot_position_m": [
+    349.26,
+    0,
+    -406.19
+   ],
+   "chunk": [
+    1,
+    1
+   ],
+   "placement_status": "proposed_requires_navmesh_validation",
+   "quest_line_id": "NPC_09"
+  },
+  {
+   "id": "N10",
+   "type": "npc",
+   "name": "Рома Безсчётчика",
+   "meta": "Квесты NPC_10 · акты 2–4",
+   "text": "Гаражи «Чек энджин». Путь через подземелье навигатор считает платной объездной.",
+   "plan_position_m": [
+    257.06,
+    787.23
+   ],
+   "godot_position_m": [
+    117.06,
+    0,
+    -69.44
+   ],
+   "chunk": [
+    1,
+    3
+   ],
+   "placement_status": "proposed_requires_navmesh_validation",
+   "quest_line_id": "NPC_10"
+  },
+  {
+   "id": "N11",
+   "type": "npc",
+   "name": "Вера Пресс",
+   "meta": "Квесты NPC_11 · акты 2–4",
+   "text": "Спортзал «Вечно двадцать». Молодость оплачивается памятью, кардио питает дронов.",
+   "plan_position_m": [
+    833.33,
+    252.72
+   ],
+   "godot_position_m": [
+    693.33,
+    0,
+    -603.95
+   ],
+   "chunk": [
+    3,
+    1
+   ],
+   "placement_status": "proposed_requires_navmesh_validation",
+   "quest_line_id": "NPC_11"
+  },
+  {
+   "id": "N12",
+   "type": "npc",
+   "name": "Гоша Кольцо",
+   "meta": "Квесты NPC_12 · акты 3–5",
+   "text": "ЗАГС «До первого рейда». Героя по ошибке женят на муниципальной парковке.",
+   "plan_position_m": [
+    392.43,
+    539.95
+   ],
+   "godot_position_m": [
+    252.43,
+    0,
+    -316.72
+   ],
+   "chunk": [
+    1,
+    2
+   ],
+   "placement_status": "proposed_requires_navmesh_validation",
+   "quest_line_id": "NPC_12"
+  },
+  {
+   "id": "N13",
+   "type": "npc",
+   "name": "Инга Архив",
+   "meta": "Квесты NPC_13 · акты 4–5",
+   "text": "Архив R-12. Доказательства поддельной добровольности и письма с будущими извинениями.",
+   "plan_position_m": [
+    846.67,
+    896.67
+   ],
+   "godot_position_m": [
+    706.67,
+    0,
+    40.0
+   ],
+   "chunk": [
+    3,
+    3
+   ],
+   "placement_status": "proposed_requires_navmesh_validation",
+   "quest_line_id": "NPC_13"
+  },
+  {
+   "id": "N14",
+   "type": "npc",
+   "name": "Феликс Ус",
+   "meta": "Квесты NPC_14 · акты 1–3",
+   "text": "Парикмахерская «Без лица». Парик признан гражданином и проходит КПП без хозяина.",
+   "plan_position_m": [
+    170.0,
+    553.33
+   ],
+   "godot_position_m": [
+    30.0,
+    0,
+    -303.34
+   ],
+   "chunk": [
+    0,
+    2
+   ],
+   "placement_status": "proposed_requires_navmesh_validation",
+   "quest_line_id": "NPC_14"
+  },
+  {
+   "id": "N15",
+   "type": "npc",
+   "name": "Саня Стерильный",
+   "meta": "Квесты NPC_15 · акты 3–5",
+   "text": "Клуб «Стерильно» и старая баня. Сертификат чистоты выдан раньше проверки подвала.",
+   "plan_position_m": [
+    626.01,
+    197.4
+   ],
+   "godot_position_m": [
+    486.01,
+    0,
+    -659.27
+   ],
+   "chunk": [
+    2,
+    0
+   ],
+   "placement_status": "proposed_requires_navmesh_validation",
+   "quest_line_id": "NPC_15"
+  },
+  {
+   "id": "B1",
+   "type": "boss",
+   "name": "Люся Глушительница Лайков",
+   "meta": "BOSS_01 · ARENA_01 · LOC_039 · ур. 8",
+   "text": "Рекламная площадь, проект арены 110 × 90 м. Укрытия — колонны рекламных щитов. Сектор «вспышки спонсорства»; квест «Реклама спасения».",
+   "plan_position_m": [
+    814.89,
+    453.9
+   ],
+   "godot_position_m": [
+    674.89,
+    0,
+    -402.77
+   ],
+   "chunk": [
+    3,
+    1
+   ],
+   "placement_status": "proposed_requires_navmesh_validation",
+   "source_boss_id": "BOSS_01",
+   "source_arena_id": "ARENA_01",
+   "source_location_id": "LOC_039",
+   "legacy_level": 8,
+   "arena_size_m": [
+    72,
+    58
+   ],
+   "phase_health_percent": [
+    100,
+    70,
+    35,
+    0
+   ]
+  },
+  {
+   "id": "B2",
+   "type": "boss",
+   "name": "Портье Семь Лиц",
+   "meta": "BOSS_02 · ARENA_02 · LOC_038 · ур. 11",
+   "text": "Клубная арена 90 × 70 м. Световой фейс-контроль и голографическая проверка личности; укрытия — барные стойки. Квест «Карантин с танцами».",
+   "plan_position_m": [
+    586.05,
+    129.79
+   ],
+   "godot_position_m": [
+    446.05,
+    0,
+    -726.88
+   ],
+   "chunk": [
+    2,
+    0
+   ],
+   "placement_status": "proposed_requires_navmesh_validation",
+   "source_boss_id": "BOSS_02",
+   "source_arena_id": "ARENA_02",
+   "source_location_id": "LOC_038",
+   "legacy_level": 11,
+   "arena_size_m": [
+    58,
+    46
+   ],
+   "phase_health_percent": [
+    100,
+    70,
+    35,
+    0
+   ]
+  },
+  {
+   "id": "B3",
+   "type": "boss",
+   "name": "Танцор Протокол-404",
+   "meta": "BOSS_03 · ARENA_03 · LOC_052 · ур. 14",
+   "text": "Площадка аттракциона 120 × 100 м. Танцевальный рой дронов, лазерные дорожки и укрытия-кассы. Квест «Тарелка из пенопласта».",
+   "plan_position_m": [
+    48.0,
+    200.0
+   ],
+   "godot_position_m": [
+    -92.0,
+    0,
+    -656.67
+   ],
+   "chunk": [
+    0,
+    0
+   ],
+   "placement_status": "proposed_requires_navmesh_validation",
+   "source_boss_id": "BOSS_03",
+   "source_arena_id": "ARENA_03",
+   "source_location_id": "LOC_052",
+   "legacy_level": 14,
+   "arena_size_m": [
+    78,
+    65
+   ],
+   "phase_health_percent": [
+    100,
+    70,
+    35,
+    0
+   ]
+  },
+  {
+   "id": "M1-1",
+   "type": "mob",
+   "name": "Дрон-лайкомёт",
+   "meta": "Проект спавна · радиус 45 м",
+   "text": "Рекламные дворы; патруль из 3–4 дронов. Не появляется в зоне отдыха. Состав группы — предложение для балансировки.",
+   "plan_position_m": [
+    759.57,
+    401.65
+   ],
+   "godot_position_m": [
+    619.57,
+    0,
+    -455.02
+   ],
+   "chunk": [
+    3,
+    1
+   ],
+   "placement_status": "proposed_requires_navmesh_validation",
+   "radius_m": 27,
+   "spawn_min_distance_to_player_m": 25,
+   "respawn_delay_s": 180,
+   "group_composition": {
+    "status": "proposed_not_playtested",
+    "members": [
+     {
+      "mob_type_id": "mob_01",
+      "count_min": 3,
+      "count_max": 4
+     }
+    ],
+    "total_min": 3,
+    "total_max": 4,
+    "count_selection": "integer_in_inclusive_range_at_group_creation"
+   }
+  },
+  {
+   "id": "M1-2",
+   "type": "mob",
+   "name": "Дрон-лайкомёт",
+   "meta": "Проект спавна · радиус 45 м",
+   "text": "Рекламные дворы; патруль из 3–4 дронов. Не появляется в зоне отдыха. Состав группы — предложение для балансировки.",
+   "plan_position_m": [
+    747.28,
+    546.1
+   ],
+   "godot_position_m": [
+    607.28,
+    0,
+    -310.57
+   ],
+   "chunk": [
+    2,
+    2
+   ],
+   "placement_status": "proposed_requires_navmesh_validation",
+   "radius_m": 27,
+   "spawn_min_distance_to_player_m": 25,
+   "respawn_delay_s": 180,
+   "group_composition": {
+    "status": "proposed_not_playtested",
+    "members": [
+     {
+      "mob_type_id": "mob_01",
+      "count_min": 3,
+      "count_max": 4
+     }
+    ],
+    "total_min": 3,
+    "total_max": 4,
+    "count_selection": "integer_in_inclusive_range_at_group_creation"
+   }
+  },
+  {
+   "id": "M1-3",
+   "type": "mob",
+   "name": "Дрон-лайкомёт",
+   "meta": "Проект спавна · радиус 45 м",
+   "text": "Рекламные дворы; патруль из 3–4 дронов. Не появляется в зоне отдыха. Состав группы — предложение для балансировки.",
+   "plan_position_m": [
+    521.51,
+    383.21
+   ],
+   "godot_position_m": [
+    381.51,
+    0,
+    -473.46
+   ],
+   "chunk": [
+    2,
+    1
+   ],
+   "placement_status": "proposed_requires_navmesh_validation",
+   "radius_m": 27,
+   "spawn_min_distance_to_player_m": 25,
+   "respawn_delay_s": 180,
+   "group_composition": {
+    "status": "proposed_not_playtested",
+    "members": [
+     {
+      "mob_type_id": "mob_01",
+      "count_min": 3,
+      "count_max": 4
+     }
+    ],
+    "total_min": 3,
+    "total_max": 4,
+    "count_selection": "integer_in_inclusive_range_at_group_creation"
+   }
+  },
+  {
+   "id": "M2-1",
+   "type": "mob",
+   "name": "Охранник клуба «Без слуха»",
+   "meta": "Проект спавна · радиус 45 м",
+   "text": "Входные группы клубов; 2–3 охранника. Не появляется в зоне отдыха. Состав группы — предложение для балансировки.",
+   "plan_position_m": [
+    389.36,
+    142.08
+   ],
+   "godot_position_m": [
+    249.36,
+    0,
+    -714.59
+   ],
+   "chunk": [
+    1,
+    0
+   ],
+   "placement_status": "proposed_requires_navmesh_validation",
+   "radius_m": 27,
+   "spawn_min_distance_to_player_m": 25,
+   "respawn_delay_s": 180,
+   "group_composition": {
+    "status": "proposed_not_playtested",
+    "members": [
+     {
+      "mob_type_id": "mob_02",
+      "count_min": 2,
+      "count_max": 3
+     }
+    ],
+    "total_min": 2,
+    "total_max": 3,
+    "count_selection": "integer_in_inclusive_range_at_group_creation"
+   }
+  },
+  {
+   "id": "M2-2",
+   "type": "mob",
+   "name": "Охранник клуба «Без слуха»",
+   "meta": "Проект спавна · радиус 45 м",
+   "text": "Входные группы клубов; 2–3 охранника. Не появляется в зоне отдыха. Состав группы — предложение для балансировки.",
+   "plan_position_m": [
+    444.68,
+    277.31
+   ],
+   "godot_position_m": [
+    304.68,
+    0,
+    -579.36
+   ],
+   "chunk": [
+    1,
+    1
+   ],
+   "placement_status": "proposed_requires_navmesh_validation",
+   "radius_m": 27,
+   "spawn_min_distance_to_player_m": 25,
+   "respawn_delay_s": 180,
+   "group_composition": {
+    "status": "proposed_not_playtested",
+    "members": [
+     {
+      "mob_type_id": "mob_02",
+      "count_min": 2,
+      "count_max": 3
+     }
+    ],
+    "total_min": 2,
+    "total_max": 3,
+    "count_selection": "integer_in_inclusive_range_at_group_creation"
+   }
+  },
+  {
+   "id": "M2-3",
+   "type": "mob",
+   "name": "Охранник клуба «Без слуха»",
+   "meta": "Проект спавна · радиус 45 м",
+   "text": "Входные группы клубов; 2–3 охранника. Не появляется в зоне отдыха. Состав группы — предложение для балансировки.",
+   "plan_position_m": [
+    647.52,
+    145.15
+   ],
+   "godot_position_m": [
+    507.52,
+    0,
+    -711.52
+   ],
+   "chunk": [
+    2,
+    0
+   ],
+   "placement_status": "proposed_requires_navmesh_validation",
+   "radius_m": 27,
+   "spawn_min_distance_to_player_m": 25,
+   "respawn_delay_s": 180,
+   "group_composition": {
+    "status": "proposed_not_playtested",
+    "members": [
+     {
+      "mob_type_id": "mob_02",
+      "count_min": 2,
+      "count_max": 3
+     }
+    ],
+    "total_min": 2,
+    "total_max": 3,
+    "count_selection": "integer_in_inclusive_range_at_group_creation"
+   }
+  },
+  {
+   "id": "M3-1",
+   "type": "mob",
+   "name": "Гастрономический слизень",
+   "meta": "Проект спавна · радиус 45 м",
+   "text": "Кухни, мусорные дворы и сливные решётки; 4–6 существ. Не появляется в зоне отдыха. Состав группы — предложение для балансировки.",
+   "plan_position_m": [
+    450.83,
+    774.94
+   ],
+   "godot_position_m": [
+    310.83,
+    0,
+    -81.73
+   ],
+   "chunk": [
+    1,
+    3
+   ],
+   "placement_status": "proposed_requires_navmesh_validation",
+   "radius_m": 27,
+   "spawn_min_distance_to_player_m": 25,
+   "respawn_delay_s": 180,
+   "group_composition": {
+    "status": "proposed_not_playtested",
+    "members": [
+     {
+      "mob_type_id": "mob_03",
+      "count_min": 4,
+      "count_max": 6
+     }
+    ],
+    "total_min": 4,
+    "total_max": 6,
+    "count_selection": "integer_in_inclusive_range_at_group_creation"
+   }
+  },
+  {
+   "id": "M3-2",
+   "type": "mob",
+   "name": "Гастрономический слизень",
+   "meta": "Проект спавна · радиус 45 м",
+   "text": "Кухни, мусорные дворы и сливные решётки; 4–6 существ. Не появляется в зоне отдыха. Состав группы — предложение для балансировки.",
+   "plan_position_m": [
+    564.54,
+    857.92
+   ],
+   "godot_position_m": [
+    424.54,
+    0,
+    1.25
+   ],
+   "chunk": [
+    2,
+    3
+   ],
+   "placement_status": "proposed_requires_navmesh_validation",
+   "radius_m": 27,
+   "spawn_min_distance_to_player_m": 25,
+   "respawn_delay_s": 180,
+   "group_composition": {
+    "status": "proposed_not_playtested",
+    "members": [
+     {
+      "mob_type_id": "mob_03",
+      "count_min": 4,
+      "count_max": 6
+     }
+    ],
+    "total_min": 4,
+    "total_max": 6,
+    "count_selection": "integer_in_inclusive_range_at_group_creation"
+   }
+  },
+  {
+   "id": "M3-3",
+   "type": "mob",
+   "name": "Гастрономический слизень",
+   "meta": "Проект спавна · радиус 45 м",
+   "text": "Кухни, мусорные дворы и сливные решётки; 4–6 существ. Не появляется в зоне отдыха. Состав группы — предложение для балансировки.",
+   "plan_position_m": [
+    377.07,
+    897.87
+   ],
+   "godot_position_m": [
+    237.07,
+    0,
+    41.2
+   ],
+   "chunk": [
+    1,
+    3
+   ],
+   "placement_status": "proposed_requires_navmesh_validation",
+   "radius_m": 27,
+   "spawn_min_distance_to_player_m": 25,
+   "respawn_delay_s": 180,
+   "group_composition": {
+    "status": "proposed_not_playtested",
+    "members": [
+     {
+      "mob_type_id": "mob_03",
+      "count_min": 4,
+      "count_max": 6
+     }
+    ],
+    "total_min": 4,
+    "total_max": 6,
+    "count_selection": "integer_in_inclusive_range_at_group_creation"
+   }
+  },
+  {
+   "id": "M4-1",
+   "type": "mob",
+   "name": "Патрульный цензор",
+   "meta": "Проект спавна · радиус 45 м",
+   "text": "Административные проходы; 2 патрульных и 1 дрон. Не появляется в зоне отдыха. Состав группы — предложение для балансировки.",
+   "plan_position_m": [
+    561.47,
+    417.02
+   ],
+   "godot_position_m": [
+    421.47,
+    0,
+    -439.65
+   ],
+   "chunk": [
+    2,
+    1
+   ],
+   "placement_status": "proposed_requires_navmesh_validation",
+   "radius_m": 27,
+   "spawn_min_distance_to_player_m": 25,
+   "respawn_delay_s": 180,
+   "group_composition": {
+    "status": "proposed_not_playtested",
+    "members": [
+     {
+      "mob_type_id": "mob_04",
+      "count_min": 2,
+      "count_max": 2
+     },
+     {
+      "mob_type_id": "mob_01",
+      "count_min": 1,
+      "count_max": 1
+     }
+    ],
+    "total_min": 3,
+    "total_max": 3,
+    "count_selection": "integer_in_inclusive_range_at_group_creation",
+    "note": "В прежнем тексте указан один дрон без уточнения типа. Выбран дрон-лайкомёт как проектное уточнение."
+   }
+  },
+  {
+   "id": "M4-2",
+   "type": "mob",
+   "name": "Патрульный цензор",
+   "meta": "Проект спавна · радиус 45 м",
+   "text": "Административные проходы; 2 патрульных и 1 дрон. Не появляется в зоне отдыха. Состав группы — предложение для балансировки.",
+   "plan_position_m": [
+    685.81,
+    595.27
+   ],
+   "godot_position_m": [
+    545.81,
+    0,
+    -261.4
+   ],
+   "chunk": [
+    2,
+    2
+   ],
+   "placement_status": "proposed_requires_navmesh_validation",
+   "radius_m": 27,
+   "spawn_min_distance_to_player_m": 25,
+   "respawn_delay_s": 180,
+   "group_composition": {
+    "status": "proposed_not_playtested",
+    "members": [
+     {
+      "mob_type_id": "mob_04",
+      "count_min": 2,
+      "count_max": 2
+     },
+     {
+      "mob_type_id": "mob_01",
+      "count_min": 1,
+      "count_max": 1
+     }
+    ],
+    "total_min": 3,
+    "total_max": 3,
+    "count_selection": "integer_in_inclusive_range_at_group_creation",
+    "note": "В прежнем тексте указан один дрон без уточнения типа. Выбран дрон-лайкомёт как проектное уточнение."
+   }
+  },
+  {
+   "id": "M4-3",
+   "type": "mob",
+   "name": "Патрульный цензор",
+   "meta": "Проект спавна · радиус 45 м",
+   "text": "Административные проходы; 2 патрульных и 1 дрон. Не появляется в зоне отдыха. Состав группы — предложение для балансировки.",
+   "plan_position_m": [
+    398.58,
+    490.78
+   ],
+   "godot_position_m": [
+    258.58,
+    0,
+    -365.89
+   ],
+   "chunk": [
+    1,
+    1
+   ],
+   "placement_status": "proposed_requires_navmesh_validation",
+   "radius_m": 27,
+   "spawn_min_distance_to_player_m": 25,
+   "respawn_delay_s": 180,
+   "group_composition": {
+    "status": "proposed_not_playtested",
+    "members": [
+     {
+      "mob_type_id": "mob_04",
+      "count_min": 2,
+      "count_max": 2
+     },
+     {
+      "mob_type_id": "mob_01",
+      "count_min": 1,
+      "count_max": 1
+     }
+    ],
+    "total_min": 3,
+    "total_max": 3,
+    "count_selection": "integer_in_inclusive_range_at_group_creation",
+    "note": "В прежнем тексте указан один дрон без уточнения типа. Выбран дрон-лайкомёт как проектное уточнение."
+   }
+  },
+  {
+   "id": "M5-1",
+   "type": "mob",
+   "name": "Хлопающий мутант",
+   "meta": "Проект спавна · радиус 45 м",
+   "text": "Театр и места обязательного восхищения; группа 4–5. Не появляется в зоне отдыха. Состав группы — предложение для балансировки.",
+   "plan_position_m": [
+    433.33,
+    198.0
+   ],
+   "godot_position_m": [
+    293.33,
+    0,
+    -658.67
+   ],
+   "chunk": [
+    1,
+    0
+   ],
+   "placement_status": "proposed_requires_navmesh_validation",
+   "radius_m": 27,
+   "spawn_min_distance_to_player_m": 25,
+   "respawn_delay_s": 180,
+   "group_composition": {
+    "status": "proposed_not_playtested",
+    "members": [
+     {
+      "mob_type_id": "mob_05",
+      "count_min": 4,
+      "count_max": 5
+     }
+    ],
+    "total_min": 4,
+    "total_max": 5,
+    "count_selection": "integer_in_inclusive_range_at_group_creation"
+   },
+   "placement_note": "0.11: сдвинута с объёма нового макета «Рубин» на свободное место рядом"
+  },
+  {
+   "id": "M5-2",
+   "type": "mob",
+   "name": "Хлопающий мутант",
+   "meta": "Проект спавна · радиус 45 м",
+   "text": "Театр и места обязательного восхищения; группа 4–5. Не появляется в зоне отдыха. Состав группы — предложение для балансировки.",
+   "plan_position_m": [
+    444.68,
+    481.56
+   ],
+   "godot_position_m": [
+    304.68,
+    0,
+    -375.11
+   ],
+   "chunk": [
+    1,
+    1
+   ],
+   "placement_status": "proposed_requires_navmesh_validation",
+   "radius_m": 27,
+   "spawn_min_distance_to_player_m": 25,
+   "respawn_delay_s": 180,
+   "group_composition": {
+    "status": "proposed_not_playtested",
+    "members": [
+     {
+      "mob_type_id": "mob_05",
+      "count_min": 4,
+      "count_max": 5
+     }
+    ],
+    "total_min": 4,
+    "total_max": 5,
+    "count_selection": "integer_in_inclusive_range_at_group_creation"
+   }
+  },
+  {
+   "id": "M5-3",
+   "type": "mob",
+   "name": "Хлопающий мутант",
+   "meta": "Проект спавна · радиус 45 м",
+   "text": "Театр и места обязательного восхищения; группа 4–5. Не появляется в зоне отдыха. Состав группы — предложение для балансировки.",
+   "plan_position_m": [
+    716.55,
+    398.58
+   ],
+   "godot_position_m": [
+    576.55,
+    0,
+    -458.09
+   ],
+   "chunk": [
+    2,
+    1
+   ],
+   "placement_status": "proposed_requires_navmesh_validation",
+   "radius_m": 27,
+   "spawn_min_distance_to_player_m": 25,
+   "respawn_delay_s": 180,
+   "group_composition": {
+    "status": "proposed_not_playtested",
+    "members": [
+     {
+      "mob_type_id": "mob_05",
+      "count_min": 4,
+      "count_max": 5
+     }
+    ],
+    "total_min": 4,
+    "total_max": 5,
+    "count_selection": "integer_in_inclusive_range_at_group_creation"
+   }
+  },
+  {
+   "id": "M6-1",
+   "type": "mob",
+   "name": "Курьер пропусков",
+   "meta": "Проект спавна · радиус 45 м",
+   "text": "Проходные и боковые улицы; подвижная группа из 3. Не появляется в зоне отдыха. Состав группы — предложение для балансировки.",
+   "plan_position_m": [
+    298.82,
+    506.15
+   ],
+   "godot_position_m": [
+    158.82,
+    0,
+    -350.52
+   ],
+   "chunk": [
+    1,
+    2
+   ],
+   "placement_status": "proposed_requires_navmesh_validation",
+   "radius_m": 27,
+   "spawn_min_distance_to_player_m": 25,
+   "respawn_delay_s": 180,
+   "group_composition": {
+    "status": "proposed_not_playtested",
+    "members": [
+     {
+      "mob_type_id": "mob_06",
+      "count_min": 3,
+      "count_max": 3
+     }
+    ],
+    "total_min": 3,
+    "total_max": 3,
+    "count_selection": "integer_in_inclusive_range_at_group_creation"
+   }
+  },
+  {
+   "id": "M6-2",
+   "type": "mob",
+   "name": "Курьер пропусков",
+   "meta": "Проект спавна · радиус 45 м",
+   "text": "Проходные и боковые улицы; подвижная группа из 3. Не появляется в зоне отдыха. Состав группы — предложение для балансировки.",
+   "plan_position_m": [
+    577.91,
+    578.17
+   ],
+   "godot_position_m": [
+    437.91,
+    0,
+    -278.5
+   ],
+   "chunk": [
+    2,
+    2
+   ],
+   "placement_status": "proposed_requires_navmesh_validation",
+   "radius_m": 27,
+   "spawn_min_distance_to_player_m": 25,
+   "respawn_delay_s": 180,
+   "group_composition": {
+    "status": "proposed_not_playtested",
+    "members": [
+     {
+      "mob_type_id": "mob_06",
+      "count_min": 3,
+      "count_max": 3
+     }
+    ],
+    "total_min": 3,
+    "total_max": 3,
+    "count_selection": "integer_in_inclusive_range_at_group_creation"
+   }
+  },
+  {
+   "id": "M6-3",
+   "type": "mob",
+   "name": "Курьер пропусков",
+   "meta": "Проект спавна · радиус 45 м",
+   "text": "Проходные и боковые улицы; подвижная группа из 3. Не появляется в зоне отдыха. Состав группы — предложение для балансировки.",
+   "plan_position_m": [
+    931.68,
+    543.03
+   ],
+   "godot_position_m": [
+    791.68,
+    0,
+    -313.64
+   ],
+   "chunk": [
+    3,
+    2
+   ],
+   "placement_status": "proposed_requires_navmesh_validation",
+   "radius_m": 27,
+   "spawn_min_distance_to_player_m": 25,
+   "respawn_delay_s": 180,
+   "group_composition": {
+    "status": "proposed_not_playtested",
+    "members": [
+     {
+      "mob_type_id": "mob_06",
+      "count_min": 3,
+      "count_max": 3
+     }
+    ],
+    "total_min": 3,
+    "total_max": 3,
+    "count_selection": "integer_in_inclusive_range_at_group_creation"
+   }
+  },
+  {
+   "id": "M7-1",
+   "type": "mob",
+   "name": "Дрон осветитель",
+   "meta": "Проект спавна · радиус 45 м",
+   "text": "Парк и сцены; 3 световых дрона. Не появляется в зоне отдыха. Состав группы — предложение для балансировки.",
+   "plan_position_m": [
+    194.33,
+    194.33
+   ],
+   "godot_position_m": [
+    54.33,
+    0,
+    -662.34
+   ],
+   "chunk": [
+    0,
+    0
+   ],
+   "placement_status": "proposed_requires_navmesh_validation",
+   "radius_m": 27,
+   "spawn_min_distance_to_player_m": 25,
+   "respawn_delay_s": 180,
+   "group_composition": {
+    "status": "proposed_not_playtested",
+    "members": [
+     {
+      "mob_type_id": "mob_07",
+      "count_min": 3,
+      "count_max": 3
+     }
+    ],
+    "total_min": 3,
+    "total_max": 3,
+    "count_selection": "integer_in_inclusive_range_at_group_creation"
+   }
+  },
+  {
+   "id": "M7-2",
+   "type": "mob",
+   "name": "Дрон осветитель",
+   "meta": "Проект спавна · радиус 45 м",
+   "text": "Парк и сцены; 3 световых дрона. Не появляется в зоне отдыха. Состав группы — предложение для балансировки.",
+   "plan_position_m": [
+    283.45,
+    126.71
+   ],
+   "godot_position_m": [
+    143.45,
+    0,
+    -729.96
+   ],
+   "chunk": [
+    1,
+    0
+   ],
+   "placement_status": "proposed_requires_navmesh_validation",
+   "radius_m": 27,
+   "spawn_min_distance_to_player_m": 25,
+   "respawn_delay_s": 180,
+   "group_composition": {
+    "status": "proposed_not_playtested",
+    "members": [
+     {
+      "mob_type_id": "mob_07",
+      "count_min": 3,
+      "count_max": 3
+     }
+    ],
+    "total_min": 3,
+    "total_max": 3,
+    "count_selection": "integer_in_inclusive_range_at_group_creation"
+   }
+  },
+  {
+   "id": "M7-3",
+   "type": "mob",
+   "name": "Дрон осветитель",
+   "meta": "Проект спавна · радиус 45 м",
+   "text": "Парк и сцены; 3 световых дрона. Не появляется в зоне отдыха. Состав группы — предложение для балансировки.",
+   "plan_position_m": [
+    552.25,
+    228.13
+   ],
+   "godot_position_m": [
+    412.25,
+    0,
+    -628.54
+   ],
+   "chunk": [
+    2,
+    0
+   ],
+   "placement_status": "proposed_requires_navmesh_validation",
+   "radius_m": 27,
+   "spawn_min_distance_to_player_m": 25,
+   "respawn_delay_s": 180,
+   "group_composition": {
+    "status": "proposed_not_playtested",
+    "members": [
+     {
+      "mob_type_id": "mob_07",
+      "count_min": 3,
+      "count_max": 3
+     }
+    ],
+    "total_min": 3,
+    "total_max": 3,
+    "count_selection": "integer_in_inclusive_range_at_group_creation"
+   }
+  },
+  {
+   "id": "M8-1",
+   "type": "mob",
+   "name": "Пустоглазый бармен",
+   "meta": "Проект спавна · радиус 45 м",
+   "text": "Служебные двери баров; 2–3 противника. Не появляется в зоне отдыха. Состав группы — предложение для балансировки.",
+   "plan_position_m": [
+    603.33,
+    100.0
+   ],
+   "godot_position_m": [
+    463.33,
+    0,
+    -756.67
+   ],
+   "chunk": [
+    2,
+    0
+   ],
+   "placement_status": "proposed_requires_navmesh_validation",
+   "radius_m": 27,
+   "spawn_min_distance_to_player_m": 25,
+   "respawn_delay_s": 180,
+   "group_composition": {
+    "status": "proposed_not_playtested",
+    "members": [
+     {
+      "mob_type_id": "mob_08",
+      "count_min": 2,
+      "count_max": 3
+     }
+    ],
+    "total_min": 2,
+    "total_max": 3,
+    "count_selection": "integer_in_inclusive_range_at_group_creation"
+   }
+  },
+  {
+   "id": "M8-2",
+   "type": "mob",
+   "name": "Пустоглазый бармен",
+   "meta": "Проект спавна · радиус 45 м",
+   "text": "Служебные двери баров; 2–3 противника. Не появляется в зоне отдыха. Состав группы — предложение для балансировки.",
+   "plan_position_m": [
+    383.21,
+    234.28
+   ],
+   "godot_position_m": [
+    243.21,
+    0,
+    -622.39
+   ],
+   "chunk": [
+    1,
+    0
+   ],
+   "placement_status": "proposed_requires_navmesh_validation",
+   "radius_m": 27,
+   "spawn_min_distance_to_player_m": 25,
+   "respawn_delay_s": 180,
+   "group_composition": {
+    "status": "proposed_not_playtested",
+    "members": [
+     {
+      "mob_type_id": "mob_08",
+      "count_min": 2,
+      "count_max": 3
+     }
+    ],
+    "total_min": 2,
+    "total_max": 3,
+    "count_selection": "integer_in_inclusive_range_at_group_creation"
+   }
+  },
+  {
+   "id": "M8-3",
+   "type": "mob",
+   "name": "Пустоглазый бармен",
+   "meta": "Проект спавна · радиус 45 м",
+   "text": "Служебные двери баров; 2–3 противника. Не появляется в зоне отдыха. Состав группы — предложение для балансировки.",
+   "plan_position_m": [
+    598.35,
+    765.72
+   ],
+   "godot_position_m": [
+    458.35,
+    0,
+    -90.95
+   ],
+   "chunk": [
+    2,
+    3
+   ],
+   "placement_status": "proposed_requires_navmesh_validation",
+   "radius_m": 27,
+   "spawn_min_distance_to_player_m": 25,
+   "respawn_delay_s": 180,
+   "group_composition": {
+    "status": "proposed_not_playtested",
+    "members": [
+     {
+      "mob_type_id": "mob_08",
+      "count_min": 2,
+      "count_max": 3
+     }
+    ],
+    "total_min": 2,
+    "total_max": 3,
+    "count_selection": "integer_in_inclusive_range_at_group_creation"
+   }
+  },
+  {
+   "id": "M9-1",
+   "type": "mob",
+   "name": "Мутант-очередник",
+   "meta": "Проект спавна · радиус 45 м",
+   "text": "Очереди у МФЦ и регистрационных окон; группа 5–6. Не появляется в зоне отдыха. Состав группы — предложение для балансировки.",
+   "plan_position_m": [
+    472.34,
+    404.73
+   ],
+   "godot_position_m": [
+    332.34,
+    0,
+    -451.94
+   ],
+   "chunk": [
+    1,
+    1
+   ],
+   "placement_status": "proposed_requires_navmesh_validation",
+   "radius_m": 27,
+   "spawn_min_distance_to_player_m": 25,
+   "respawn_delay_s": 180,
+   "group_composition": {
+    "status": "proposed_not_playtested",
+    "members": [
+     {
+      "mob_type_id": "mob_09",
+      "count_min": 5,
+      "count_max": 6
+     }
+    ],
+    "total_min": 5,
+    "total_max": 6,
+    "count_selection": "integer_in_inclusive_range_at_group_creation"
+   }
+  },
+  {
+   "id": "M9-2",
+   "type": "mob",
+   "name": "Мутант-очередник",
+   "meta": "Проект спавна · радиус 45 м",
+   "text": "Очереди у МФЦ и регистрационных окон; группа 5–6. Не появляется в зоне отдыха. Состав группы — предложение для балансировки.",
+   "plan_position_m": [
+    358.63,
+    570.69
+   ],
+   "godot_position_m": [
+    218.63,
+    0,
+    -285.98
+   ],
+   "chunk": [
+    1,
+    2
+   ],
+   "placement_status": "proposed_requires_navmesh_validation",
+   "radius_m": 27,
+   "spawn_min_distance_to_player_m": 25,
+   "respawn_delay_s": 180,
+   "group_composition": {
+    "status": "proposed_not_playtested",
+    "members": [
+     {
+      "mob_type_id": "mob_09",
+      "count_min": 5,
+      "count_max": 6
+     }
+    ],
+    "total_min": 5,
+    "total_max": 6,
+    "count_selection": "integer_in_inclusive_range_at_group_creation"
+   }
+  },
+  {
+   "id": "M9-3",
+   "type": "mob",
+   "name": "Мутант-очередник",
+   "meta": "Проект спавна · радиус 45 м",
+   "text": "Очереди у МФЦ и регистрационных окон; группа 5–6. Не появляется в зоне отдыха. Состав группы — предложение для балансировки.",
+   "plan_position_m": [
+    598.35,
+    481.56
+   ],
+   "godot_position_m": [
+    458.35,
+    0,
+    -375.11
+   ],
+   "chunk": [
+    2,
+    1
+   ],
+   "placement_status": "proposed_requires_navmesh_validation",
+   "radius_m": 27,
+   "spawn_min_distance_to_player_m": 25,
+   "respawn_delay_s": 180,
+   "group_composition": {
+    "status": "proposed_not_playtested",
+    "members": [
+     {
+      "mob_type_id": "mob_09",
+      "count_min": 5,
+      "count_max": 6
+     }
+    ],
+    "total_min": 5,
+    "total_max": 6,
+    "count_selection": "integer_in_inclusive_range_at_group_creation"
+   }
+  },
+  {
+   "id": "M10-1",
+   "type": "mob",
+   "name": "Дорожный паразит",
+   "meta": "Проект спавна · радиус 45 м",
+   "text": "Разбитое покрытие и объездные; 4–6 существ. Не появляется в зоне отдыха. Состав группы — предложение для балансировки.",
+   "plan_position_m": [
+    169.74,
+    696.21
+   ],
+   "godot_position_m": [
+    29.74,
+    0,
+    -160.46
+   ],
+   "chunk": [
+    0,
+    2
+   ],
+   "placement_status": "proposed_requires_navmesh_validation",
+   "radius_m": 27,
+   "spawn_min_distance_to_player_m": 25,
+   "respawn_delay_s": 180,
+   "group_composition": {
+    "status": "proposed_not_playtested",
+    "members": [
+     {
+      "mob_type_id": "mob_10",
+      "count_min": 4,
+      "count_max": 6
+     }
+    ],
+    "total_min": 4,
+    "total_max": 6,
+    "count_selection": "integer_in_inclusive_range_at_group_creation"
+   }
+  },
+  {
+   "id": "M10-2",
+   "type": "mob",
+   "name": "Дорожный паразит",
+   "meta": "Проект спавна · радиус 45 м",
+   "text": "Разбитое покрытие и объездные; 4–6 существ. Не появляется в зоне отдыха. Состав группы — предложение для балансировки.",
+   "plan_position_m": [
+    804.6,
+    891.73
+   ],
+   "godot_position_m": [
+    664.6,
+    0,
+    35.06
+   ],
+   "chunk": [
+    3,
+    3
+   ],
+   "placement_status": "proposed_requires_navmesh_validation",
+   "radius_m": 27,
+   "spawn_min_distance_to_player_m": 25,
+   "respawn_delay_s": 180,
+   "group_composition": {
+    "status": "proposed_not_playtested",
+    "members": [
+     {
+      "mob_type_id": "mob_10",
+      "count_min": 4,
+      "count_max": 6
+     }
+    ],
+    "total_min": 4,
+    "total_max": 6,
+    "count_selection": "integer_in_inclusive_range_at_group_creation"
+   },
+   "placement_note": "0.11: сдвинута с объёма нового макета «Рубин» на свободное место рядом"
+  },
+  {
+   "id": "M10-3",
+   "type": "mob",
+   "name": "Дорожный паразит",
+   "meta": "Проект спавна · радиус 45 м",
+   "text": "Разбитое покрытие и объездные; 4–6 существ. Не появляется в зоне отдыха. Состав группы — предложение для балансировки.",
+   "plan_position_m": [
+    897.87,
+    741.13
+   ],
+   "godot_position_m": [
+    757.87,
+    0,
+    -115.54
+   ],
+   "chunk": [
+    3,
+    2
+   ],
+   "placement_status": "proposed_requires_navmesh_validation",
+   "radius_m": 27,
+   "spawn_min_distance_to_player_m": 25,
+   "respawn_delay_s": 180,
+   "group_composition": {
+    "status": "proposed_not_playtested",
+    "members": [
+     {
+      "mob_type_id": "mob_10",
+      "count_min": 4,
+      "count_max": 6
+     }
+    ],
+    "total_min": 4,
+    "total_max": 6,
+    "count_selection": "integer_in_inclusive_range_at_group_creation"
+   }
+  },
+  {
+   "id": "P0",
+   "type": "place",
+   "name": "Парковка «Похмельная»",
+   "meta": "MAIN_001",
+   "text": "Старт: чужой кабриолет, телефон у разбитого киоска и счёт за ЖКХ.",
+   "plan_position_m": [
+    131.0,
+    747.17
+   ],
+   "godot_position_m": [
+    -9.0,
+    0,
+    -109.5
+   ],
+   "chunk": [
+    0,
+    2
+   ],
+   "placement_status": "proposed_requires_navmesh_validation"
+  },
+  {
+   "id": "P1",
+   "type": "place",
+   "name": "Центральная площадь",
+   "meta": "MAIN_003",
+   "text": "Ежедневные поклоны тарелке. Места в очереди продают заранее.",
+   "plan_position_m": [
+    463.33,
+    463.33
+   ],
+   "godot_position_m": [
+    323.33,
+    0,
+    -393.34
+   ],
+   "chunk": [
+    1,
+    1
+   ],
+   "placement_status": "proposed_requires_navmesh_validation"
+  },
+  {
+   "id": "P2",
+   "type": "place",
+   "name": "Торговый коллектор",
+   "meta": "MAIN_004",
+   "text": "Торговля под улицей, обходные тоннели и первый подземный маршрут.",
+   "plan_position_m": [
+    478.49,
+    688.89
+   ],
+   "godot_position_m": [
+    338.49,
+    0,
+    -167.78
+   ],
+   "chunk": [
+    1,
+    2
+   ],
+   "placement_status": "proposed_requires_navmesh_validation"
+  },
+  {
+   "id": "P3",
+   "type": "place",
+   "name": "Клуб «Тридцать лайков»",
+   "meta": "NPC_01_2",
+   "text": "Подписка на спасение продаётся до появления маршрута эвакуации.",
+   "plan_position_m": [
+    744.06,
+    493.85
+   ],
+   "godot_position_m": [
+    604.06,
+    0,
+    -362.82
+   ],
+   "chunk": [
+    2,
+    1
+   ],
+   "placement_status": "proposed_requires_navmesh_validation"
+  },
+  {
+   "id": "P4",
+   "type": "place",
+   "name": "Телецентр «Погуляй»",
+   "meta": "NPC_01_3",
+   "text": "Единственный честный зритель — инопланетный ИИ.",
+   "plan_position_m": [
+    976.67,
+    603.33
+   ],
+   "godot_position_m": [
+    836.67,
+    0,
+    -253.34
+   ],
+   "chunk": [
+    3,
+    2
+   ],
+   "placement_status": "proposed_requires_navmesh_validation"
+  },
+  {
+   "id": "P5",
+   "type": "place",
+   "name": "Студия «Подвал 808»",
+   "meta": "NPC_02_2",
+   "text": "Речитатив признан нелегальным способом передачи информации.",
+   "plan_position_m": [
+    380.14,
+    197.4
+   ],
+   "godot_position_m": [
+    240.14,
+    0,
+    -659.27
+   ],
+   "chunk": [
+    1,
+    0
+   ],
+   "placement_status": "proposed_requires_navmesh_validation"
+  },
+  {
+   "id": "P6",
+   "type": "place",
+   "name": "Площадь «Бит»",
+   "meta": "NPC_02_3",
+   "text": "Концерт прикрывает вывоз музыкантов из клиники.",
+   "plan_position_m": [
+    453.9,
+    295.75
+   ],
+   "godot_position_m": [
+    313.9,
+    0,
+    -560.92
+   ],
+   "chunk": [
+    1,
+    1
+   ],
+   "placement_status": "proposed_requires_navmesh_validation"
+  },
+  {
+   "id": "P7",
+   "type": "place",
+   "name": "Ресторан «Сытый конец»",
+   "meta": "NPC_03_2",
+   "text": "Посетители в меню не по собственной воле.",
+   "plan_position_m": [
+    518.68,
+    802.84
+   ],
+   "godot_position_m": [
+    378.68,
+    0,
+    -53.83
+   ],
+   "chunk": [
+    2,
+    3
+   ],
+   "placement_status": "proposed_requires_navmesh_validation"
+  },
+  {
+   "id": "P8",
+   "type": "place",
+   "name": "Театр «Овация»",
+   "meta": "NPC_05_2",
+   "text": "Тишина — новая роскошь.",
+   "plan_position_m": [
+    373.33,
+    260.0
+   ],
+   "godot_position_m": [
+    233.33,
+    0,
+    -596.67
+   ],
+   "chunk": [
+    1,
+    1
+   ],
+   "placement_status": "proposed_requires_navmesh_validation"
+  },
+  {
+   "id": "P9",
+   "type": "place",
+   "name": "КПП «Нулевая дверь»",
+   "meta": "NPC_06_3",
+   "text": "Главный КПП охраняет выход из сознания. Переход в Деловой.",
+   "plan_position_m": [
+    937.83,
+    484.63
+   ],
+   "godot_position_m": [
+    797.83,
+    0,
+    -372.04
+   ],
+   "chunk": [
+    3,
+    1
+   ],
+   "placement_status": "proposed_requires_navmesh_validation"
+  },
+  {
+   "id": "P10",
+   "type": "place",
+   "name": "Парк аттракционов",
+   "meta": "NPC_07_3",
+   "text": "Фальшивая тарелка, настоящие проблемы.",
+   "plan_position_m": [
+    150.0,
+    60.0
+   ],
+   "godot_position_m": [
+    10.0,
+    0,
+    -796.67
+   ],
+   "chunk": [
+    0,
+    0
+   ],
+   "placement_status": "proposed_requires_navmesh_validation"
+  },
+  {
+   "id": "P11",
+   "type": "place",
+   "name": "Обсерватория «Седьмой этаж»",
+   "meta": "NPC_08_2",
+   "text": "Прогноз рейда на квартал, который ещё не построили.",
+   "plan_position_m": [
+    882.51,
+    129.79
+   ],
+   "godot_position_m": [
+    742.51,
+    0,
+    -726.88
+   ],
+   "chunk": [
+    3,
+    0
+   ],
+   "placement_status": "proposed_requires_navmesh_validation"
+  },
+  {
+   "id": "P12",
+   "type": "place",
+   "name": "МФЦ «Окно № 0»",
+   "meta": "NPC_09_2",
+   "text": "Выдача талонов на перепрошивку личности.",
+   "plan_position_m": [
+    363.33,
+    363.33
+   ],
+   "godot_position_m": [
+    223.33,
+    0,
+    -493.34
+   ],
+   "chunk": [
+    1,
+    1
+   ],
+   "placement_status": "proposed_requires_navmesh_validation"
+  },
+  {
+   "id": "P13",
+   "type": "place",
+   "name": "Гаражи «Чек энджин»",
+   "meta": "NPC_10_3",
+   "text": "Такси, ремонт, сомнительная объездная.",
+   "plan_position_m": [
+    159.0,
+    737.67
+   ],
+   "godot_position_m": [
+    19.0,
+    0,
+    -119.0
+   ],
+   "chunk": [
+    0,
+    2
+   ],
+   "placement_status": "proposed_requires_navmesh_validation"
+  },
+  {
+   "id": "P14",
+   "type": "place",
+   "name": "Показательный ЖК",
+   "meta": "MAIN_010",
+   "text": "Бесплатные квартиры отсутствуют на плане города.",
+   "plan_position_m": [
+    916.67,
+    140.0
+   ],
+   "godot_position_m": [
+    776.67,
+    0,
+    -716.67
+   ],
+   "chunk": [
+    3,
+    0
+   ],
+   "placement_status": "proposed_requires_navmesh_validation"
+  },
+  {
+   "id": "P15",
+   "type": "place",
+   "name": "Старая баня",
+   "meta": "NPC_15_3",
+   "text": "Город признан чистым, биоколония в подвале не согласна.",
+   "plan_position_m": [
+    753.43,
+    778.01
+   ],
+   "godot_position_m": [
+    613.43,
+    0,
+    -78.66
+   ],
+   "chunk": [
+    3,
+    3
+   ],
+   "placement_status": "proposed_requires_navmesh_validation"
+  },
+  {
+   "id": "P16",
+   "type": "place",
+   "name": "ЗАГС «До первого рейда»",
+   "meta": "NPC_12_2",
+   "text": "Развод с парковкой требует её личного присутствия.",
+   "plan_position_m": [
+    367.85,
+    518.44
+   ],
+   "godot_position_m": [
+    227.85,
+    0,
+    -338.23
+   ],
+   "chunk": [
+    1,
+    2
+   ],
+   "placement_status": "proposed_requires_navmesh_validation"
+  },
+  {
+   "id": "P17",
+   "type": "place",
+   "name": "Подземный архив R-12",
+   "meta": "NPC_13_2",
+   "text": "Шаблоны извинений тем, чью личность перепрошили.",
+   "plan_position_m": [
+    891.73,
+    854.85
+   ],
+   "godot_position_m": [
+    751.73,
+    0,
+    -1.82
+   ],
+   "chunk": [
+    3,
+    3
+   ],
+   "placement_status": "proposed_requires_navmesh_validation"
+  },
+  {
+   "id": "S0",
+   "type": "safe",
+   "name": "Стартовый двор",
+   "meta": "Проект безопасной точки · радиус 90 м",
+   "text": "Отдых, возврат после поражения и остановка такси после открытия. Мобы сюда не спавнятся; агрессия сбрасывается на границе.",
+   "plan_position_m": [
+    260.0,
+    916.67
+   ],
+   "godot_position_m": [
+    120.0,
+    0,
+    60.0
+   ],
+   "chunk": [
+    1,
+    3
+   ],
+   "placement_status": "proposed_requires_navmesh_validation",
+   "radius_m": 45
+  },
+  {
+   "id": "S1",
+   "type": "safe",
+   "name": "Двор мастерских",
+   "meta": "Проект безопасной точки · радиус 90 м",
+   "text": "Отдых, возврат после поражения и остановка такси после открытия. Мобы сюда не спавнятся; агрессия сбрасывается на границе.",
+   "plan_position_m": [
+    274.23,
+    377.07
+   ],
+   "godot_position_m": [
+    134.23,
+    0,
+    -479.6
+   ],
+   "chunk": [
+    1,
+    1
+   ],
+   "placement_status": "proposed_requires_navmesh_validation",
+   "radius_m": 45
+  },
+  {
+   "id": "S2",
+   "type": "safe",
+   "name": "Тихий внутренний двор",
+   "meta": "Проект безопасной точки · радиус 90 м",
+   "text": "Отдых, возврат после поражения и остановка такси после открытия. Мобы сюда не спавнятся; агрессия сбрасывается на границе.",
+   "plan_position_m": [
+    533.81,
+    607.57
+   ],
+   "godot_position_m": [
+    393.81,
+    0,
+    -249.1
+   ],
+   "chunk": [
+    2,
+    2
+   ],
+   "placement_status": "proposed_requires_navmesh_validation",
+   "radius_m": 45
+  },
+  {
+   "id": "S3",
+   "type": "safe",
+   "name": "Рыночная стоянка",
+   "meta": "Проект безопасной точки · радиус 90 м",
+   "text": "Отдых, возврат после поражения и остановка такси после открытия. Мобы сюда не спавнятся; агрессия сбрасывается на границе.",
+   "plan_position_m": [
+    389.36,
+    827.19
+   ],
+   "godot_position_m": [
+    249.36,
+    0,
+    -29.48
+   ],
+   "chunk": [
+    1,
+    3
+   ],
+   "placement_status": "proposed_requires_navmesh_validation",
+   "radius_m": 45
+  },
+  {
+   "id": "S4",
+   "type": "safe",
+   "name": "Двор клиники",
+   "meta": "Проект безопасной точки · радиус 90 м",
+   "text": "Отдых, возврат после поражения и остановка такси после открытия. Мобы сюда не спавнятся; агрессия сбрасывается на границе.",
+   "plan_position_m": [
+    888.65,
+    286.53
+   ],
+   "godot_position_m": [
+    748.65,
+    0,
+    -570.14
+   ],
+   "chunk": [
+    3,
+    1
+   ],
+   "placement_status": "proposed_requires_navmesh_validation",
+   "radius_m": 45
+  },
+  {
+   "id": "U0",
+   "type": "underground",
+   "name": "Торговый коллектор",
+   "meta": "Проект входа на нижний уровень",
+   "text": "Вход с поверхности. Подземный маршрут связывает сюжетную локацию с соседними улицами; подробная внутренняя планировка — отдельный уровень.",
+   "plan_position_m": [
+    478.49,
+    688.89
+   ],
+   "godot_position_m": [
+    338.49,
+    0,
+    -167.78
+   ],
+   "chunk": [
+    1,
+    2
+   ],
+   "placement_status": "proposed_requires_navmesh_validation"
+  },
+  {
+   "id": "U1",
+   "type": "underground",
+   "name": "Клубная лаборатория",
+   "meta": "Проект входа на нижний уровень",
+   "text": "Вход с поверхности. Подземный маршрут связывает сюжетную локацию с соседними улицами; подробная внутренняя планировка — отдельный уровень.",
+   "plan_position_m": [
+    607.57,
+    280.38
+   ],
+   "godot_position_m": [
+    467.57,
+    0,
+    -576.29
+   ],
+   "chunk": [
+    2,
+    1
+   ],
+   "placement_status": "proposed_requires_navmesh_validation"
+  },
+  {
+   "id": "U2",
+   "type": "underground",
+   "name": "Архив R-12",
+   "meta": "Проект входа на нижний уровень",
+   "text": "Вход с поверхности. Подземный маршрут связывает сюжетную локацию с соседними улицами; подробная внутренняя планировка — отдельный уровень.",
+   "plan_position_m": [
+    891.73,
+    854.85
+   ],
+   "godot_position_m": [
+    751.73,
+    0,
+    -1.82
+   ],
+   "chunk": [
+    3,
+    3
+   ],
+   "placement_status": "proposed_requires_navmesh_validation"
+  },
+  {
+   "id": "U3",
+   "type": "underground",
+   "name": "Объездной модуль",
+   "meta": "Проект входа на нижний уровень",
+   "text": "Вход с поверхности. Подземный маршрут связывает сюжетную локацию с соседними улицами; подробная внутренняя планировка — отдельный уровень.",
+   "plan_position_m": [
+    257.65,
+    854.85
+   ],
+   "godot_position_m": [
+    117.65,
+    0,
+    -1.82
+   ],
+   "chunk": [
+    1,
+    3
+   ],
+   "placement_status": "proposed_requires_navmesh_validation"
+  }
+ ],
+ "npc_position_overrides": [
+  {
+   "npc_id": "N07",
+   "condition": "MAIN_001_started_and_not_completed",
+   "plan_position_m": [
+    256.0,
+    756.67
+   ],
+   "note": "Только одна активная копия Павла; после вступления основная точка в парке.",
+   "yard_plan_position_m": [
+    150.0,
+    738.67
+   ],
+   "yard_note": "Двор «Похмельной» по макету «Рубин»: у разбитого киоска «НЛО напрокат» (D-051)."
+  }
+ ],
+ "source_notes": {
+  "canon": "03_SCENARIY_127_KVESTOV.pdf, редакция 28.10.2026",
+  "new_design": "Все координаты, сетка улиц, размеры арен, лимиты групп и подгрузки предложены в этом пакете."
+ },
+ "revision_notes": {
+  "date": "2026-10-29",
+  "changes": [
+   "Добавлены mob_types и group_composition во всех 30 спавнах.",
+   "Все прежние ID, координаты и параметры сохранены."
+  ],
+  "balance_status": "proposed_not_playtested",
+  "previous_version": "1.0",
+  "layout": "0.11: улицы, дома и площадки — data/pogulyay_layout.json (пакет «Рубин»)"
+ },
+ "mob_types": [
+  {
+   "id": "mob_01",
+   "name": "Дрон-лайкомёт",
+   "id_scope": "local_to_this_manifest_not_canonical_source_id"
+  },
+  {
+   "id": "mob_02",
+   "name": "Охранник клуба «Без слуха»",
+   "id_scope": "local_to_this_manifest_not_canonical_source_id"
+  },
+  {
+   "id": "mob_03",
+   "name": "Гастрономический слизень",
+   "id_scope": "local_to_this_manifest_not_canonical_source_id"
+  },
+  {
+   "id": "mob_04",
+   "name": "Патрульный цензор",
+   "id_scope": "local_to_this_manifest_not_canonical_source_id"
+  },
+  {
+   "id": "mob_05",
+   "name": "Хлопающий мутант",
+   "id_scope": "local_to_this_manifest_not_canonical_source_id"
+  },
+  {
+   "id": "mob_06",
+   "name": "Курьер пропусков",
+   "id_scope": "local_to_this_manifest_not_canonical_source_id"
+  },
+  {
+   "id": "mob_07",
+   "name": "Дрон осветитель",
+   "id_scope": "local_to_this_manifest_not_canonical_source_id"
+  },
+  {
+   "id": "mob_08",
+   "name": "Пустоглазый бармен",
+   "id_scope": "local_to_this_manifest_not_canonical_source_id"
+  },
+  {
+   "id": "mob_09",
+   "name": "Мутант-очередник",
+   "id_scope": "local_to_this_manifest_not_canonical_source_id"
+  },
+  {
+   "id": "mob_10",
+   "name": "Дорожный паразит",
+   "id_scope": "local_to_this_manifest_not_canonical_source_id"
+  }
+ ],
+ "houses_note": "Силуэты домов со схемы POGULYAY_MAP.pdf: [x, y, ширина, глубина] в метрах плана; плотность, не коллизии.",
+ "compact": {
+  "k": 3.0,
+  "note": "см. tools/importers/compact_city.py, D-059"
+ }
+}

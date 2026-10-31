@@ -1,0 +1,290 @@
+{
+ "schema_version": 1,
+ "source": "editorial",
+ "note": "Предметы вертикального среза. Это новая редакторская работа, а не данные из исходной базы предметов: origin=editorial_P1 (квест MAIN_001) и editorial_P2 (снаряжение и расходники обновления 0.2).",
+ "items": [
+  {
+   "id": "ITEM_P1_PHONE",
+   "name": "Разряженный телефон",
+   "type": "quest",
+   "rarity": "common",
+   "origin": "editorial_P1",
+   "quest_id": "MAIN_001",
+   "desc": "0%. Последнее сообщение: «Ты где, скотина?». От кого — уже не узнать."
+  },
+  {
+   "id": "ITEM_P1_SHOE",
+   "name": "Второй ботинок",
+   "type": "quest",
+   "rarity": "common",
+   "origin": "editorial_P1",
+   "quest_id": "MAIN_001",
+   "desc": "Твой. Был на чужой ноге. Лучше не нюхать."
+  },
+  {
+   "id": "ITEM_P1_DEBT_NOTICE",
+   "name": "Уведомление о долге ЖКХ",
+   "type": "quest",
+   "rarity": "common",
+   "origin": "editorial_P1",
+   "quest_id": "MAIN_001",
+   "desc": "ЖКХ нашло тебя раньше пришельцев. Пени начисляются даже во время вторжения."
+  },
+  {
+   "id": "ITEM_P1_ALIEN_BATTERY",
+   "name": "Инопланетная батарея",
+   "type": "material",
+   "rarity": "rare",
+   "origin": "editorial_P1",
+   "quest_id": "MAIN_001",
+   "desc": "Тёплая, гудит и пахнет озоном. Киоскёр за неё продаст мать."
+  },
+  {
+   "id": "ITEM_P1_KIOSK_DISCOUNT",
+   "name": "Скидочная карта киоска",
+   "type": "key",
+   "rarity": "uncommon",
+   "origin": "editorial_P1",
+   "quest_id": "MAIN_001",
+   "desc": "Скидка 3% на всё, кроме того, что тебе нужно."
+  },
+  {
+   "id": "ITEM_P1_SCRAP",
+   "name": "Обломок дрона-сборщика",
+   "type": "material",
+   "rarity": "common",
+   "origin": "editorial_P1",
+   "desc": "Кусок дрона-сборщика. Ещё шепчет «Улыбнитесь»."
+  },
+  {
+   "id": "ITEM_P1_GRATITUDE_CHIP",
+   "name": "Чип обязательной благодарности",
+   "type": "material",
+   "rarity": "uncommon",
+   "origin": "editorial_P1",
+   "desc": "Если вставить в голову, начинаешь благодарить. Не вставляй."
+  },
+  {
+   "id": "ITEM_P2_CROWBAR",
+   "name": "Монтировка «Аргумент»",
+   "type": "weapon",
+   "slot": "weapon",
+   "rarity": "common",
+   "stats": {
+    "damage": 6
+   },
+   "class": "CLASS_1",
+   "desc": "Решает споры быстрее суда. Гравировка: «Сначала поговори».",
+   "start": "CLASS_1",
+   "origin": "editorial_P2"
+  },
+  {
+   "id": "ITEM_P2_SLINGSHOT",
+   "name": "Рогатка с гайками",
+   "type": "weapon",
+   "slot": "weapon",
+   "rarity": "common",
+   "stats": {
+    "damage": 5
+   },
+   "class": "CLASS_2",
+   "desc": "Гайки на 12 — для своих, на 17 — для пришельцев.",
+   "start": "CLASS_2",
+   "origin": "editorial_P2"
+  },
+  {
+   "id": "ITEM_P2_ANTENNA",
+   "name": "Антенна от «Рубина-714»",
+   "type": "weapon",
+   "slot": "weapon",
+   "rarity": "common",
+   "stats": {
+    "damage": 5
+   },
+   "class": "CLASS_3",
+   "desc": "Ловит три канала и одну цивилизацию. Бьёт током, если держать неправильно.",
+   "start": "CLASS_3",
+   "origin": "editorial_P2"
+  },
+  {
+   "id": "ITEM_P2_TRACKSUIT",
+   "name": "Треники с лампасами",
+   "type": "armor",
+   "slot": "body",
+   "rarity": "common",
+   "stats": {
+    "armor": 2,
+    "max_hp": 10
+   },
+   "desc": "Три полоски. Пришельцы считают это знаком отличия и стреляют вежливее.",
+   "start": "all",
+   "origin": "editorial_P2"
+  },
+  {
+   "id": "ITEM_P2_CAP",
+   "name": "Кепка «Рубин чемпион»",
+   "type": "armor",
+   "slot": "head",
+   "rarity": "common",
+   "stats": {
+    "armor": 1
+   },
+   "desc": "Козырёк защищает от солнца, сканеров и лишних вопросов.",
+   "start": "all",
+   "origin": "editorial_P2"
+  },
+  {
+   "id": "ITEM_P2_FOIL_HAT",
+   "name": "Шапочка из фольги",
+   "type": "armor",
+   "slot": "head",
+   "rarity": "uncommon",
+   "stats": {
+    "armor": 3,
+    "max_hp": 5
+   },
+   "desc": "Сосед носил двадцать лет. Сосед был прав.",
+   "loot": "drone",
+   "origin": "editorial_P2"
+  },
+  {
+   "id": "ITEM_P2_PIPE",
+   "name": "Труба с подъезда",
+   "type": "weapon",
+   "slot": "weapon",
+   "rarity": "uncommon",
+   "stats": {
+    "damage": 10
+   },
+   "desc": "Отопление в доме теперь не работает. Зато работает это.",
+   "loot": "drone",
+   "origin": "editorial_P2"
+  },
+  {
+   "id": "ITEM_P2_BEER",
+   "name": "Пиво «Рубиновое»",
+   "type": "consumable",
+   "rarity": "common",
+   "use": {
+    "heal": 30,
+    "kukukha": 4
+   },
+   "desc": "+30 здоровья, +4 кукухи. Лечит всё, кроме печени.",
+   "start": "all",
+   "start_count": 2,
+   "loot": "drone",
+   "origin": "editorial_P2"
+  },
+  {
+   "id": "ITEM_P2_SHAWARMA",
+   "name": "Шаурма сомнительная",
+   "type": "consumable",
+   "rarity": "common",
+   "use": {
+    "heal": 60,
+    "kukukha": 8
+   },
+   "desc": "+60 здоровья, +8 кукухи. Мясо опознано как «да».",
+   "start": "all",
+   "start_count": 1,
+   "loot": "drone",
+   "origin": "editorial_P2"
+  },
+  {
+   "id": "ITEM_P2_VALERIAN",
+   "name": "Валерьянка бабушкина",
+   "type": "consumable",
+   "rarity": "uncommon",
+   "use": {
+    "heal": 10,
+    "kukukha": -15
+   },
+   "desc": "−15 кукухи. На этикетке кот, который видел некоторое дерьмо.",
+   "loot": "drone",
+   "origin": "editorial_P2"
+  },
+  {
+   "id": "ITEM_P3_MUTE_CORE",
+   "name": "Ядро глушилки лайков",
+   "type": "material",
+   "rarity": "rare",
+   "origin": "editorial_P3",
+   "desc": "Сердце микрофона Люси. Если поднести к уху, слышно, как где-то отписываются."
+  },
+  {
+   "id": "ITEM_P3_BANNER_VEST",
+   "name": "Жилет из рекламного баннера",
+   "type": "armor",
+   "slot": "body",
+   "rarity": "uncommon",
+   "stats": {
+    "armor": 4,
+    "max_hp": 15
+   },
+   "origin": "editorial_P3",
+   "desc": "Сшит из растяжки «Кредит за 5 минут». Пули вязнут в процентах."
+  },
+  {
+   "id": "ITEM_P3_MIC_BAT",
+   "name": "Бита «Микрофон Люси»",
+   "type": "weapon",
+   "slot": "weapon",
+   "rarity": "rare",
+   "stats": {
+    "damage": 16
+   },
+   "origin": "editorial_P3",
+   "desc": "Глушит не только лайки. На ручке наклейка: «Стрим окончен»."
+  }
+ ],
+ "loot_tables": {
+  "drone": [
+   [
+    "ITEM_P1_SCRAP",
+    50
+   ],
+   [
+    "ITEM_P2_BEER",
+    20
+   ],
+   [
+    "ITEM_P2_SHAWARMA",
+    10
+   ],
+   [
+    "ITEM_P2_VALERIAN",
+    8
+   ],
+   [
+    "ITEM_P2_FOIL_HAT",
+    6
+   ],
+   [
+    "ITEM_P2_PIPE",
+    6
+   ]
+  ],
+  "trash": [
+   [
+    "ITEM_P2_BEER",
+    40
+   ],
+   [
+    "ITEM_P2_SHAWARMA",
+    25
+   ],
+   [
+    "ITEM_P2_VALERIAN",
+    15
+   ],
+   [
+    "ITEM_P1_SCRAP",
+    15
+   ],
+   [
+    "ITEM_P2_FOIL_HAT",
+    5
+   ]
+  ]
+ }
+}
