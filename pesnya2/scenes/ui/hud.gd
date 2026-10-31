@@ -45,6 +45,10 @@ var _combo_sub: Label
 var _combo_tween: Tween
 
 
+## Корень интерфейса: на телефоне отступает от выреза камеры и системных полос (0.23).
+var _root: Control
+
+
 func _ready() -> void:
 	layer = 10
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -53,6 +57,9 @@ func _ready() -> void:
 	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(root)
 	root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_root = root
+	_fit_safe_area()
+	get_viewport().size_changed.connect(_fit_safe_area)
 
 	pointer = ObjectivePointer.new()
 	root.add_child(pointer)
@@ -180,6 +187,21 @@ static func _wrap(name: String) -> String:
 			best_len = maxi(a.length(), b.length())
 			best = a + "\n" + b
 	return best
+
+
+## Безопасная зона экрана телефона: часы, вырез камеры и полоса жестов не ложатся на кнопки.
+func _fit_safe_area() -> void:
+	if _root == null or not OS.has_feature("mobile"):
+		return
+	var screen := Vector2(DisplayServer.screen_get_size())
+	var safe := Rect2(DisplayServer.get_display_safe_area())
+	if screen.x <= 0.0 or safe.size.x <= 0.0:
+		return
+	var k := get_viewport().get_visible_rect().size / screen
+	_root.offset_left = safe.position.x * k.x
+	_root.offset_top = safe.position.y * k.y
+	_root.offset_right = -(screen.x - safe.end.x) * k.x
+	_root.offset_bottom = -(screen.y - safe.end.y) * k.y
 
 
 func _place(c: Control, anchor: Vector2, top_left: Vector2, bottom_right: Vector2) -> void:

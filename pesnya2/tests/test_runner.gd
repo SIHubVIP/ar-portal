@@ -1083,6 +1083,14 @@ func test_perfect_dodge_doubles_next_hit() -> void:
 	pl.queue_free()
 
 
+## 0.23 (D-065): на мобильном рендерере Godot 4.7.2 стандартные материалы с рассеянием Бёрли
+## не получают солнца, когда включены тени или туман, — на телефоне всё было бирюзово-серым.
+func test_mobile_sun_uses_lambert() -> void:
+	check(ProjectSettings.get_setting("rendering/renderer/rendering_method") == "mobile"
+			and ProjectSettings.get_setting("rendering/shading/overrides/force_lambert_over_burley", false) == true,
+			"мобильный рендерер: стандартные материалы на Ламберте, солнце их освещает")
+
+
 func test_ui_skin_has_drawn_icons() -> void:
 	var ok := true
 	for c in ["CLASS_1", "CLASS_2", "CLASS_3"]:
