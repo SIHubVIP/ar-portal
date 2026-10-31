@@ -5,6 +5,11 @@ shader_type spatial;
 // 0.11: детали домов вырезаются вместе с домом (cut — дом в коридоре камеры, depth_cut —
 // всё, что ближе героя к камере, для MultiMesh мелких домов).
 
+// 0.24: bevel_box — единичный куб MultiMesh становится мягкой коробкой (soft_bevel)
+render_mode diffuse_lambert_wrap;
+#include "res://assets/shaders/soft_bevel.gdshaderinc"
+uniform bool bevel_box = false;
+uniform float bevel = 0.07;
 uniform float roughness_value = 0.75;
 uniform float glow = 4.0;
 uniform bool cut = false;
@@ -19,6 +24,13 @@ float bayer4(vec2 p) {
 	return (m[x + y * 4] + 0.5) / 16.0;
 }
 
+varying float pc_wy;
+
+void vertex() {
+	SOFT_BOX_VERTEX
+	pc_wy = (MODEL_MATRIX * vec4(VERTEX, 1.0)).y;
+}
+
 void fragment() {
 	if (cut || depth_cut) {
 		vec2 d = (SCREEN_UV - hero_screen) * vec2(VIEWPORT_SIZE.x / VIEWPORT_SIZE.y, 1.0);
@@ -28,7 +40,16 @@ void fragment() {
 			discard;
 		}
 	}
-	ALBEDO = COLOR.rgb;
+	// 0.24: контакт с землёй — низ любой детали мягко темнеет (машины, ящики, лавки)
+	ALBEDO = COLOR.rgb * mix(0.72, 1.0, smoothstep(0.0, 0.55, pc_wy));
+	RIM = 0.22;
+	RIM_TINT = 0.4;
+	if (bevel_box) {
+		float shade;
+		float edge;
+		NORMAL = soft_box_normal(SOFT_BOX_ARGS, vec3(1.0), bevel, MODEL_MATRIX, VIEW_MATRIX, shade, edge);
+		ALBEDO *= shade * (1.0 + 0.06 * edge);
+	}
 	ROUGHNESS = roughness_value;
 	EMISSION = COLOR.rgb * (1.0 - COLOR.a) * glow;
 }

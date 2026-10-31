@@ -149,9 +149,9 @@ static func collect(world: Node) -> Array:
 		out.append(_shape(cs.global_transform, bs.size, "block" if bs.size.y >= 2.5 else "prop"))
 	for n in world.find_children("*", "MeshInstance3D", true, false):
 		var mi := n as MeshInstance3D
-		if not mi.mesh is BoxMesh or _skipped(mi):
+		if not (mi.mesh is BoxMesh or mi.has_meta("box_size")) or _skipped(mi):
 			continue
-		var sz := (mi.mesh as BoxMesh).size
+		var sz: Vector3 = mi.get_meta("box_size") if mi.has_meta("box_size") else (mi.mesh as BoxMesh).size
 		if sz.y > 0.3 or mi.global_position.y > 0.3 or sz.x >= 100.0:
 			continue
 		var kind := "mark" if minf(sz.x, sz.z) < 0.4 else ("walk" if mi.global_position.y > 0.05 else "road")

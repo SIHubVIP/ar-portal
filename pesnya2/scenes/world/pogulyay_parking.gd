@@ -342,7 +342,7 @@ func _build_environment() -> void:
 	env.fog_light_color = Color(0.55, 0.74, 0.72)
 	env.fog_sun_scatter = 0.15
 	env.adjustment_enabled = true
-	env.adjustment_saturation = 1.15
+	env.adjustment_saturation = 1.28   # 0.24: сочнее, ближе к мультфильму
 	env.adjustment_contrast = 1.16
 	var we := WorldEnvironment.new()
 	we.environment = env
@@ -352,7 +352,7 @@ func _build_environment() -> void:
 	sun.name = "Sun"
 	sun.rotation_degrees = Vector3(-48, -128, 0)
 	sun.light_color = Color(1.0, 0.9, 0.72)
-	sun.light_energy = 1.4
+	sun.light_energy = 1.55
 	sun.shadow_enabled = true
 	# камера на плече 60 м видит пятно ~40 м: одного каскада до 110 м хватает (на телефоне каскады — 4 прохода)
 	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_ORTHOGONAL

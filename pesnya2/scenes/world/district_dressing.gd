@@ -666,7 +666,7 @@ static func warm() -> void:
 	for m in MODELS:
 		_parts(m)
 	# текстуры асфальта, плитки и земли грузятся при первом материале — тоже заранее
-	for kind in ["plain", "sidewalk", "path", "lawn", "pocket", "curb", "paint", "zebra", "trunk", "crown", "bush", "rock", "veg", "planter", "pipe",
+	for kind in ["plain", "plain_box", "sidewalk", "path", "lawn", "pocket", "curb", "paint", "zebra", "trunk", "crown", "bush", "rock", "veg", "planter", "pipe",
 			"roof_block", "tank", "antenna", "awning", "puddle", "pool", "spill", "lamp_post", "cloth", "play", "door",
 			"canopy", "doorlamp"]:
 		_material(kind)
@@ -694,7 +694,7 @@ static func flush_steps(root: Node3D, c: Vector2i, batch: Batch) -> Array[Callab
 				for part in _parts(model):
 					_multimesh(root, part[0], null, list, part[1], SHADOW_KINDS.has(model))
 			else:
-				_multimesh(root, _mesh(kind), _material(kind), list, Transform3D(), SHADOW_KINDS.has(kind),
+				_multimesh(root, _mesh(kind), _material("plain_box" if kind == "plain" else kind), list, Transform3D(), SHADOW_KINDS.has(kind),
 						SMALL_FAR_M if SMALL_FAR_KINDS.has(kind) else 0.0))
 	out.append(func() -> void:
 		if not is_instance_valid(root):
@@ -843,10 +843,13 @@ static func _material(kind: String) -> Material:
 		fm.shader = FOLIAGE_SHADER
 		_mats[kind] = fm
 		return fm
-	if kind == "plain" or kind == "rock" or kind == "tank" or kind == "veg":
+	if kind == "plain" or kind == "plain_box" or kind == "rock" or kind == "tank" or kind == "veg":
 		var sm := ShaderMaterial.new()
 		sm.shader = Signboard.PLAIN_SHADER
 		sm.set_shader_parameter("roughness_value", 0.9 if kind == "crown" else 0.7)
+		# plain_box — единичные кубы MultiMesh «plain» (мягкие грани, 0.24); "plain" остаётся
+		# общим для готовых сеток с цветом в вершинах (машины, кот, плитка двора)
+		sm.set_shader_parameter("bevel_box", kind == "plain_box")
 		_mats[kind] = sm
 		return sm
 	var m := StandardMaterial3D.new()

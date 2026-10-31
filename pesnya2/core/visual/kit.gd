@@ -23,7 +23,31 @@ static func mat(color: Color, emission := 0.0, roughness := 0.85) -> StandardMat
 	return m
 
 
+const SOFT_BOX_SHADER := preload("res://assets/shaders/soft_box.gdshader")
+static var _soft: Dictionary = {}
+
+
+## Материал мягкой коробки (0.24, D-067): скруглённые грани и объёмный свет без текстур.
+static func soft_mat(color: Color) -> ShaderMaterial:
+	var key := color.to_html()
+	if _soft.has(key):
+		return _soft[key]
+	var m := ShaderMaterial.new()
+	m.shader = SOFT_BOX_SHADER
+	m.set_shader_parameter("albedo", color)
+	_soft[key] = m
+	return m
+
+
 static func box(parent: Node, size: Vector3, pos: Vector3, color: Color, emission := 0.0) -> MeshInstance3D:
+	# непрозрачные несветящиеся коробки — мягкие: скруглённые рёбра в сетке и объёмный
+	# цвет в шейдере (светящиеся и стекло остаются простыми BoxMesh)
+	if emission <= 0.0 and color.a >= 1.0:
+		var mi := _add(parent, SoftMesh.box_mesh(size), pos, color, emission)
+		mi.material_override = soft_mat(color)
+		mi.set_instance_shader_parameter("box_size", size)
+		mi.set_meta("box_size", size)
+		return mi
 	var mesh := BoxMesh.new()
 	mesh.size = size
 	return _add(parent, mesh, pos, color, emission)

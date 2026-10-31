@@ -587,18 +587,53 @@ func test_no_mob_spawn_in_safe_zones() -> void:
 
 func test_camera_cutout_works_without_vulkan_and_restores() -> void:
 	var cam := IsoCamera.new()
-	var body := Kit.solid_box(self, Vector3(2, 2, 2), Vector3.ZERO, Color(0.5, 0.5, 0.5), 0.0, true)
-	var mi: MeshInstance3D = body.find_children("*", "MeshInstance3D", true, false)[0]
-	var orig := mi.material_override
-	cam._set_alpha(body, 0.0)
-	var faded := mi.material_override as ShaderMaterial
+	# стеклянная коробка — обычный материал: вырезается шейдером see_through
+	var glass := Kit.solid_box(self, Vector3(2, 2, 2), Vector3.ZERO, Color(0.5, 0.5, 0.5, 0.6), 0.0, true)
+	var gmi: MeshInstance3D = glass.find_children("*", "MeshInstance3D", true, false)[0]
+	var orig := gmi.material_override
+	cam._set_alpha(glass, 0.0)
+	var faded := gmi.material_override as ShaderMaterial
 	check(faded != null and faded.shader == IsoCamera.SEE_THROUGH_SHADER and faded.get_shader_parameter("albedo") == (orig as BaseMaterial3D).albedo_color,
 			"дом у героя вырезается непрозрачным шейдером (работает и в OpenGL)")
+	cam._set_alpha(glass, 1.0)
+	check(gmi.material_override == orig and not gmi.has_meta("fade_orig"), "после ухода героя материал дома прежний")
+	# мягкая коробка (0.24) вырезается своим шейдером с cut = true
+	var body := Kit.solid_box(self, Vector3(2, 2, 2), Vector3.ZERO, Color(0.5, 0.5, 0.5), 0.0, true)
+	var mi: MeshInstance3D = body.find_children("*", "MeshInstance3D", true, false)[0]
+	cam._set_alpha(body, 0.0)
+	var soft := mi.material_override as ShaderMaterial
+	check(soft != null and soft.shader == Kit.SOFT_BOX_SHADER and soft.get_shader_parameter("cut") == true,
+			"мягкая коробка у героя вырезается своим шейдером")
 	cam._set_alpha(body, 1.0)
-	check(mi.material_override == orig and not mi.has_meta("fade_orig"), "после ухода героя материал дома прежний")
-	check(IsoCamera.DEFAULT_SIZE == 11.0, "кадр камеры 11 м (0.23: герой крупнее)")
+	check(IsoCamera.DEFAULT_SIZE == 9.5, "кадр камеры 9.5 м (0.24: камера ближе)")
+	glass.queue_free()
 	body.queue_free()
 	cam.free()
+
+
+func test_soft_box_mesh_rounded_and_outward() -> void:
+	var m := SoftMesh.box_mesh(Vector3(2, 1, 1))
+	var arr := m.surface_get_arrays(0)
+	var verts: PackedVector3Array = arr[Mesh.ARRAY_VERTEX]
+	var norms: PackedVector3Array = arr[Mesh.ARRAY_NORMAL]
+	check(verts.size() == 44 * 3, "мягкая коробка: 6 граней, 12 фасок, 8 углов — 44 треугольника")
+	var outward := true
+	var front := true
+	for i in range(0, verts.size(), 3):
+		var c := (verts[i] + verts[i + 1] + verts[i + 2]) / 3.0
+		var g := (verts[i + 1] - verts[i]).cross(verts[i + 2] - verts[i])
+		front = front and g.dot(c) < 0.0     # в Godot лицевая сторона — по часовой
+		for k in 3:
+			outward = outward and norms[i + k].dot(verts[i + k]) > 0.0
+	check(front and outward, "все треугольники мягкой коробки смотрят наружу")
+	var aabb := m.get_aabb()
+	check(aabb.size.is_equal_approx(Vector3(2, 1, 1)), "размер мягкой коробки не меняется от скругления")
+	var mi := Kit.box(self, Vector3(1, 1, 1), Vector3.ZERO, Color(0.3, 0.6, 0.2))
+	check(mi.material_override is ShaderMaterial and mi.get_meta("box_size") == Vector3.ONE, "Kit.box даёт мягкую коробку")
+	var lit := Kit.box(self, Vector3(1, 1, 1), Vector3.ZERO, Color(1, 0.6, 0.2), 2.0)
+	check(lit.mesh is BoxMesh and lit.material_override is StandardMaterial3D, "светящаяся коробка остаётся простой")
+	mi.queue_free()
+	lit.queue_free()
 
 
 func test_stick_survives_hidden_release() -> void:

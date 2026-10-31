@@ -28,18 +28,18 @@ static func mesh(body: Color, lit := false, variant := 0) -> ArrayMesh:
 	# нижний кузов: борта чуть заваливаются внутрь, капот спереди ниже крыльев
 	_hex(st, [Vector3(-hw, 0.32, tail), Vector3(hw, 0.32, tail), Vector3(hw, 0.32, hl), Vector3(-hw, 0.32, hl),
 		Vector3(-hw + 0.05, 0.86, tail + 0.08), Vector3(hw - 0.05, 0.86, tail + 0.08), Vector3(hw - 0.05, 0.8, hl - 0.06),
-		Vector3(-hw + 0.05, 0.8, hl - 0.06)], body)
+		Vector3(-hw + 0.05, 0.8, hl - 0.06)], body, 0.14)
 	# салон: стёкла кругом, низ шире верха, лобовое и заднее скошены
 	var c0 := tail + (0.75 if variant == 0 else 0.35)
 	var c1 := 0.75
 	var r0 := c0 + (0.4 if variant == 0 else 0.12)
 	var r1 := 0.05
 	_hex(st, [Vector3(-hw + 0.1, 0.86, c0), Vector3(hw - 0.1, 0.86, c0), Vector3(hw - 0.1, 0.86, c1), Vector3(-hw + 0.1, 0.86, c1),
-		Vector3(-hw + 0.24, 1.4, r0), Vector3(hw - 0.24, 1.4, r0), Vector3(hw - 0.24, 1.4, r1), Vector3(-hw + 0.24, 1.4, r1)], GLASS)
+		Vector3(-hw + 0.24, 1.4, r0), Vector3(hw - 0.24, 1.4, r0), Vector3(hw - 0.24, 1.4, r1), Vector3(-hw + 0.24, 1.4, r1)], GLASS, 0.08)
 	# крыша и стойки цвета кузова
 	_hex(st, [Vector3(-hw + 0.22, 1.38, r0 - 0.02), Vector3(hw - 0.22, 1.38, r0 - 0.02), Vector3(hw - 0.22, 1.38, r1 + 0.02),
 		Vector3(-hw + 0.22, 1.38, r1 + 0.02), Vector3(-hw + 0.26, 1.45, r0 + 0.03), Vector3(hw - 0.26, 1.45, r0 + 0.03),
-		Vector3(hw - 0.26, 1.45, r1 - 0.03), Vector3(-hw + 0.26, 1.45, r1 - 0.03)], body)
+		Vector3(hw - 0.26, 1.45, r1 - 0.03), Vector3(-hw + 0.26, 1.45, r1 - 0.03)], body, 0.06)
 	var mid := (r0 + r1) / 2.0
 	for sx: float in [-1.0, 1.0]:
 		_box(st, Vector3(sx * (hw - 0.17), 1.13, mid), Vector3(0.05, 0.54, 0.09), body)      # средняя стойка
@@ -91,11 +91,16 @@ static func _wheel(st: SurfaceTool, c: Vector3, r: float, w: float, side: float)
 static func _box(st: SurfaceTool, c: Vector3, s: Vector3, col: Color) -> void:
 	var h := s / 2.0
 	_hex(st, [c + Vector3(-h.x, -h.y, -h.z), c + Vector3(h.x, -h.y, -h.z), c + Vector3(h.x, -h.y, h.z), c + Vector3(-h.x, -h.y, h.z),
-		c + Vector3(-h.x, h.y, -h.z), c + Vector3(h.x, h.y, -h.z), c + Vector3(h.x, h.y, h.z), c + Vector3(-h.x, h.y, h.z)], col)
+		c + Vector3(-h.x, h.y, -h.z), c + Vector3(h.x, h.y, -h.z), c + Vector3(h.x, h.y, h.z), c + Vector3(-h.x, h.y, h.z)], col,
+		SoftMesh.bevel_for(s))
 
 
 ## Шестигранник по 8 углам: низ 0–3, верх 4–7 (−x−z, +x−z, +x+z, −x+z). Грани наружу.
-static func _hex(st: SurfaceTool, v: Array, col: Color) -> void:
+static func _hex(st: SurfaceTool, v: Array, col: Color, bevel := 0.05) -> void:
+	# 0.24: рёбра скруглены (SoftMesh) — мультяшный объём вместо картонных граней
+	if bevel > 0.0:
+		SoftMesh.hex(st, v, col, bevel)
+		return
 	var center := Vector3.ZERO
 	for p: Vector3 in v:
 		center += p
