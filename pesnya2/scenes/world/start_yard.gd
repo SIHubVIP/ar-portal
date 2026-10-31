@@ -147,13 +147,23 @@ static func slab_mesh() -> ArrayMesh:
 	for k in 4:
 		var n := (k + 1) % 4
 		_quad(st, lo[n], lo[k], hi[k], hi[n])
-	st.generate_normals()
+	# 0.23: нормали плоские и наружу. generate_normals усреднял верх с фасками и разворачивал
+	# его вниз — на телефоне верх плиток не ловил солнца, и двор был бурым в голубую сетку
 	_slab_mesh = st.commit()
 	return _slab_mesh
 
 
 static func _quad(st: SurfaceTool, a: Vector3, b: Vector3, c: Vector3, d: Vector3) -> void:
-	for v in [a, c, b, a, d, c]:
+	var n := (c - a).cross(b - a).normalized()
+	if n.dot((a + b + c + d) / 4.0 - Vector3(0, 0.5, 0)) < 0.0:
+		n = -n
+	# лицевая грань в Godot — по часовой, если смотреть снаружи; верх плитки раньше был
+	# изнанкой и отсекался: сквозь него была видна бурая подложка, а фаски давали сетку
+	var order := [a, c, b, a, d, c]
+	if (c - a).cross(b - a).dot(n) > 0.0:
+		order = [a, b, c, a, c, d]
+	for v in order:
+		st.set_normal(n)
 		st.add_vertex(v)
 
 
@@ -386,7 +396,7 @@ static func _greenery() -> void:
 			var c := cell_center(i, j, y) + Vector3(rng.randf_range(-0.5, 0.5), 0, rng.randf_range(-0.5, 0.5))
 			match ch:
 				"T", "Y":
-					DistrictDressing._tree(b, c, rng, rng.randf_range(1.3, 1.7), false)
+					DistrictDressing._tree(b, c, rng, rng.randf_range(0.95, 1.2), false)
 				"b", "B":
 					DistrictDressing._bush(b, c, rng, rng.randf_range(0.9, 1.3))
 					if rng.randf() < 0.5:
@@ -399,7 +409,7 @@ static func _greenery() -> void:
 					b.add("tank", Transform3D(Basis().scaled(Vector3(2.4, 0.6, 2.4)), pc + Vector3(0, 0.3, 0)), STONE_TONES[1].lightened(0.1))
 					b.add("tank", Transform3D(Basis().scaled(Vector3(2.1, 0.05, 2.1)), pc + Vector3(0, 0.62, 0)), Color(0.3, 0.22, 0.14))
 					b.add("tank", Transform3D(Basis().scaled(Vector3(2.7, 0.08, 2.7)), pc + Vector3(0, 0.6, 0)), Color(0.55, 0.38, 0.22))
-					DistrictDressing._tree(b, pc + Vector3(0, 0.6, 0), rng, 1.2, false)
+					DistrictDressing._tree(b, pc + Vector3(0, 0.6, 0), rng, 0.9, false)
 				"f", "F":
 					_flowerbed(b, c, rng)
 				"h":

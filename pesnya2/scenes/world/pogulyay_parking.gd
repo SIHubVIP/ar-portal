@@ -326,7 +326,7 @@ func _build_environment() -> void:
 	env.sky = sky
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	env.ambient_light_color = Color(0.42, 0.62, 0.66)      # тени не серые, а бирюзовые, как на референсах
-	env.ambient_light_energy = 0.58
+	env.ambient_light_energy = 0.8       # 0.23: тень домов во дворе не проваливается в черноту
 	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
 	env.tonemap_exposure = 0.88
 	env.glow_enabled = true
@@ -357,7 +357,7 @@ func _build_environment() -> void:
 	# камера на плече 60 м видит пятно ~40 м: одного каскада до 110 м хватает (на телефоне каскады — 4 прохода)
 	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_ORTHOGONAL
 	sun.directional_shadow_max_distance = 110.0
-	sun.shadow_opacity = 0.85
+	sun.shadow_opacity = 0.65
 	sun.shadow_blur = 1.6           # 0.18: мягкий край тени, как кистью; без ступенек на газоне
 	add_child(sun)
 
@@ -1211,10 +1211,14 @@ func _run_autotest() -> void:
 	var elite_ok: bool = errands._alive(errands._elite) and objective()[0].distance_to(errands._elite.global_position) < 0.5
 	var babki_e := GameState.babki
 	errands._elite.take_hit(99999.0, player.global_position)
-	await _frames(40)
-	for d in get_tree().get_nodes_in_group("loot"):
-		d.pick()
-	await _frames(4)
+	# трофей падает после анимации смерти — ждём его, а не фиксированные 40 кадров
+	for wait in 12:
+		await _frames(10)
+		for d in get_tree().get_nodes_in_group("loot"):
+			d.pick()
+		await _frames(4)
+		if NpcErrands.stage_type(eq) == "collect_stack" and not errands._group.is_empty():
+			break
 	var stack_ok: bool = NpcErrands.stage_type(eq) == "collect_stack" and not errands._group.is_empty()
 	for round in 6:
 		for m in errands._group:

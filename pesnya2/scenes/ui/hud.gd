@@ -369,7 +369,7 @@ func _build_tracker(parent: Node) -> void:
 	sb.content_margin_left = 16
 	sb.content_margin_right = 14
 	_tracker.add_theme_stylebox_override("panel", sb)
-	_tracker.custom_minimum_size.x = 420
+	_tracker.custom_minimum_size.x = 330     # 0.23: уже и мельче — меньше закрывает двор
 	_tracker.gui_input.connect(func(e: InputEvent):
 		if (e is InputEventMouseButton or e is InputEventScreenTouch) and e.pressed:
 			open_quests())
@@ -378,15 +378,15 @@ func _build_tracker(parent: Node) -> void:
 	v.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	v.add_theme_constant_override("separation", 0)
 	_tracker.add_child(v)
-	_tr_head = _label(v, "", 14)
+	_tr_head = _label(v, "", 12)
 	_tr_head.add_theme_color_override("font_color", UiSkin.GOLD)
-	_tr_title = _label(v, "", 19)
+	_tr_title = _label(v, "", 16)
 	_tr_title.add_theme_font_override("font", UiSkin.title_font())
-	_tr_goal = _label(v, "", 21)
+	_tr_goal = _label(v, "", 16)
 	_tr_goal.add_theme_color_override("font_color", Color(1, 0.92, 0.55))
 	_tr_goal.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_tr_goal.custom_minimum_size.x = 390
-	_tr_detail = _label(v, "", 16)
+	_tr_goal.custom_minimum_size.x = 300
+	_tr_detail = _label(v, "", 14)
 	_tr_detail.add_theme_color_override("font_color", Color(0.75, 0.9, 1))
 
 

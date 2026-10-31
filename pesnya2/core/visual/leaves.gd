@@ -15,7 +15,7 @@ func _ready() -> void:
 	name = "Leaves"
 	set_meta("map_skip", true)
 	var p := GPUParticles3D.new()
-	p.amount = 90
+	p.amount = 40          # 0.23: было 90 — на телефоне читалось жёлтым мусором
 	p.lifetime = 7.0
 	p.preprocess = 7.0
 	p.local_coords = false
@@ -43,14 +43,18 @@ func _ready() -> void:
 	m.scale_max = 1.3
 	var g := Gradient.new()
 	g.offsets = PackedFloat32Array([0.0, 0.5, 1.0])
-	g.colors = PackedColorArray([Color(0.98, 0.78, 0.25), Color(0.92, 0.5, 0.15), Color(0.7, 0.25, 0.1)])
+	g.colors = PackedColorArray([Color(0.86, 0.66, 0.24), Color(0.8, 0.44, 0.16), Color(0.6, 0.24, 0.1)])
 	var gt := GradientTexture1D.new()
 	gt.gradient = g
 	m.color_initial_ramp = gt
 	p.process_material = m
 	var q := QuadMesh.new()
-	q.size = Vector2(0.22, 0.16)
+	q.size = Vector2(0.26, 0.2)
 	var mat := StandardMaterial3D.new()
+	# форма листа, а не прямоугольник: квадраты на земле выглядели как конфетти
+	mat.albedo_texture = leaf_texture()
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
+	mat.alpha_scissor_threshold = 0.5
 	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	mat.vertex_color_use_as_albedo = true
 	mat.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
@@ -60,6 +64,22 @@ func _ready() -> void:
 	p.draw_pass_1 = q
 	add_child(p)
 	_leaves = p
+
+
+## Лист-лодочка 32 × 32: заострённые концы, белый — цвет даёт частица.
+static func leaf_texture() -> ImageTexture:
+	var img := Image.create(32, 32, false, Image.FORMAT_RGBA8)
+	for y in 32:
+		for x in 32:
+			var u := (x - 15.5) / 15.5
+			var v := (y - 15.5) / 15.5
+			# полуширина листа сужается к концам: 0.55 · (1 − u²)
+			var half := 0.55 * (1.0 - u * u)
+			var a := 1.0 if absf(v) < half and absf(u) < 0.98 else 0.0
+			# прожилка темнее
+			var shade := 0.82 if absf(v) < 0.06 and absf(u) < 0.8 else 1.0
+			img.set_pixel(x, y, Color(shade, shade, shade, a))
+	return ImageTexture.create_from_image(img)
 
 
 func _process(_delta: float) -> void:

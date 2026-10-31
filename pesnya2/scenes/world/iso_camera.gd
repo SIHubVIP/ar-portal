@@ -9,9 +9,9 @@ extends Camera3D
 const PITCH_MIN := deg_to_rad(28.0)
 const PITCH_MAX := deg_to_rad(80.0)
 const ZOOM_MIN := 8.0
-const ZOOM_MAX := 40.0
+const ZOOM_MAX := 26.0
 ## Кадр по умолчанию: 12 м (D-043, владелец: «камера слишком далеко», было 18).
-const DEFAULT_SIZE := 12.0
+const DEFAULT_SIZE := 11.0
 ## Камера стоит на этом расстоянии от героя: в ортографике оно не меняет масштаб,
 ## только то, что попадает между камерой и героем.
 const ARM := 60.0

@@ -596,7 +596,7 @@ func test_camera_cutout_works_without_vulkan_and_restores() -> void:
 			"дом у героя вырезается непрозрачным шейдером (работает и в OpenGL)")
 	cam._set_alpha(body, 1.0)
 	check(mi.material_override == orig and not mi.has_meta("fade_orig"), "после ухода героя материал дома прежний")
-	check(IsoCamera.DEFAULT_SIZE == 12.0, "кадр камеры 12 м")
+	check(IsoCamera.DEFAULT_SIZE == 11.0, "кадр камеры 11 м (0.23: герой крупнее)")
 	body.queue_free()
 	cam.free()
 
@@ -1089,6 +1089,17 @@ func test_mobile_sun_uses_lambert() -> void:
 	check(ProjectSettings.get_setting("rendering/renderer/rendering_method") == "mobile"
 			and ProjectSettings.get_setting("rendering/shading/overrides/force_lambert_over_burley", false) == true,
 			"мобильный рендерер: стандартные материалы на Ламберте, солнце их освещает")
+
+
+## 0.23: верх плитки двора — лицевая грань с нормалью вверх. Раньше он был изнанкой и отсекался,
+## сквозь него проступала бурая подложка, а фаски рисовали голубую сетку.
+func test_yard_slab_top_faces_up() -> void:
+	var a := StartYard.slab_mesh().surface_get_arrays(0)
+	var v: PackedVector3Array = a[Mesh.ARRAY_VERTEX]
+	var n: PackedVector3Array = a[Mesh.ARRAY_NORMAL]
+	# первые два треугольника — верх; лицевая грань в Godot — по часовой, если смотреть по нормали
+	var cw := (v[1] - v[0]).cross(v[2] - v[0]).dot(n[0]) < 0.0
+	check(n[0].y > 0.99 and v[0].y > 0.99 and cw, "верх плитки двора смотрит вверх и не отсекается")
 
 
 func test_ui_skin_has_drawn_icons() -> void:
