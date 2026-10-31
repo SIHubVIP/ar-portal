@@ -4,6 +4,8 @@ extends CanvasLayer
 ## Наблюдает EventBus и не меняет экономику напрямую.
 
 signal pause_action(action: String)
+## Маршрутка с карты (0.22): мир сам решает, хватает ли денег, и везёт.
+signal travel(plan: Vector2, title: String)
 
 var controls: TouchControls
 var _hp_bar: ProgressBar
@@ -123,6 +125,7 @@ func _ready() -> void:
 	root.add_child(world_map)
 	_place(world_map, Vector2(0.5, 0.5), Vector2(-620, -350), Vector2(620, 350))
 	world_map.closed.connect(func(): _set_controls(true))
+	world_map.travel_requested.connect(func(plan: Vector2, title: String) -> void: travel.emit(plan, title))
 	dialog = DialogView.new()
 	root.add_child(dialog)
 	dialog.closed.connect(func(): _set_controls(true))

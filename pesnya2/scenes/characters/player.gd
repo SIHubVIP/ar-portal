@@ -11,6 +11,8 @@ signal combo(n: int)
 signal perfect_dodge
 
 const SPEED := 6.0
+## Самокат «НЛО напрокат» (0.22): район 1 × 1 км пешком — это наказание, а не игра.
+const SCOOTER_SPEED := 13.0
 const DODGE_DISTANCE := 4.5
 const DODGE_TIME := 0.22
 const ATTACK_RANGE := 2.6
@@ -43,6 +45,8 @@ var safe_zone := ""
 
 var _attack_ready_at := 0.0
 var combo_count := 0
+var on_scooter := false
+var _scooter: Node3D
 var _combo_until := 0.0
 var _perfect_until := 0.0
 var _dodge_left := 0.0
@@ -160,15 +164,22 @@ func _physics_process(delta: float) -> void:
 		velocity.z = _knock.z
 		_knock = _knock.lerp(Vector3.ZERO, clampf(6.0 * delta, 0.0, 1.0))
 	else:
-		velocity.x = dir.x * SPEED
-		velocity.z = dir.z * SPEED
+		var sp := SCOOTER_SPEED if on_scooter else SPEED
+		velocity.x = dir.x * sp
+		velocity.z = dir.z * sp
 	velocity.y = 0.0 if is_on_floor() else velocity.y - 20.0 * delta
 	move_and_slide()
 	_push_props()
 	if dir.length() > 0.05:
 		facing = dir.normalized()
 	_rig.rotation.y = lerp_angle(_rig.rotation.y, atan2(facing.x, facing.z), 12.0 * delta)
-	_animate(delta, dir.length())
+	if on_scooter:
+		# на самокате не бегут: стоят, чуть наклонившись вперёд по ходу
+		_rig.rotation.x = lerpf(_rig.rotation.x, 0.12 * dir.length(), 8.0 * delta)
+		_animate(delta, 0.0)
+	else:
+		_rig.rotation.x = 0.0
+		_animate(delta, dir.length())
 
 
 func _animate(delta: float, moving: float) -> void:
@@ -193,6 +204,45 @@ func _animate(delta: float, moving: float) -> void:
 		_arms[1].rotation.x = lerpf(_arms[1].rotation.x, swing * 0.8, 10.0 * delta)
 
 
+## Самокат есть после MAIN_001: киоскёр «НЛО напрокат» отдаёт его в благодарность.
+static func has_scooter() -> bool:
+	return GameState.has_flag("scooter") or QuestService.state_of("MAIN_001") == QuestService.COMPLETED
+
+
+func toggle_scooter() -> void:
+	if not controls_enabled or not has_scooter():
+		return
+	set_scooter(not on_scooter)
+
+
+func set_scooter(v: bool) -> void:
+	if v == on_scooter:
+		return
+	on_scooter = v
+	if v and _scooter == null:
+		_scooter = _build_scooter()
+	if _scooter:
+		_scooter.visible = v
+	_rig.position.y = 0.16 if v else 0.0
+
+
+## Самокат из фигур: дека, колёса, стойка, руль с красными ручками и наклейка «НЛО».
+func _build_scooter() -> Node3D:
+	var sc := Node3D.new()
+	_rig.add_child(sc)
+	sc.position.y = -0.16
+	Kit.box(sc, Vector3(0.22, 0.05, 0.85), Vector3(0, 0.1, 0.05), Color(0.95, 0.3, 0.25))
+	Kit.box(sc, Vector3(0.18, 0.012, 0.5), Vector3(0, 0.13, -0.02), Color(0.15, 0.15, 0.17))
+	for z in [-0.36, 0.44]:
+		Kit.cylinder(sc, 0.09, 0.06, Vector3(0, 0.09, z), Color(0.1, 0.1, 0.1)).rotation_degrees.z = 90.0
+	Kit.cylinder(sc, 0.025, 1.0, Vector3(0, 0.6, 0.46), Color(0.75, 0.76, 0.8))
+	Kit.cylinder(sc, 0.025, 0.5, Vector3(0, 1.08, 0.46), Color(0.75, 0.76, 0.8)).rotation_degrees.z = 90.0
+	for x in [-0.25, 0.25]:
+		Kit.cylinder(sc, 0.035, 0.12, Vector3(x, 1.08, 0.46), Color(0.95, 0.3, 0.25)).rotation_degrees.z = 90.0
+	Kit.sphere(sc, 0.06, Vector3(0, 0.95, 0.5), Color(1, 1, 0.75), 2.0)
+	return sc
+
+
 func is_guarding() -> bool:
 	return t < guard_until
 
@@ -202,6 +252,8 @@ func is_dodging() -> bool:
 
 
 func take_hit(damage: float) -> void:
+	if on_scooter and not is_dodging() and safe_zone == "" and GameState.hp > 0.0:
+		set_scooter(false)     # сбили с самоката — дальше пешком
 	if is_dodging() and GameState.hp > 0.0 and t >= _perfect_until:
 		# увернулся в последний момент — награда за риск
 		_perfect_until = t + PERFECT_WINDOW
@@ -231,6 +283,7 @@ func _push_props() -> void:
 func basic_attack() -> void:
 	if t < _attack_ready_at or not controls_enabled:
 		return
+	set_scooter(false)
 	_attack_ready_at = t + ATTACK_COOLDOWN
 	# удар разбрасывает мелочь перед героем, даже если врага рядом нет
 	PhysProp.blast(get_tree(), global_position + facing * 1.2, 2.4, 5.5)
@@ -273,6 +326,7 @@ func attack_damage(base: float) -> float:
 func dodge() -> void:
 	if _dodge_left > 0.0 or not controls_enabled:
 		return
+	set_scooter(false)
 	dash(facing, DODGE_TIME)
 	play_action("Dodge", 0.4)
 
@@ -315,6 +369,7 @@ func use_ability(index: int) -> void:
 	if not ability_unlocked(index):
 		EventBus.toast.emit("«%s» откроется на %d уровне" % [book.abilities[index].name, unlock_level(index)])
 		return
+	set_scooter(false)
 	var a: Dictionary = book.abilities[index]
 	if not book.cast(a.id, t):
 		return

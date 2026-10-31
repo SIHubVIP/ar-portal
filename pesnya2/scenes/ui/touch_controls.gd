@@ -6,6 +6,7 @@ extends Control
 signal attack
 signal dodge
 signal interact
+signal scooter
 signal ability(index: int)
 signal camera_rotate(radians: float)
 signal camera_zoom(amount: float)
@@ -51,6 +52,9 @@ func buttons() -> Dictionary:
 	if interact_label != "":
 		b["interact"] = [a + Vector2(0, -330), 48.0]
 	# поворот камеры — слева от мини-карты (она в правом верхнем углу)
+	# самокат — над стиком слева (0.22): большой палец левой руки рядом
+	if player and Player.has_scooter():
+		b["scooter"] = [Vector2(70, s.y - 330), 40.0]
 	b["rot_left"] = [Vector2(s.x - 345, 146), 30.0]
 	b["rot_right"] = [Vector2(s.x - 265, 146), 30.0]
 	var inner := [180.0, 210.0, 240.0, 270.0]
@@ -124,6 +128,8 @@ func _unhandled_key_input(event: InputEvent) -> void:
 			dodge.emit()
 		KEY_E:
 			interact.emit()
+		KEY_R:
+			scooter.emit()
 		var k when k >= KEY_1 and k <= KEY_7:
 			ability.emit(k - KEY_1)
 
@@ -141,6 +147,7 @@ func _fire(id: String) -> void:
 		"attack": attack.emit()
 		"dodge": dodge.emit()
 		"interact": interact.emit()
+		"scooter": scooter.emit()
 		"rot_left": camera_rotate.emit(deg_to_rad(-45.0))
 		"rot_right": camera_rotate.emit(deg_to_rad(45.0))
 		_: ability.emit(int(id.get_slice("_", 1)))
@@ -188,6 +195,9 @@ func _draw() -> void:
 			"rot_left", "rot_right":
 				col = Color(UiSkin.INK_LIGHT, 0.85)
 				icon = id
+			"scooter":
+				col = Color(0.95, 0.55, 0.2) if player and player.on_scooter else Color(UiSkin.INK_LIGHT, 0.9)
+				icon = "scooter"
 			_:
 				var i := int(id.get_slice("_", 1))
 				var a: Dictionary = player.book.abilities[i] if player and i < player.book.abilities.size() else {}

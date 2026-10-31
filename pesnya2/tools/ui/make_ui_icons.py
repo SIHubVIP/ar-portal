@@ -465,6 +465,19 @@ def q_craft():
     i.save("q_craft")
 
 
+def scooter():
+    i = Icon()
+    i.part(thick([(330, 110), (300, 380)], 26), rgb("c9ccd4"))
+    i.part(thick([(270, 110), (390, 110)], 28), rgb("ff5a3c"))
+    i.part(rr((110, 360, 340, 400), 18), rgb("ff5a3c"))
+    for c in ((140, 420), (310, 420)):
+        i.part(ell((c[0] - 44, c[1] - 44, c[0] + 44, c[1] + 44)), rgb("3a3a44"))
+        i.paint(ell((c[0] - 14, c[1] - 14, c[0] + 14, c[1] + 14)), rgb("c9ccd4"))
+    for k, y in enumerate((170, 230, 290)):
+        i.part(rr((40 + k * 20, y, 180 + k * 10, y + 26), 13), rgb("bfefff"), line=12, shade=False)
+    i.save("scooter")
+
+
 _FONTS = {}
 
 
@@ -479,7 +492,7 @@ def _font(size):
 if __name__ == "__main__":
     os.makedirs(OUT, exist_ok=True)
     for f in (bag, quests, menu, map_icon, heart, coin, rep, kukukha, close, lock, fist, dodge, hand, q_unique, q_stack,
-              q_craft):
+              q_craft, scooter):
         f()
     rot("rot_right", False)
     rot("rot_left", True)

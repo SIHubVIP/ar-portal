@@ -5,6 +5,8 @@ extends PanelContainer
 ## Вкладка «Квартал» — двор старта с живыми точками (как мини-карта, но крупно).
 
 signal closed
+## Поездка на маршрутке к точке (0.22): план в метрах и название остановки.
+signal travel_requested(plan: Vector2, title: String)
 
 const KINDS := {"npc": ["NPC", Color(0.45, 0.9, 0.65)], "boss": ["Босс", Color(0.95, 0.38, 0.45)],
 		"mob": ["Мобы", Color(1, 0.55, 0.3)], "place": ["Место", Color(0.93, 0.87, 0.75)],
@@ -26,6 +28,8 @@ var _district: _DistrictCanvas
 var _quarter: MapCanvas
 var _quarter_overlay: Control
 var _info: Label
+var _travel_btn: Button
+var _travel_to: Dictionary = {}
 
 
 func _ready() -> void:
@@ -77,7 +81,18 @@ func _ready() -> void:
 	_info.add_theme_font_size_override("font_size", 17)
 	_info.add_theme_color_override("font_color", UiSkin.TEXT_DIM)
 	_info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	v.add_child(_info)
+	_info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var foot := HBoxContainer.new()
+	foot.add_theme_constant_override("separation", 12)
+	v.add_child(foot)
+	foot.add_child(_info)
+	_travel_btn = _btn(foot, "", func() -> void:
+		if _travel_to.is_empty():
+			return
+		var p := _travel_to
+		close_panel()
+		travel_requested.emit(District.pos(p), String(p.name)), 18)
+	_travel_btn.visible = false
 
 
 func open() -> void:
@@ -97,6 +112,8 @@ func close_panel() -> void:
 
 
 func _render() -> void:
+	if _travel_btn:
+		_travel_btn.visible = false
 	for c in _tabs.get_children():
 		c.queue_free()
 	for t in [["district", "Район · " + String(District.district_at(player_plan()).get("name", "Погуляй"))], ["quarter", "Квартал · Старт"]]:
@@ -182,7 +199,21 @@ func player_plan() -> Vector2:
 	return District.to_plan(player.global_position)
 
 
+## Куда ходит маршрутка: к жителям, с которыми уже говорил, и в безопасные дворы.
+static func can_travel(p: Dictionary) -> bool:
+	if p.get("type", "") == "safe":
+		return true
+	if p.get("type", "") == "npc":
+		for e in GameData.errands:
+			if e.point == p.id:
+				return GameState.has_flag("offered:" + String(e.quest))
+	return false
+
+
 func show_point(p: Dictionary) -> void:
+	_travel_to = p if can_travel(p) else {}
+	_travel_btn.visible = not _travel_to.is_empty()
+	_travel_btn.text = "  Маршрутка сюда · 15 бабок  "
 	var kind: Array = KINDS.get(p.type, ["Точка", Color.WHITE])
 	var sec := District.sector_at(District.pos(p))
 	var at := District.pos(p)

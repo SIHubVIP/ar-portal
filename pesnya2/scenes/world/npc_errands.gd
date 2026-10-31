@@ -125,7 +125,7 @@ func talk(qid: String) -> void:
 			lines.append({"speaker": sp, "text": t})
 		var q := GameData.quest(qid)
 		var lvl := int(q.min_level)
-		var warn := "" if GameState.level >= lvl - 2 else " (рекомендуемый уровень %d — будет больно)" % lvl
+		var warn := "" if GameState.level >= lvl - 2 else " (рекомендуемый уровень %d — будет непросто)" % lvl
 		hud.play_dialog(lines, func() -> void:
 			hud.ask_from(sp, e.lines.ask, [
 				{"text": "Берусь%s" % warn, "tone": "green", "cb": func() -> void: _accept(qid)},
@@ -219,9 +219,10 @@ func _on_ground(item: String) -> bool:
 	return false
 
 
-## Сила врагов растёт с рекомендуемым уровнем задания: +4 % здоровья и +2 % урона за уровень.
+## Сила врагов растёт с уровнем: +4 % здоровья и +2 % урона за уровень. Уровень — рекомендованный
+## заданием, но не выше уровня героя + 2 (0.22): на 1-м уровне враг 35-го не убивает с двух ударов.
 static func level_k(qid: String) -> Vector2:
-	var l := float(GameData.quest(qid).get("min_level", 1)) - 1.0
+	var l := float(mini(int(GameData.quest(qid).get("min_level", 1)), GameState.level + 2)) - 1.0
 	return Vector2(1.0 + 0.04 * l, 1.0 + 0.02 * l)
 
 

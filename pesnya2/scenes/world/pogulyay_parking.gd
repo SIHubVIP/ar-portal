@@ -98,6 +98,12 @@ func _ready() -> void:
 	add_child(errands)
 	errands.build()
 	hud.controls.attack.connect(player.basic_attack)
+	hud.controls.scooter.connect(player.toggle_scooter)
+	EventBus.quest_state_changed.connect(func(q: String, st: String) -> void:
+		if q == QID and st == QuestService.COMPLETED and not GameState.has_flag("scooter"):
+			GameState.set_flag("scooter")
+			hud.show_toast("Киоскёр отдал самокат «НЛО напрокат»: кнопка слева над стиком (R)"))
+	hud.travel.connect(_travel)
 	hud.controls.dodge.connect(player.dodge)
 	hud.controls.ability.connect(player.use_ability)
 	hud.controls.interact.connect(_on_interact)
@@ -225,6 +231,9 @@ func _ready() -> void:
 			get_tree().create_timer(1.0).timeout.connect(func() -> void:
 				if arena.boss != null:
 					arena.boss.take_hit(arena.boss.max_hp * 0.31, player.global_position))
+		if arg == "--scooter":             # скриншот самоката
+			GameState.set_flag("scooter")
+			player.set_scooter(true)
 		if arg.begins_with("--errand="):   # скриншот поручения: --errand=NPC_14_1[:npc] — принято, герой у врага
 			var eq := arg.trim_prefix("--errand=").get_slice(":", 0)
 			var at_npc := arg.ends_with(":npc")
@@ -737,6 +746,26 @@ func _build_taxi() -> void:
 			k += 1
 
 
+## Маршрутка «Погуляй-экспресс» (0.22): с карты к знакомому жителю или в безопасный двор.
+const TRAVEL_COST := 15
+
+
+func _travel(plan: Vector2, title: String) -> void:
+	if GameState.babki < TRAVEL_COST:
+		hud.show_toast("Маршрутка без денег не едет. Даже в апокалипсис. Нужно %d бабок" % TRAVEL_COST)
+		return
+	GameState.grant("travel:%d" % Time.get_ticks_usec(), "Маршрутка до «%s»" % title, {"babki": -TRAVEL_COST})
+	player.set_scooter(false)
+	# высаживает у точки, на проходимой клетке рядом, а не в самом жителе
+	var to := plan
+	for k in 16:
+		var q := plan + Vector2.from_angle(k * TAU / 16.0) * 4.0
+		if District.walkable(q):
+			to = q
+			break
+	_ride(District.to_world(to), "Маршрутка «Погуляй-экспресс»", "Остановка: %s. Водитель просит не благодарить — это платно" % title)
+
+
 ## Поездка: затемнение, перенос героя, подгрузка участков, баннер с названием района.
 func _ride(to: Vector3, title: String, sub: String) -> void:
 	var layer := CanvasLayer.new()
@@ -1209,6 +1238,17 @@ func _run_autotest() -> void:
 			and GameState.item_count(ex.elite.item.id) == 0 and GameState.babki > babki_e
 	log.call("поручение Павла: житель с «!» %s, враг и стрелка %s, сбор %s, сборка %s, сдано %s" % [seen_npc, elite_ok, stack_ok, craft_ok, done_ok])
 	if not (seen_npc and elite_ok and stack_ok and craft_ok and done_ok):
+		print("AUTOTEST_FAIL")
+	# 0.22: самокат и маршрутка с карты в безопасный двор S1
+	player.toggle_scooter()
+	var scoot := player.on_scooter
+	var cash := GameState.babki
+	var s1 := District.pos(District.point("S1"))
+	_travel(s1, "Двор мастерских")
+	await get_tree().create_timer(1.8).timeout
+	var arrived := District.to_plan(player.global_position).distance_to(s1) < 8.0 and GameState.babki == cash - TRAVEL_COST
+	log.call("самокат %s, маршрутка в S1: %s" % [scoot, arrived])
+	if not scoot or not arrived or player.on_scooter:
 		print("AUTOTEST_FAIL")
 	# 0.7: живая улица и группа мобов у M10-1
 	var mp := District.pos(District.point("M10-1"))

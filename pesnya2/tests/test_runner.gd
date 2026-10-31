@@ -1127,8 +1127,13 @@ func test_errands_cover_pogulyay_npcs() -> void:
 		ok = ok and GameData.dialogues_speakers.has(e.speaker) and e.lines.hello.size() >= 1 and e.lines.done.size() >= 1
 		ok = ok and int(e.stack.count) == int(String(q.stages[2].text).get_slice("/", 1).get_slice(" ", 0))
 	check(ok, "у каждого поручения — житель на карте, вещи со значками, портрет, реплики и число трофеев из карточки")
-	var k := NpcErrands.level_k("NPC_13_1")
-	check(k.x > NpcErrands.level_k("NPC_07_1").x and is_equal_approx(NpcErrands.level_k("NPC_07_1").x, 1.08), "враги поручения крепче с рекомендуемым уровнем")
+	var lv := GameState.level
+	GameState.level = 40
+	check(NpcErrands.level_k("NPC_13_1").x > NpcErrands.level_k("NPC_07_1").x and is_equal_approx(NpcErrands.level_k("NPC_07_1").x, 1.08),
+			"враги поручения крепче с рекомендуемым уровнем")
+	GameState.level = 1
+	check(is_equal_approx(NpcErrands.level_k("NPC_13_1").x, 1.08), "но не сильнее уровня героя + 2")
+	GameState.level = lv
 
 
 func test_tracked_quest_follows_last_accepted() -> void:
@@ -1139,3 +1144,29 @@ func test_tracked_quest_follows_last_accepted() -> void:
 	QuestService.advance("MAIN_001", "MAIN_001_S01", 99)
 	check(QuestService.tracked_quest().get("id", "") == "MAIN_001", "и переключается на продвинутое")
 	QuestService.reset()
+
+
+func test_scooter_speeds_up_and_drops_on_hit() -> void:
+	var pl := Player.new()
+	add_child(pl)
+	GameState.set_flag("scooter")
+	pl.toggle_scooter()
+	check(pl.on_scooter and Player.SCOOTER_SPEED > Player.SPEED * 2.0, "самокат: больше чем вдвое быстрее пешком")
+	pl.take_hit(5.0)
+	check(not pl.on_scooter, "удар сбивает с самоката")
+	pl.toggle_scooter()
+	pl.t += 1.0
+	pl.basic_attack()
+	check(not pl.on_scooter, "замах — слез с самоката")
+	GameState.heal(GameState.max_hp)
+	GameState.flags.erase("scooter")
+	pl.queue_free()
+
+
+func test_travel_only_to_known_places() -> void:
+	check(WorldMap.can_travel(District.point("S1")), "в безопасный двор маршрутка ходит всегда")
+	GameState.flags.erase("offered:NPC_14_1")
+	check(not WorldMap.can_travel(District.point("N14")), "к незнакомому жителю — нет")
+	GameState.set_flag("offered:NPC_14_1")
+	check(WorldMap.can_travel(District.point("N14")) and not WorldMap.can_travel(District.point("M10-1")), "к знакомому — да, к мобам — нет")
+	GameState.flags.erase("offered:NPC_14_1")
